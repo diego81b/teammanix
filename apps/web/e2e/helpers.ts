@@ -26,12 +26,12 @@ export async function linkFromMail(to: string, subject = ''): Promise<string> {
 
 export async function registerAndVerify(page: Page, email: string, name = 'Ada') {
   await go(page, '/registration')
-  await page.getByLabel('Name', { exact: true }).fill(name)
-  await page.getByLabel('Surname').fill('Rossi')
+  await page.getByLabel('Nome', { exact: true }).fill(name)
+  await page.getByLabel('Cognome').fill('Rossi')
   await page.getByLabel('Email').fill(email)
   await page.getByRole('textbox', { name: /^Password/ }).fill(PASSWORD)
   await page.getByRole('checkbox').check()
-  await page.getByRole('button', { name: 'Registered' }).click()
+  await page.getByRole('button', { name: 'Registrati' }).click()
   await expect(page.getByRole('heading', { name: 'Controlla la tua email' })).toBeVisible()
   await go(page, await linkFromMail(email))
   await expect(page.getByRole('heading', { name: 'Email verificata' })).toBeVisible()
@@ -41,5 +41,5 @@ export async function login(page: Page, email: string) {
   await go(page, '/login')
   await page.getByLabel('Email').fill(email)
   await page.getByRole('textbox', { name: /^Password/ }).fill(PASSWORD)
-  await page.getByRole('button', { name: 'Login' }).click()
+  await page.getByRole('button', { name: 'Accedi' }).click()
 }

@@ -6,7 +6,7 @@ test('registration, email verification, login, club creation', async ({ page }) 
   await registerAndVerify(page, email, 'Ada')
 
   await login(page, email)
-  await expect(page).toHaveURL(/\/benvenuto/)
+  await expect(page).toHaveURL(/\/welcome/)
 
   await page.getByRole('link', { name: 'Crea la tua società' }).click()
   await page.getByRole('textbox', { name: /^Nome della società/ }).fill('ASD E2E')

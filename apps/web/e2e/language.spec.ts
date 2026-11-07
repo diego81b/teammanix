@@ -3,7 +3,7 @@ import { go } from './helpers'
 
 test('switching language translates the interface and persists after reload', async ({ page }) => {
   await go(page, '/login')
-  await expect(page.getByRole('heading', { name: 'Login' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Accedi' })).toBeVisible()
 
   await page.getByRole('button', { name: 'English' }).click()
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()
