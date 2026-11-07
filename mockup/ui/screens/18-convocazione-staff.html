@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Convocazione · TeamManix</title>
+<link rel="icon" href="../assets/app-icon.png">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/app.css">
+<script src="../js/theme.js"></script>
+</head>
+<body>
+<a class="tm-skip-link" href="#main">Vai al contenuto</a>
+<div class="tm-app tm-app--with-actionbar" data-app>
+
+<header class="tm-header tm-header--task" data-nuxt-ui="UDashboardNavbar">
+<a class="tm-button tm-button--icon tm-header__back" href="#" aria-label="Torna all'evento" data-nuxt-ui="UButton"><svg class="tm-icon tm-icon--md" aria-hidden="true"><use href="#i-chevron-left"/></svg></a>
+<div class="tm-header__titles"><span class="tm-header__title" data-ev="title">Partita contro US Pontassieve</span><span class="tm-header__sub" data-ev="sub">Convocazione · Under 17 · sab 7 nov · 15:30</span></div>
+<button type="button" class="tm-button tm-button--icon" aria-label="Valutazione del mockup" data-nuxt-ui="UButton" data-dialog-open="dlg-eval"><svg class="tm-icon" aria-hidden="true"><use href="#i-sliders"/></svg></button>
+</header>
+
+<aside class="tm-sidebar" aria-label="Navigazione principale" data-nuxt-ui="UDashboardSidebar">
+<div class="tm-sidebar__brand"><span class="tm-logo" data-nuxt-ui="NuxtImg"><img class="tm-logo__light" src="../assets/logo.png" alt="TeamManix" width="131" height="28"><img class="tm-logo__dark" src="../assets/logo-dark.png" alt="TeamManix" width="131" height="28"></span></div>
+<button type="button" class="tm-sidebar__switch" aria-haspopup="dialog" data-nuxt-ui="UButton"><span class="tm-org-logo" aria-hidden="true"><svg class="tm-icon" aria-hidden="true"><use href="#i-building"/></svg></span><span class="tm-team-switch__text"><span class="tm-team-switch__team">Under 17</span><span class="tm-team-switch__org">ASD Polisportiva Valdarno</span></span><svg class="tm-icon tm-icon--muted" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+<nav class="tm-sidebar__section" aria-label="Sezioni" data-nuxt-ui="UNavigationMenu"><a class="tm-nav-item" href="#"><svg class="tm-icon" aria-hidden="true"><use href="#i-home"/></svg>Home</a><a class="tm-nav-item" href="#" aria-current="page"><svg class="tm-icon" aria-hidden="true"><use href="#i-calendar"/></svg>Calendario</a><a class="tm-nav-item" href="#"><svg class="tm-icon" aria-hidden="true"><use href="#i-users"/></svg>Rosa</a><a class="tm-nav-item" href="#"><svg class="tm-icon" aria-hidden="true"><use href="#i-bell"/></svg>Notifiche</a></nav>
+<div class="tm-sidebar__foot"><a class="tm-nav-item" href="#"><span class="tm-avatar tm-avatar--sm" data-nuxt-ui="UAvatar" aria-hidden="true">MB</span>Marco Bertini</a></div>
+</aside>
+
+<main class="tm-app__main" id="main"><div class="tm-container">
+
+<nav class="tm-breadcrumb tm-desktop-only" aria-label="Percorso" data-nuxt-ui="UBreadcrumb"><ol><li><a href="#">Calendario</a><svg class="tm-icon" aria-hidden="true"><use href="#i-chevron-right"/></svg></li><li><a href="#" data-ev="crumb">Partita contro US Pontassieve</a><svg class="tm-icon" aria-hidden="true"><use href="#i-chevron-right"/></svg></li><li><span aria-current="page">Convocazione</span></li></ol></nav>
+<div class="tm-page-head tm-desktop-only"><div class="tm-page-head__titles"><h1 class="tm-h1">Convocazione</h1><span class="tm-text-muted" data-ev="long">Partita contro US Pontassieve · Under 17 · Sabato 7 novembre, 15:30 · Campo comunale Via dello Sport</span></div>
+<div class="tm-page-head__actions"><button type="button" class="tm-button tm-button--ghost" data-nuxt-ui="UButton" data-dialog-open="dlg-eval"><svg class="tm-icon tm-button__icon" aria-hidden="true"><use href="#i-sliders"/></svg><span class="tm-button__spinner tm-spinner" aria-hidden="true"></span>Valutazione</button><button type="button" class="tm-button" data-nuxt-ui="UButton" data-send><svg class="tm-icon tm-button__icon" aria-hidden="true"><use href="#i-send"/></svg><span class="tm-button__spinner tm-spinner" aria-hidden="true"></span>Invia convocazione</button></div></div>
+<h1 class="tm-visually-hidden tm-mobile-only">Convocazione</h1>
+
+
+<div class="tm-convocation__kpis tm-desktop-only">
+<div class="tm-card tm-kpi"><span class="tm-number" data-kpi="conv">0</span><span class="tm-kpi__label">Convocati</span></div>
+<div class="tm-card tm-kpi"><span class="tm-number" data-kpi="confermato">0</span><span class="tm-kpi__label">Confermati</span></div>
+<div class="tm-card tm-kpi"><span class="tm-number" data-kpi="senza-risposta">0</span><span class="tm-kpi__label">Senza risposta</span></div>
+<div class="tm-card tm-kpi"><span class="tm-number" data-kpi="da-avvisare">0</span><span class="tm-kpi__label">Da avvisare</span></div>
+</div>
+
+<div class="tm-convocation"><div class="tm-convocation__bar">
+<p class="tm-summary tm-mobile-only" data-summary aria-live="polite"></p>
+<div class="tm-segmented tm-segmented--wrap tm-convocation__tabs" role="tablist" aria-label="Liste della convocazione" data-nuxt-ui="UTabs (variant pill)">
+<button type="button" class="tm-segmented__item" role="tab" id="cv-t-conv" aria-selected="true" aria-controls="cv-p-conv"><span class="tm-segmented__label">Convocati</span><span class="tm-segmented__count" data-count="conv"></span></button>
+<button type="button" class="tm-segmented__item" role="tab" id="cv-t-out" aria-selected="false" aria-controls="cv-p-out"><span class="tm-segmented__label">Non convocati</span><span class="tm-segmented__count" data-count="out"></span></button>
+</div></div>
+
+<div class="tm-banner tm-banner--neutral" data-readonly-banner hidden data-spacing><svg class="tm-icon" aria-hidden="true"><use href="#i-lock"/></svg><div class="tm-banner__body"><strong>Evento concluso.</strong> La convocazione è in sola lettura.</div></div>
+<div class="tm-convocation__cols">
+<section class="tm-convocation__panel" data-list="conv" role="tabpanel" id="cv-p-conv" aria-labelledby="cv-t-conv" tabindex="-1">
+<div class="tm-convocation__head"><h2 class="tm-h2" id="cv-h-conv">Convocati <span class="tm-text-muted" data-count="conv"></span></h2></div>
+<p class="tm-convocation__help">Confermati, in attesa di risposta e da avvisare. Le persone aggiunte ora ricevono la notifica solo quando premi Invia.</p>
+<ul class="tm-list tm-list--card" role="list" data-items="conv" aria-labelledby="cv-h-conv"></ul>
+<div data-empty="conv" hidden></div>
+</section>
+<section class="tm-convocation__panel" data-list="out" role="tabpanel" id="cv-p-out" aria-labelledby="cv-t-out" tabindex="-1">
+<div class="tm-convocation__head"><h2 class="tm-h2" id="cv-h-out">Non convocati <span class="tm-text-muted" data-count="out"></span></h2></div>
+<p class="tm-convocation__help" data-help="out">Chi è convocabile ha il pulsante Convoca. Gli altri sono esclusi per infortunio, squalifica, certificato o assenza, oppure hanno risposto che non possono.</p>
+<div class="tm-group"><h3 class="tm-group-title" id="cv-h-able">Convocabili <span class="tm-group-title__count" data-count="able"></span></h3>
+<ul class="tm-list tm-list--card" role="list" data-items="able" aria-labelledby="cv-h-able"></ul><div data-empty="able" hidden></div></div><div class="tm-group"><h3 class="tm-group-title" id="cv-h-not">Non convocabili <span class="tm-group-title__count" data-count="not"></span></h3>
+<ul class="tm-list tm-list--card" role="list" data-items="not" aria-labelledby="cv-h-not"></ul><div data-empty="not" hidden></div></div>
+</section>
+</div>
+<section class="tm-section tm-convocation__staff" aria-labelledby="cv-staff-t" data-staff-section data-nuxt-ui="(sezione Staff)">
+<div class="tm-section__head"><h2 class="tm-h2" id="cv-staff-t">Staff</h2><span class="tm-text-muted tm-text-sm" data-staff-summary>1 disponibile su 4</span></div>
+<div class="tm-banner tm-banner--warning" data-no-coach data-nuxt-ui="UAlert"><svg class="tm-icon" aria-hidden="true"><use href="#i-warning"/></svg><div class="tm-banner__body"><strong>Nessun allenatore disponibile</strong> per questo evento.</div></div>
+<div class="tm-staff-groups"><div class="tm-group" data-staff-group="si"><h3 class="tm-group-title">Disponibili <span class="tm-group-title__count">2</span></h3><ul class="tm-list tm-list--card" role="list"><li data-role="vice"><div class="tm-row" data-nuxt-ui="UUser"><div class="tm-row__lead"><span class="tm-avatar" data-nuxt-ui="UAvatar" aria-hidden="true">PF</span></div><div class="tm-row__body"><span class="tm-row__role">Vice</span><span class="tm-row__title">Paolo Ferretti</span><span class="tm-row__meta"><span class="tm-badge tm-badge--success" data-nuxt-ui="UBadge"><svg class="tm-icon" aria-hidden="true"><use href="#i-check-circle"/></svg>Disponibile</span></span></div><div class="tm-row__trail" data-squal-action><div class="tm-menu-anchor" data-nuxt-ui="UDropdownMenu"><button type="button" class="tm-button tm-button--icon" aria-label="Azioni per Paolo Ferretti" aria-haspopup="menu" aria-expanded="false" aria-controls="cv-staff-m1" data-menu data-nuxt-ui="UButton"><svg class="tm-icon" aria-hidden="true"><use href="#i-dots-v"/></svg></button><ul class="tm-menu" id="cv-staff-m1" role="menu" hidden><li role="none"><button type="button" class="tm-menu__item" role="menuitem" data-squalifica-staff="paoloferretti"><svg class="tm-icon" aria-hidden="true"><use href="#i-card"/></svg>Squalifica</button></li></ul></div></div></div></li></ul></div><div class="tm-group" data-staff-group="no"><h3 class="tm-group-title">Non disponibili <span class="tm-group-title__count">3</span></h3><ul class="tm-list tm-list--card" role="list"><li data-role="preparatore"><div class="tm-row" data-nuxt-ui="UUser"><div class="tm-row__lead"><span class="tm-avatar" data-nuxt-ui="UAvatar" aria-hidden="true">AS</span></div><div class="tm-row__body"><span class="tm-row__role">Preparatore</span><span class="tm-row__title">Andrea Sodi</span><span class="tm-row__meta"><span class="tm-badge tm-badge--warning" data-nuxt-ui="UBadge"><svg class="tm-icon" aria-hidden="true"><use href="#i-calendar-x"/></svg>Non disponibile fino al 15/11</span></span></div><div class="tm-row__trail" data-squal-action><div class="tm-menu-anchor" data-nuxt-ui="UDropdownMenu"><button type="button" class="tm-button tm-button--icon" aria-label="Azioni per Andrea Sodi" aria-haspopup="menu" aria-expanded="false" aria-controls="cv-staff-m2" data-menu data-nuxt-ui="UButton"><svg class="tm-icon" aria-hidden="true"><use href="#i-dots-v"/></svg></button><ul class="tm-menu" id="cv-staff-m2" role="menu" hidden><li role="none"><button type="button" class="tm-menu__item" role="menuitem" data-squalifica-staff="andreasodi"><svg class="tm-icon" aria-hidden="true"><use href="#i-card"/></svg>Squalifica</button></li></ul></div></div></div></li><li data-role="dirigente accompagnatore" data-squal-staff><div class="tm-row tm-row--no-trail" data-nuxt-ui="UUser"><div class="tm-row__lead"><span class="tm-avatar" data-nuxt-ui="UAvatar" aria-hidden="true">SM</span></div><div class="tm-row__body"><span class="tm-row__role">Dirigente accompagnatore</span><span class="tm-row__title">Stefano Mazzei</span><span class="tm-row__meta"><span class="tm-badge tm-badge--squal" data-nuxt-ui="UBadge"><svg class="tm-icon" aria-hidden="true"><use href="#i-card"/></svg>Squalificato fino al 30/11</span></span></div></div></li></ul></div><div class="tm-group" data-staff-group="attesa"><h3 class="tm-group-title">Senza risposta <span class="tm-group-title__count">1</span></h3><ul class="tm-list tm-list--card" role="list"><li data-role="allenatore"><div class="tm-row tm-row--self tm-row--no-trail" data-nuxt-ui="UUser"><div class="tm-row__lead"><span class="tm-avatar" data-nuxt-ui="UAvatar" aria-hidden="true">MB</span></div><div class="tm-row__body"><span class="tm-row__role">Allenatore</span><span class="tm-row__title">Marco Bertini</span><span class="tm-row__meta"><span class="tm-badge js-staff-badge" data-nuxt-ui="UBadge"><svg class="tm-icon" aria-hidden="true"><use href="#i-help"/></svg>Senza risposta</span><span class="tm-badge tm-badge--outline">Tu</span></span><div class="tm-segmented tm-segmented--inline" role="radiogroup" aria-label="La tua disponibilità" data-staff-self data-nuxt-ui="URadioGroup"><button type="button" class="tm-segmented__item" role="radio" aria-checked="false" data-value="si">Ci sono</button><button type="button" class="tm-segmented__item" role="radio" aria-checked="false" data-value="no">Non posso</button></div></div></div></li></ul></div></div>
+<p class="tm-visually-hidden" aria-live="polite" data-staff-live></p></section>
+</div>
+<p class="tm-visually-hidden" aria-live="polite" id="cv-live"></p>
+</div></main>
+
+<nav class="tm-tabbar" aria-label="Navigazione principale" data-nuxt-ui="UNavigationMenu"><a class="tm-tabbar__item" href="#"><svg class="tm-icon tm-icon--md" aria-hidden="true"><use href="#i-home"/></svg><span>Home</span></a><a class="tm-tabbar__item" href="#" aria-current="page"><svg class="tm-icon tm-icon--md" aria-hidden="true"><use href="#i-calendar"/></svg><span>Calendario</span></a><a class="tm-tabbar__item" href="#"><svg class="tm-icon tm-icon--md" aria-hidden="true"><use href="#i-users"/></svg><span>Rosa</span></a><a class="tm-tabbar__item" href="#"><svg class="tm-icon tm-icon--md" aria-hidden="true"><use href="#i-more"/></svg><span>Altro</span></a></nav>
+<div class="tm-actionbar tm-mobile-only" data-actionbar><button type="button" class="tm-button tm-button--block tm-button--lg" data-nuxt-ui="UButton" data-send><svg class="tm-icon tm-button__icon" aria-hidden="true"><use href="#i-send"/></svg><span class="tm-button__spinner tm-spinner" aria-hidden="true"></span>Invia convocazione</button></div>
+</div>
+
+<dialog class="tm-dialog" id="dlg-invia" aria-labelledby="dlg-invia-t" aria-describedby="dlg-invia-d" data-nuxt-ui="UDrawer · UModal da 768px">
+<div class="tm-dialog__grip" aria-hidden="true"></div>
+<div class="tm-dialog__head"><h2 class="tm-dialog__title" id="dlg-invia-t">Inviare la convocazione?</h2><button type="button" class="tm-button tm-button--icon" aria-label="Chiudi" data-nuxt-ui="UButton" data-dialog-close><svg class="tm-icon" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+<div class="tm-dialog__body tm-stack tm-stack--sm" id="dlg-invia-d"><p data-send-text></p><ul class="tm-list tm-list--card" role="list" data-send-list></ul><p class="tm-text-muted tm-text-sm">Chi era già stato avvisato non riceve un nuovo messaggio.</p></div>
+<div class="tm-dialog__foot"><button type="button" class="tm-button tm-button--neutral tm-button--block" data-nuxt-ui="UButton" data-dialog-close>Annulla</button><button type="button" class="tm-button tm-button--block" data-nuxt-ui="UButton" data-send-confirm><svg class="tm-icon tm-button__icon" aria-hidden="true"><use href="#i-send"/></svg><span class="tm-button__spinner tm-spinner" aria-hidden="true"></span>Invia</button></div>
+</dialog>
+
+<dialog class="tm-dialog" id="dlg-rimuovi" aria-labelledby="dlg-rimuovi-t" aria-describedby="dlg-rimuovi-d" data-nuxt-ui="UModal">
+<div class="tm-dialog__grip" aria-hidden="true"></div>
+<div class="tm-dialog__head"><h2 class="tm-dialog__title" id="dlg-rimuovi-t">Togliere dai convocati?</h2><button type="button" class="tm-button tm-button--icon" aria-label="Chiudi" data-nuxt-ui="UButton" data-dialog-close><svg class="tm-icon" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+<div class="tm-dialog__body" id="dlg-rimuovi-d"><p data-remove-text></p></div>
+<div class="tm-dialog__foot"><button type="button" class="tm-button tm-button--neutral tm-button--block" data-nuxt-ui="UButton" data-dialog-close>Annulla</button><button type="button" class="tm-button tm-button--danger tm-button--block" data-nuxt-ui="UButton" data-remove-confirm><svg class="tm-icon tm-button__icon" aria-hidden="true"><use href="#i-user-minus"/></svg><span class="tm-button__spinner tm-spinner" aria-hidden="true"></span>Togli dai convocati</button></div>
+</dialog>
+
+<dialog class="tm-dialog" id="dlg-impegnato" aria-labelledby="dlg-impegnato-t" aria-describedby="dlg-impegnato-d" data-nuxt-ui="UModal">
+<div class="tm-dialog__grip" aria-hidden="true"></div>
+<div class="tm-dialog__head"><h2 class="tm-dialog__title" id="dlg-impegnato-t">Già impegnato alla stessa ora</h2><button type="button" class="tm-button tm-button--icon" aria-label="Chiudi" data-nuxt-ui="UButton" data-dialog-close><svg class="tm-icon" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+<div class="tm-dialog__body" id="dlg-impegnato-d"><p data-busy-text></p></div>
+<div class="tm-dialog__foot"><button type="button" class="tm-button tm-button--neutral tm-button--block" data-nuxt-ui="UButton" data-dialog-close>Annulla</button><button type="button" class="tm-button tm-button--block" data-nuxt-ui="UButton" data-busy-confirm><svg class="tm-icon tm-button__icon" aria-hidden="true"><use href="#i-user-plus"/></svg><span class="tm-button__spinner tm-spinner" aria-hidden="true"></span>Convoca comunque</button></div>
+</dialog>
+
+<dialog class="tm-dialog" id="dlg-assenza" aria-labelledby="dlg-assenza-t" aria-describedby="dlg-assenza-d" data-nuxt-ui="UModal">
+<div class="tm-dialog__grip" aria-hidden="true"></div>
+<div class="tm-dialog__head"><h2 class="tm-dialog__title" id="dlg-assenza-t">Assenza dichiarata</h2><button type="button" class="tm-button tm-button--icon" aria-label="Chiudi" data-nuxt-ui="UButton" data-dialog-close><svg class="tm-icon" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+<div class="tm-dialog__body" id="dlg-assenza-d"><p data-absence-text></p></div>
+<div class="tm-dialog__foot"><button type="button" class="tm-button tm-button--neutral tm-button--block" data-nuxt-ui="UButton" data-dialog-close>Annulla</button><button type="button" class="tm-button tm-button--block" data-nuxt-ui="UButton" data-absence-confirm><svg class="tm-icon tm-button__icon" aria-hidden="true"><use href="#i-user-plus"/></svg><span class="tm-button__spinner tm-spinner" aria-hidden="true"></span>Convoca comunque</button></div>
+</dialog>
+
+<dialog class="tm-dialog" id="dlg-squal" aria-labelledby="dlg-squal-t" data-nuxt-ui="UDrawer · UModal da 768px">
+<div class="tm-dialog__grip" aria-hidden="true"></div>
+<div class="tm-dialog__head"><h2 class="tm-dialog__title" id="dlg-squal-t">Nuova squalifica</h2><button type="button" class="tm-button tm-button--icon" aria-label="Chiudi" data-nuxt-ui="UButton" data-dialog-close><svg class="tm-icon" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+<div class="tm-dialog__body tm-stack">
+<div class="tm-field"><span class="tm-field__label">Persona</span><span class="tm-person"><span class="tm-avatar" aria-hidden="true" data-sq-ini></span><span class="tm-person__body"><span class="tm-person__name" data-sq-person></span><span class="tm-person__role" data-sq-role></span></span></span></div>
+<div class="tm-field"><span class="tm-field__label">Dalla partita</span><span data-sq-match>Partita contro US Pontassieve · sab 7 nov</span></div>
+<div class="tm-field"><span class="tm-field__label" id="sq-type-l">Tipo</span><div class="tm-segmented" role="radiogroup" aria-labelledby="sq-type-l" data-sq-type data-nuxt-ui="URadioGroup"><button type="button" class="tm-segmented__item" role="radio" aria-checked="true" data-value="giornate">A giornate</button><button type="button" class="tm-segmented__item" role="radio" aria-checked="false" data-value="tempo">A tempo</button></div></div>
+<div class="tm-field" data-sq-g><label class="tm-field__label" for="sq-n">Numero di giornate</label><input class="tm-input" id="sq-n" type="number" inputmode="numeric" min="1" max="20" value="1" data-nuxt-ui="UInputNumber"></div>
+<div class="tm-field" data-sq-t hidden><label class="tm-field__label" for="sq-end">Fino al</label><input class="tm-input" id="sq-end" type="date" min="2026-11-07" data-nuxt-ui="UInputDate"></div>
+<div class="tm-field"><label class="tm-field__label" for="sq-comp">Competizione <span class="tm-field__optional">(facoltativo)</span></label><div class="tm-select-wrap"><select class="tm-select" id="sq-comp" data-nuxt-ui="USelect"><option>Campionato regionale Under 17</option><option>Coppa Toscana</option><option value="">Nessuna</option></select><svg class="tm-icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></div></div>
+<div class="tm-field"><label class="tm-field__label" for="sq-orig">Partita di origine <span class="tm-field__optional">(facoltativo)</span></label><div class="tm-select-wrap"><select class="tm-select" id="sq-orig" data-nuxt-ui="USelect"><option value="">Nessuna</option><option>sab 31 ott · contro AC Figline</option><option>sab 24 ott · contro Fiesole</option></select><svg class="tm-icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></div></div>
+<p class="tm-field__error" id="sq-err" role="alert" hidden><svg class="tm-icon tm-icon--xs" aria-hidden="true"><use href="#i-error"/></svg><span data-sq-err></span></p>
+</div>
+<div class="tm-dialog__foot"><button type="button" class="tm-button tm-button--neutral tm-button--block" data-nuxt-ui="UButton" data-dialog-close>Annulla</button><button type="button" class="tm-button tm-button--block" data-nuxt-ui="UButton" data-sq-save><svg class="tm-icon tm-button__icon" aria-hidden="true"><use href="#i-card"/></svg><span class="tm-button__spinner tm-spinner" aria-hidden="true"></span>Salva squalifica</button></div>
+</dialog>
+
+<dialog class="tm-dialog" id="dlg-eval" aria-labelledby="dlg-eval-t">
+<div class="tm-dialog__grip" aria-hidden="true"></div>
+<div class="tm-dialog__head"><h2 class="tm-dialog__title" id="dlg-eval-t">Valutazione del mockup</h2><button type="button" class="tm-button tm-button--icon" aria-label="Chiudi" data-nuxt-ui="UButton" data-dialog-close><svg class="tm-icon" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+<div class="tm-dialog__body tm-stack"><p class="tm-text-muted tm-text-sm">Comandi solo per la revisione, non fanno parte dell'app.</p>
+<div class="tm-field"><span class="tm-field__label">Tema</span><div class="tm-segmented tm-theme-switch" role="radiogroup" aria-label="Tema (solo per la valutazione del mockup)" data-nuxt-ui="UColorModeSelect"><button type="button" class="tm-segmented__item" role="radio" aria-checked="false" data-theme-value="light"><svg class="tm-icon" aria-hidden="true"><use href="#i-sun"/></svg><span class="tm-segmented__label">Chiaro</span></button><button type="button" class="tm-segmented__item" role="radio" aria-checked="false" data-theme-value="dark"><svg class="tm-icon" aria-hidden="true"><use href="#i-moon"/></svg><span class="tm-segmented__label">Scuro</span></button><button type="button" class="tm-segmented__item" role="radio" aria-checked="false" data-theme-value="auto"><svg class="tm-icon" aria-hidden="true"><use href="#i-monitor"/></svg><span class="tm-segmented__label">Automatico</span></button></div></div>
+<div class="tm-field"><span class="tm-field__label">Variante della schermata</span><ul class="tm-choice-list" role="list"><li><a class="tm-choice" href="?" data-variant aria-current="true">Standard (calcio)<svg class="tm-icon tm-choice__check" aria-hidden="true"><use href="#i-check"/></svg></a></li><li><a class="tm-choice" href="?stato=vuoto" data-variant>Nessun convocato<svg class="tm-icon tm-choice__check" aria-hidden="true"><use href="#i-check"/></svg></a></li><li><a class="tm-choice" href="?stato=passato" data-variant>Evento passato, sola lettura<svg class="tm-icon tm-choice__check" aria-hidden="true"><use href="#i-check"/></svg></a></li><li><a class="tm-choice" href="?sport=scherma" data-variant>Sport individuale (scherma)<svg class="tm-icon tm-choice__check" aria-hidden="true"><use href="#i-check"/></svg></a></li><li><a class="tm-choice" href="?nav=senza-tab" data-variant>Telefono senza tab bar (da confrontare)<svg class="tm-icon tm-choice__check" aria-hidden="true"><use href="#i-check"/></svg></a></li><li><a class="tm-choice" href="?evento=allenamento" data-variant>Allenamento (squalifica non vale)<svg class="tm-icon tm-choice__check" aria-hidden="true"><use href="#i-check"/></svg></a></li><li><a class="tm-choice" href="?staff=squalificato" data-variant>Staff squalificato (la tua riga)<svg class="tm-icon tm-choice__check" aria-hidden="true"><use href="#i-check"/></svg></a></li><li><a class="tm-choice" href="?evento=allenamento&staff=squalificato" data-variant>Allenamento con staff squalificato<svg class="tm-icon tm-choice__check" aria-hidden="true"><use href="#i-check"/></svg></a></li></ul></div></div>
+</dialog>
+<div class="tm-toaster" aria-live="polite" data-nuxt-ui="UToast"></div>
+<script src="../js/icons.js"></script><script src="../js/mock.js"></script><script src="../js/convocazione.js"></script>
+</body>
+</html>

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup — Formazione</title>
+<style>
+  :root {
+    /* Sostituibili con il foglio di stile del brand */
+    --bg-page: #EEF1F6;
+    --bg-app: #F5F7FA;
+    --bg-card: #FFFFFF;
+    --primary: #3B82F6;
+    --primary-dark: #2563EB;
+    --success: #22C55E;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --text-h: #111827;
+    --text: #374151;
+    --text-2: #6B7280;
+    --text-3: #9CA3AF;
+    --border: #E5E7EB;
+    --divider: #F3F4F6;
+    --input: #F9FAFB;
+    --font: 'Inter', 'Segoe UI', Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg-page);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 40px;
+    padding: 32px 16px;
+  }
+  button { font-family: inherit; cursor: pointer; border: 0; background: none; color: inherit; }
+  svg { display: block; flex-shrink: 0; }
+
+  /* ---------- Telefono ---------- */
+  .phone {
+    width: 390px; height: 844px; background: var(--bg-app);
+    border: 10px solid #0F1722; border-radius: 40px;
+    box-shadow: 0 20px 50px rgba(15, 23, 34, 0.25);
+    display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
+  }
+  .statusbar {
+    height: 28px; display: flex; justify-content: space-between; align-items: center;
+    padding: 0 22px; font-size: 12px; font-weight: 600; color: var(--text-h); background: var(--bg-card);
+  }
+  .topbar {
+    background: var(--bg-card); padding: 8px 16px 12px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .icon-btn { width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center; color: var(--text); }
+  .icon-btn:hover { background: var(--divider); }
+  .topbar-title { flex: 1; min-width: 0; }
+  .topbar-title h1 { font-size: 17px; font-weight: 700; color: var(--text-h); line-height: 1.2; }
+  .topbar-title p { font-size: 12px; color: var(--text-2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chip {
+    font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px;
+    white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;
+  }
+  .chip.ok { background: #22C55E20; color: #15803D; }
+  .chip.warn { background: #F59E0B20; color: #B45309; }
+  .chip.bad { background: #EF444420; color: #B91C1C; }
+  .chip.info { background: #3B82F620; color: var(--primary-dark); }
+
+  .scroll { flex: 1; overflow-y: auto; padding: 12px 16px 16px; }
+  .scroll::-webkit-scrollbar { width: 0; }
+
+  /* Riepilogo */
+  .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .stat {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; box-shadow: 0 1px 2px #00000010;
+  }
+  .stat .label { font-size: 11px; color: var(--text-2); }
+  .stat .value { font-size: 20px; font-weight: 700; color: var(--text-h); margin-top: 2px; }
+  .stat .value small { font-size: 12px; font-weight: 500; color: var(--text-2); }
+  .stat.incomplete { border-color: #F59E0B80; background: #FFFBEB; }
+  .stat.complete { border-color: #86EFAC; background: #F0FDF4; }
+
+  .notice {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E;
+    border-radius: 8px; padding: 10px 12px; font-size: 12px; margin-bottom: 4px; line-height: 1.4;
+  }
+  .notice svg { margin-top: 1px; color: var(--warning); }
+
+  .section-head { display: flex; justify-content: space-between; align-items: baseline; margin: 16px 0 8px; }
+  .section-head h2 { font-size: 15px; font-weight: 600; color: var(--text-h); }
+  .section-head span { font-size: 12px; color: var(--text-2); }
+  .bar { height: 4px; background: var(--divider); border-radius: 4px; overflow: hidden; margin: -2px 0 8px; }
+  .bar i { display: block; width: 100%; height: 100%; background: var(--primary); transform-origin: left; transition: transform .2s; }
+
+  /* ---------- Liste ---------- */
+  .list { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; box-shadow: 0 1px 2px #00000010; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid var(--divider); }
+  .row:last-child { border-bottom: 0; }
+  .order { width: 14px; font-size: 12px; font-weight: 600; color: var(--text-3); text-align: center; }
+  .grip { color: var(--text-3); }
+  .shirt {
+    position: relative; width: 36px; height: 36px; border-radius: 50%;
+    background: var(--primary); color: #fff; font-weight: 700; font-size: 13px; display: grid; place-items: center;
+  }
+  .row.blocked .shirt { background: #CBD5E1; }
+  .badge-dot {
+    position: absolute; top: -3px; right: -3px; width: 15px; height: 15px; border-radius: 50%;
+    background: var(--warning); color: #fff; font-size: 9px; font-weight: 800; display: grid; place-items: center; border: 2px solid #fff;
+  }
+  .info { flex: 1; min-width: 0; }
+  .info b { display: block; font-size: 14px; color: var(--text-h); font-weight: 600; }
+  .info .sub { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-2); margin-top: 2px; flex-wrap: wrap; }
+  .row.blocked .info b { color: var(--text-2); }
+  .actions { display: flex; gap: 6px; }
+  .act {
+    min-width: 32px; height: 32px; padding: 0 6px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--bg-card); color: var(--text); display: grid; place-items: center; font-size: 12px; font-weight: 700;
+  }
+  .act:hover:not(:disabled) { background: var(--divider); }
+  .act.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .act.primary:hover:not(:disabled) { background: var(--primary-dark); }
+  .act:disabled { background: var(--divider); color: var(--text-3); border-color: var(--divider); cursor: not-allowed; }
+  .empty { padding: 18px 12px; text-align: center; font-size: 12px; color: var(--text-3); }
+  .legend { font-size: 11px; color: var(--text-2); margin-top: 6px; }
+
+  /* ---------- Footer ---------- */
+  .footer { background: var(--bg-card); border-top: 1px solid var(--border); padding: 10px 16px 18px; }
+  .footer .msg { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 8px; color: #B45309; }
+  .footer .msg.done { color: #15803D; }
+  .footer .actions { display: grid; grid-template-columns: 1fr 1.5fr; gap: 8px; }
+  .btn { height: 42px; border-radius: 6px; font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .btn.secondary { background: var(--bg-card); border: 1px solid var(--border); color: var(--text); }
+  .btn.primary { background: var(--primary); color: #fff; }
+  .btn.primary:hover { background: var(--primary-dark); }
+  .footer .privacy { display: flex; justify-content: center; align-items: center; gap: 5px; font-size: 11px; color: var(--text-3); margin-top: 8px; }
+
+  /* ---------- Note ---------- */
+  .notes {
+    width: 340px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; box-shadow: 0 1px 2px #00000010; flex-shrink: 0;
+  }
+  .notes h2 { font-size: 16px; font-weight: 700; color: var(--text-h); margin-bottom: 4px; }
+  .notes > p { font-size: 12px; color: var(--text-2); margin-bottom: 14px; }
+  .notes h3 { font-size: 13px; font-weight: 600; color: var(--text-h); margin: 14px 0 6px; }
+  .notes ul { padding-left: 16px; }
+  .notes li { font-size: 12px; line-height: 1.5; margin-bottom: 4px; color: var(--text); }
+
+  @media (max-width: 860px) {
+    .notes { display: none; }
+    body { padding: 16px 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span>5G ▮▮▮</span></div>
+
+  <div class="topbar">
+    <button class="icon-btn" aria-label="Indietro">
+      <svg width="20" height="20" viewBox="0 0 20 20" style="transform: rotate(180deg)"><path d="M4 10h12M12 5l5 5-5 5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+    </button>
+    <div class="topbar-title">
+      <h1>Formazione</h1>
+      <p>vs Atletico Rossi · Dom 8 nov · 15:00 · Casa</p>
+    </div>
+    <span class="chip info">
+      <svg width="12" height="12" viewBox="0 0 20 20"><rect x="5" y="9" width="10" height="8" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M7 9V6a3 3 0 016 0v3" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+      Solo staff
+    </span>
+  </div>
+
+  <div class="scroll">
+
+    <div class="summary">
+      <div class="stat" id="stat-t"><div class="label">Titolari</div><div class="value"></div></div>
+      <div class="stat" id="stat-b"><div class="label">Panchina</div><div class="value"></div></div>
+      <div class="stat"><div class="label">Convocati</div><div class="value">19</div></div>
+    </div>
+
+    <div class="notice">
+      <svg width="18" height="18" viewBox="0 0 20 20"><path d="M10 2L1 18h18L10 2z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/><line x1="10" y1="8" x2="10" y2="12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="10" cy="15" r="0.9" fill="currentColor"/></svg>
+      <div><b>Costa</b> ha il certificato in scadenza tra 12 giorni. Puoi schierarlo, scade dopo la partita.</div>
+    </div>
+
+    <div class="section-head"><h2>Titolari</h2><span id="t-count"></span></div>
+    <div class="bar"><i id="t-bar"></i></div>
+    <div class="list" id="list-t"></div>
+
+    <div class="section-head"><h2>Panchina</h2><span id="b-count"></span></div>
+    <div class="list" id="list-b"></div>
+
+    <div class="section-head"><h2>Convocati disponibili</h2><span id="n-count"></span></div>
+    <div class="list" id="list-n"></div>
+    <p class="legend"><b>T</b> sposta in titolari · <b>P</b> sposta in panchina</p>
+
+  </div>
+
+  <div class="footer">
+    <div class="msg" id="msg"></div>
+    <div class="actions">
+      <button class="btn secondary">Annulla</button>
+      <button class="btn primary">Salva formazione</button>
+    </div>
+    <div class="privacy">
+      <svg width="12" height="12" viewBox="0 0 20 20"><rect x="5" y="9" width="10" height="8" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M7 9V6a3 3 0 016 0v3" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+      I giocatori non vedono titolari e panchina
+    </div>
+  </div>
+</div>
+
+<aside class="notes">
+  <h2>Note di interazione</h2>
+  <p>Schermata staff, dettaglio partita, tab Formazione.</p>
+
+  <h3>Costruzione</h3>
+  <ul>
+    <li>Due liste piatte, titolari e panchina, uguali per ogni sport. Titolari ordinati per numero di maglia, nessun raggruppamento per ruolo, nessun modulo né campo.</li>
+    <li>La posizione del giocatore è solo un'etichetta opzionale mostrata sotto il nome, non struttura la lista. Per sport senza ruoli (scherma) non compare.</li>
+    <li>Fase 2: vista per sport (raggruppamento per ruolo nel calcio, campo, rotazioni nella pallavolo) guidata dal profilo sport, sugli stessi dati.</li>
+    <li>Sposta con i pulsanti di riga (provali: la demo funziona). Nell'app anche con il trascinamento.</li>
+    <li>Ordine di panchina con le maniglie di trascinamento.</li>
+    <li>Limiti titolari e panchina dal profilo sport (qui calcio a 11: 11 e 7).</li>
+  </ul>
+
+  <h3>Regole mostrate</h3>
+  <ul>
+    <li>Selezionabili solo i convocati della stagione.</li>
+    <li>Certificato in scadenza: warning, selezionabile. Scaduto o infortunato: bloccato (configurabile per società).</li>
+    <li>Salvataggio sempre possibile, anche con formazione incompleta.</li>
+  </ul>
+
+  <h3>Privacy</h3>
+  <ul>
+    <li>Titolari e panchina sono visibili solo allo staff. Il giocatore vede la propria convocazione e la sua risposta, mai la formazione.</li>
+    <li>Nessuna pubblicazione e nessuna notifica sulla formazione nell'MVP.</li>
+    <li>Stato "Infortunato" e dettagli del certificato solo a staff e dirigenti. Lo staff vede semaforo e scadenza, non il file.</li>
+  </ul>
+
+  <h3>Tablet e desktop</h3>
+  <ul>
+    <li>Titolari e panchina affiancati, disponibili in una colonna a destra.</li>
+  </ul>
+</aside>
+
+<script>
+  /* Demo: sposta i giocatori tra le liste. w = dove si trova: T titolari, B panchina, N disponibili. */
+  const MAX_T = 11, MAX_B = 7;
+  const POS = { P: 'Portiere', D: 'Difensore', C: 'Centrocampista', A: 'Attaccante' };
+  let players = [
+    { n: 1,  s: 'Bianchi',  p: 'P', w: 'T' },
+    { n: 2,  s: 'Ferri',    p: 'D', w: 'T' },
+    { n: 5,  s: 'Conti',    p: 'D', w: 'T' },
+    { n: 4,  s: 'Moretti',  p: 'D', w: 'T' },
+    { n: 3,  s: 'Gallo',    p: 'D', w: 'T' },
+    { n: 8,  s: 'Romano',   p: 'C', w: 'T' },
+    { n: 6,  s: 'Greco',    p: 'C', w: 'T' },
+    { n: 10, s: 'Costa',    p: 'C', w: 'T', cert: 'warn' },
+    { n: 7,  s: 'Marino',   p: 'C', w: 'T' },
+    { n: 9,  s: 'Esposito', p: 'A', w: 'T' },
+    { n: 12, s: 'Sala',     p: 'P', w: 'B' },
+    { n: 13, s: 'Neri',     p: 'D', w: 'B' },
+    { n: 14, s: 'Fabbri',   p: 'C', w: 'B' },
+    { n: 15, s: 'Leone',    p: 'C', w: 'B' },
+    { n: 16, s: 'Riva',     p: 'A', w: 'B' },
+    { n: 17, s: 'Pellegrini', p: 'A', w: 'N', resp: 'Confermato' },
+    { n: 18, s: 'Fontana',  p: 'A', w: 'N', cert: 'warn', resp: 'In attesa' },
+    { n: 20, s: 'De Luca',  p: 'D', w: 'N', cert: 'bad',  resp: 'Confermato' },
+    { n: 21, s: 'Villa',    p: 'C', w: 'N', injured: true, resp: 'Confermato' }
+  ];
+
+  const ICON = {
+    down:  '<svg width="16" height="16" viewBox="0 0 20 20"><path d="M10 3v13M5 11l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>',
+    up:    '<svg width="16" height="16" viewBox="0 0 20 20"><path d="M10 17V4M5 9l5-5 5 5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>',
+    close: '<svg width="14" height="14" viewBox="0 0 20 20"><line x1="4" y1="4" x2="16" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="4" x2="4" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    lock:  '<svg width="14" height="14" viewBox="0 0 20 20"><rect x="5" y="9" width="10" height="8" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M7 9V6a3 3 0 016 0v3" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>',
+    grip:  '<svg class="grip" width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><circle cx="3.5" cy="3" r="1.2"/><circle cx="8.5" cy="3" r="1.2"/><circle cx="3.5" cy="8" r="1.2"/><circle cx="8.5" cy="8" r="1.2"/><circle cx="3.5" cy="13" r="1.2"/><circle cx="8.5" cy="13" r="1.2"/></svg>'
+  };
+
+  const count = w => players.filter(p => p.w === w).length;
+  const blocked = p => !!p.injured || p.cert === 'bad';
+
+  function chip(p) {
+    if (p.injured) return '<span class="chip bad">Infortunato</span>';
+    if (p.cert === 'bad') return '<span class="chip bad">Cert. scaduto</span>';
+    if (p.cert === 'warn') return '<span class="chip warn">Cert. 12 gg</span>';
+    return '';
+  }
+
+  function row(p, left, actions, extra) {
+    const badge = p.cert === 'warn' && !p.injured ? '<span class="badge-dot">!</span>' : '';
+    const sub = (extra ? '<span>' + extra + '</span>' : '') + chip(p);
+    return '<div class="row' + (blocked(p) ? ' blocked' : '') + '" data-n="' + p.n + '">' +
+      left +
+      '<div class="shirt">' + p.n + badge + '</div>' +
+      '<div class="info"><b>' + p.s + '</b><div class="sub">' + sub + '</div></div>' +
+      '<div class="actions">' + actions + '</div></div>';
+  }
+
+  function btn(a, html, label, opts) {
+    opts = opts || {};
+    return '<button class="act' + (opts.primary ? ' primary' : '') + '" data-a="' + a + '" title="' + label + '" aria-label="' + label + '"' + (opts.off ? ' disabled' : '') + '>' + html + '</button>';
+  }
+
+  function render() {
+    const T = count('T'), B = count('B'), N = count('N');
+    const fullT = T >= MAX_T, fullB = B >= MAX_B;
+
+    // Titolari: elenco piatto, ordinato per numero di maglia (nessun raggruppamento per ruolo)
+    const starters = players.filter(p => p.w === 'T').sort((a, b) => a.n - b.n);
+    document.getElementById('list-t').innerHTML = starters.length
+      ? starters.map(p => row(p, '', btn('B', ICON.down, 'Sposta in panchina', { off: fullB }) + btn('N', ICON.close, 'Rimuovi dalla formazione'), POS[p.p])).join('')
+      : '<div class="empty">Nessun titolare</div>';
+
+    // Panchina, in ordine
+    const bench = players.filter(p => p.w === 'B');
+    document.getElementById('list-b').innerHTML = bench.length
+      ? bench.map((p, i) => row(p, '<span class="order">' + (i + 1) + '</span>' + ICON.grip,
+          btn('T', ICON.up, 'Sposta in titolari', { off: fullT || blocked(p) }) + btn('N', ICON.close, 'Rimuovi dalla formazione'), POS[p.p])).join('')
+      : '<div class="empty">Nessun giocatore in panchina</div>';
+
+    // Disponibili
+    const avail = players.filter(p => p.w === 'N');
+    document.getElementById('list-n').innerHTML = avail.length
+      ? avail.map(p => {
+          const off = blocked(p);
+          const actions = off
+            ? btn('x', ICON.lock, 'Non selezionabile', { off: true })
+            : btn('T', 'T', 'Aggiungi ai titolari', { primary: true, off: fullT }) + btn('B', 'P', 'Aggiungi in panchina', { off: fullB });
+          return row(p, '', actions, POS[p.p] + ' · ' + p.resp);
+        }).join('')
+      : '<div class="empty">Tutti i convocati sono schierati</div>';
+
+    // Contatori
+    document.querySelector('#stat-t .value').innerHTML = T + '<small>/' + MAX_T + '</small>';
+    document.querySelector('#stat-b .value').innerHTML = B + '<small>/' + MAX_B + '</small>';
+    document.getElementById('stat-t').className = 'stat ' + (T === MAX_T ? 'complete' : 'incomplete');
+    document.getElementById('t-count').textContent = T + ' di ' + MAX_T;
+    document.getElementById('b-count').textContent = B + ' di ' + MAX_B + ' · ordine con le maniglie';
+    document.getElementById('n-count').textContent = N + ' non schierati';
+    document.getElementById('t-bar').style.transform = 'scaleX(' + (T / MAX_T) + ')';
+
+    const msg = document.getElementById('msg');
+    if (T < MAX_T) {
+      const m = MAX_T - T;
+      msg.className = 'msg';
+      msg.textContent = 'Formazione incompleta: ' + (m === 1 ? 'manca 1 titolare' : 'mancano ' + m + ' titolari');
+    } else {
+      msg.className = 'msg done';
+      msg.textContent = 'Formazione completa: 11 titolari';
+    }
+  }
+
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-a]');
+    if (!b || b.disabled) return;
+    const r = b.closest('[data-n]');
+    const idx = players.findIndex(p => p.n === Number(r.dataset.n));
+    if (idx < 0 || b.dataset.a === 'x') return;
+    const p = players.splice(idx, 1)[0];
+    p.w = b.dataset.a;
+    players.push(p);
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>

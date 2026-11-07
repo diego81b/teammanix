@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Squalifiche · TeamManix</title>
+<link rel="icon" href="../assets/app-icon.png">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/app.css">
+<script src="../js/theme.js"></script>
+</head>
+<body>
+<a class="tm-skip-link" href="#main">Vai al contenuto</a>
+<div class="tm-app tm-app--with-actionbar" data-app>
+
+<header class="tm-header tm-header--task" data-nuxt-ui="UDashboardNavbar">
+<a class="tm-button tm-button--icon tm-header__back" href="#" aria-label="Torna alla rosa" data-nuxt-ui="UButton"><svg class="tm-icon tm-icon--md" aria-hidden="true"><use href="#i-chevron-left"/></svg></a>
+<div class="tm-header__titles"><span class="tm-header__title">Squalifiche</span><span class="tm-header__sub" data-season>Under 17 · Stagione 2026/27</span></div>
+<button type="button" class="tm-button tm-button--icon" aria-label="Valutazione del mockup" data-nuxt-ui="UButton" data-dialog-open="dlg-eval"><svg class="tm-icon" aria-hidden="true"><use href="#i-sliders"/></svg></button>
+</header>
+
+<aside class="tm-sidebar" aria-label="Navigazione principale" data-nuxt-ui="UDashboardSidebar">
+<div class="tm-sidebar__brand"><span class="tm-logo" data-nuxt-ui="NuxtImg"><img class="tm-logo__light" src="../assets/logo.png" alt="TeamManix" width="131" height="28"><img class="tm-logo__dark" src="../assets/logo-dark.png" alt="TeamManix" width="131" height="28"></span></div>
+<button type="button" class="tm-sidebar__switch" aria-haspopup="dialog" data-nuxt-ui="UButton"><span class="tm-org-logo" aria-hidden="true"><svg class="tm-icon" aria-hidden="true"><use href="#i-building"/></svg></span><span class="tm-team-switch__text"><span class="tm-team-switch__team">Under 17</span><span class="tm-team-switch__org">ASD Polisportiva Valdarno</span></span><svg class="tm-icon tm-icon--muted" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+<nav class="tm-sidebar__section" aria-label="Sezioni" data-nuxt-ui="UNavigationMenu"><a class="tm-nav-item" href="#"><svg class="tm-icon" aria-hidden="true"><use href="#i-home"/></svg>Home</a><a class="tm-nav-item" href="#"><svg class="tm-icon" aria-hidden="true"><use href="#i-calendar"/></svg>Calendario</a><a class="tm-nav-item" href="#" aria-current="page"><svg class="tm-icon" aria-hidden="true"><use href="#i-users"/></svg>Rosa</a><a class="tm-nav-item" href="#"><svg class="tm-icon" aria-hidden="true"><use href="#i-bell"/></svg>Notifiche</a></nav>
+<div class="tm-sidebar__foot"><a class="tm-nav-item" href="#"><span class="tm-avatar tm-avatar--sm" data-nuxt-ui="UAvatar" aria-hidden="true">MB</span>Marco Bertini</a></div>
+</aside>
+
+<main class="tm-app__main" id="main"><div class="tm-container tm-stack tm-stack--lg">
+<div class="tm-stack tm-stack--sm">
+<nav class="tm-breadcrumb tm-desktop-only" aria-label="Percorso" data-nuxt-ui="UBreadcrumb"><ol><li><a href="#">Rosa</a><svg class="tm-icon" aria-hidden="true"><use href="#i-chevron-right"/></svg></li><li><span aria-current="page">Squalifiche</span></li></ol></nav>
+<div class="tm-page-head"><div class="tm-page-head__titles"><h1 class="tm-h1">Squalifiche</h1><p class="tm-text-muted">Valgono solo per le partite. Giocatori e staff squalificati non sono convocabili per le partite coinvolte.</p></div>
+<div class="tm-page-head__actions tm-desktop-only"><button type="button" class="tm-button tm-button--ghost" data-nuxt-ui="UButton" data-dialog-open="dlg-eval"><svg class="tm-icon tm-button__icon" aria-hidden="true"><use href="#i-sliders"/></svg><span class="tm-button__spinner tm-spinner" aria-hidden="true"></span>Valutazione</button><button type="button" class="tm-button" data-nuxt-ui="UButton" data-new><svg class="tm-icon tm-button__icon" aria-hidden="true"><use href="#i-plus"/></svg><span class="tm-button__spinner tm-spinner" aria-hidden="true"></span>Nuova squalifica</button></div></div>
+</div>
+
+<div class="tm-segmented" role="tablist" aria-label="Vista" data-nuxt-ui="UTabs (variant pill)">
+<button type="button" class="tm-segmented__item" role="tab" id="v-t-list" aria-selected="true" aria-controls="v-p-list"><svg class="tm-icon" aria-hidden="true"><use href="#i-filter"/></svg><span class="tm-segmented__label">Elenco</span></button>
+<button type="button" class="tm-segmented__item" role="tab" id="v-t-cal" aria-selected="false" aria-controls="v-p-cal"><svg class="tm-icon" aria-hidden="true"><use href="#i-calendar"/></svg><span class="tm-segmented__label">Calendario</span></button>
+</div>
+
+<section id="v-p-list" role="tabpanel" aria-labelledby="v-t-list" class="tm-stack tm-stack--lg tm-list-narrow" data-list></section>
+<section id="v-p-cal" role="tabpanel" aria-labelledby="v-t-cal" class="tm-card" hidden>
+<div class="tm-calendar" data-calendar></div>
+</section>
+<p class="tm-visually-hidden" aria-live="polite" id="sq-live"></p>
+</div></main>
+
+<nav class="tm-tabbar" aria-label="Navigazione principale" data-nuxt-ui="UNavigationMenu"><a class="tm-tabbar__item" href="#"><svg class="tm-icon tm-icon--md" aria-hidden="true"><use href="#i-home"/></svg><span>Home</span></a><a class="tm-tabbar__item" href="#"><svg class="tm-icon tm-icon--md" aria-hidden="true"><use href="#i-calendar"/></svg><span>Calendario</span></a><a class="tm-tabbar__item" href="#" aria-current="page"><svg class="tm-icon tm-icon--md" aria-hidden="true"><use href="#i-users"/></svg><span>Rosa</span></a><a class="tm-tabbar__item" href="#"><svg class="tm-icon tm-icon--md" aria-hidden="true"><use href="#i-more"/></svg><span>Altro</span></a></nav>
+<div class="tm-actionbar tm-mobile-only" data-actionbar><button type="button" class="tm-button tm-button--block tm-button--lg" data-nuxt-ui="UButton" data-new><svg class="tm-icon tm-button__icon" aria-hidden="true"><use href="#i-plus"/></svg><span class="tm-button__spinner tm-spinner" aria-hidden="true"></span>Nuova squalifica</button></div>
+</div>
+
+<dialog class="tm-dialog" id="dlg-form" aria-labelledby="dlg-form-t" data-nuxt-ui="UDrawer · UModal da 768px">
+<div class="tm-dialog__grip" aria-hidden="true"></div>
+<div class="tm-dialog__head"><h2 class="tm-dialog__title" id="dlg-form-t" data-form-title>Nuova squalifica</h2><button type="button" class="tm-button tm-button--icon" aria-label="Chiudi" data-nuxt-ui="UButton" data-dialog-close><svg class="tm-icon" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+<div class="tm-dialog__body tm-stack">
+<div class="tm-field" data-nuxt-ui="UFormField"><label class="tm-field__label" for="f-who">Persona</label><div class="tm-select-wrap"><select class="tm-select" id="f-who" data-nuxt-ui="USelectMenu (con ricerca)"></select><svg class="tm-icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></div></div>
+<div class="tm-field"><span class="tm-field__label" id="f-type-l">Tipo</span><div class="tm-segmented" role="radiogroup" aria-labelledby="f-type-l" data-type data-nuxt-ui="URadioGroup"><button type="button" class="tm-segmented__item" role="radio" aria-checked="true" data-value="giornate">A giornate</button><button type="button" class="tm-segmented__item" role="radio" aria-checked="false" data-value="tempo">A tempo</button></div></div>
+<div class="tm-grid tm-grid--2">
+<div class="tm-field" data-nuxt-ui="UFormField"><label class="tm-field__label" for="f-start">Dal</label><input class="tm-input" id="f-start" type="date" data-nuxt-ui="UInputDate"></div>
+<div class="tm-field" data-g data-nuxt-ui="UFormField"><label class="tm-field__label" for="f-n">Giornate</label><input class="tm-input" id="f-n" type="number" inputmode="numeric" min="1" max="20" data-nuxt-ui="UInputNumber"></div>
+<div class="tm-field" data-t hidden data-nuxt-ui="UFormField"><label class="tm-field__label" for="f-end">Fino al</label><input class="tm-input" id="f-end" type="date" data-nuxt-ui="UInputDate"></div>
+</div>
+<p class="tm-field__error" id="f-error" role="alert" hidden><svg class="tm-icon tm-icon--xs" aria-hidden="true"><use href="#i-error"/></svg><span data-error-text></span></p>
+<div class="tm-field"><label class="tm-field__label" for="f-comp">Competizione <span class="tm-field__optional">(facoltativo)</span></label><div class="tm-select-wrap"><select class="tm-select" id="f-comp" data-nuxt-ui="USelect"><option value="">Nessuna</option><option>Campionato regionale Under 17</option><option>Coppa Toscana</option></select><svg class="tm-icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></div></div>
+<div class="tm-field"><label class="tm-field__label" for="f-orig">Partita di origine <span class="tm-field__optional">(facoltativo)</span></label><div class="tm-select-wrap"><select class="tm-select" id="f-orig" data-nuxt-ui="USelect"><option value="">Nessuna</option><option>sab 31 ott · contro AC Figline</option><option>sab 24 ott · contro Fiesole</option><option>sab 17 ott · contro Lastra a Signa</option></select><svg class="tm-icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></div></div>
+</div>
+<div class="tm-dialog__foot"><button type="button" class="tm-button tm-button--neutral tm-button--block" data-nuxt-ui="UButton" data-dialog-close>Annulla</button><button type="button" class="tm-button tm-button--block" data-nuxt-ui="UButton" data-save><svg class="tm-icon tm-button__icon" aria-hidden="true"><use href="#i-card"/></svg><span class="tm-button__spinner tm-spinner" aria-hidden="true"></span>Salva squalifica</button></div>
+</dialog>
+
+<dialog class="tm-dialog tm-dialog--side" id="dlg-detail" aria-labelledby="dlg-detail-t" data-nuxt-ui="USlideover (desktop) · UDrawer (telefono)">
+<div class="tm-dialog__grip" aria-hidden="true"></div>
+<div class="tm-dialog__head"><h2 class="tm-dialog__title" id="dlg-detail-t" data-detail-title>Squalifica</h2><button type="button" class="tm-button tm-button--icon" aria-label="Chiudi" data-nuxt-ui="UButton" data-dialog-close><svg class="tm-icon" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+<div class="tm-dialog__body"><div class="tm-detail" data-detail></div></div>
+<div class="tm-dialog__foot"><button type="button" class="tm-button tm-button--danger tm-button--block" data-nuxt-ui="UButton" data-detail-delete><svg class="tm-icon tm-button__icon" aria-hidden="true"><use href="#i-trash"/></svg><span class="tm-button__spinner tm-spinner" aria-hidden="true"></span>Elimina</button><button type="button" class="tm-button tm-button--secondary tm-button--block" data-nuxt-ui="UButton" data-detail-edit><svg class="tm-icon tm-button__icon" aria-hidden="true"><use href="#i-edit"/></svg><span class="tm-button__spinner tm-spinner" aria-hidden="true"></span>Modifica</button></div>
+</dialog>
+
+<dialog class="tm-dialog" id="dlg-delete" aria-labelledby="dlg-delete-t" aria-describedby="dlg-delete-d" data-nuxt-ui="UModal">
+<div class="tm-dialog__grip" aria-hidden="true"></div>
+<div class="tm-dialog__head"><h2 class="tm-dialog__title" id="dlg-delete-t">Eliminare la squalifica?</h2><button type="button" class="tm-button tm-button--icon" aria-label="Chiudi" data-nuxt-ui="UButton" data-dialog-close><svg class="tm-icon" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+<div class="tm-dialog__body" id="dlg-delete-d"><p data-delete-text></p></div>
+<div class="tm-dialog__foot"><button type="button" class="tm-button tm-button--neutral tm-button--block" data-nuxt-ui="UButton" data-dialog-close>Annulla</button><button type="button" class="tm-button tm-button--danger tm-button--block" data-nuxt-ui="UButton" data-delete-confirm><svg class="tm-icon tm-button__icon" aria-hidden="true"><use href="#i-trash"/></svg><span class="tm-button__spinner tm-spinner" aria-hidden="true"></span>Elimina</button></div>
+</dialog>
+
+<dialog class="tm-dialog" id="dlg-eval" aria-labelledby="dlg-eval-t">
+<div class="tm-dialog__grip" aria-hidden="true"></div>
+<div class="tm-dialog__head"><h2 class="tm-dialog__title" id="dlg-eval-t">Valutazione del mockup</h2><button type="button" class="tm-button tm-button--icon" aria-label="Chiudi" data-nuxt-ui="UButton" data-dialog-close><svg class="tm-icon" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+<div class="tm-dialog__body tm-stack"><p class="tm-text-muted tm-text-sm">Comandi solo per la revisione, non fanno parte dell'app.</p>
+<div class="tm-field"><span class="tm-field__label">Tema</span><div class="tm-segmented tm-theme-switch" role="radiogroup" aria-label="Tema (solo per la valutazione del mockup)" data-nuxt-ui="UColorModeSelect"><button type="button" class="tm-segmented__item" role="radio" aria-checked="false" data-theme-value="light"><svg class="tm-icon" aria-hidden="true"><use href="#i-sun"/></svg><span class="tm-segmented__label">Chiaro</span></button><button type="button" class="tm-segmented__item" role="radio" aria-checked="false" data-theme-value="dark"><svg class="tm-icon" aria-hidden="true"><use href="#i-moon"/></svg><span class="tm-segmented__label">Scuro</span></button><button type="button" class="tm-segmented__item" role="radio" aria-checked="false" data-theme-value="auto"><svg class="tm-icon" aria-hidden="true"><use href="#i-monitor"/></svg><span class="tm-segmented__label">Automatico</span></button></div></div>
+<div class="tm-field"><span class="tm-field__label">Variante della schermata</span><ul class="tm-choice-list" role="list"><li><a class="tm-choice" href="?" data-variant aria-current="true">Standard (in corso, future, concluse)<svg class="tm-icon tm-choice__check" aria-hidden="true"><use href="#i-check"/></svg></a></li><li><a class="tm-choice" href="?stato=vuoto" data-variant>Nessuna squalifica<svg class="tm-icon tm-choice__check" aria-hidden="true"><use href="#i-check"/></svg></a></li><li><a class="tm-choice" href="?stato=fine-stagione" data-variant>Residua a fine stagione<svg class="tm-icon tm-choice__check" aria-hidden="true"><use href="#i-check"/></svg></a></li><li><a class="tm-choice" href="?stato=errore" data-variant>Errore nel modulo<svg class="tm-icon tm-choice__check" aria-hidden="true"><use href="#i-check"/></svg></a></li></ul></div></div>
+</dialog>
+<div class="tm-toaster" aria-live="polite" data-nuxt-ui="UToast"></div>
+<script src="../js/icons.js"></script><script src="../js/mock.js"></script><script src="../js/squalifiche.js"></script>
+</body>
+</html>

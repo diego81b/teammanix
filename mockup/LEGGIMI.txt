@@ -1,0 +1,6 @@
+TEAMMANIX — SVG vettoriali petrolio
+- logo.svg: logo per fondi chiari, trasparente
+- logo-dark.svg: logo per fondi scuri, trasparente
+- app-icon.svg: icona con gradiente petrolio
+
+I tracciati sono vettorializzati dall'immagine originale. Testi e simbolo sono convertiti in tracciati (non testo editabile come font); colori e forme sono modificabili in un editor SVG.

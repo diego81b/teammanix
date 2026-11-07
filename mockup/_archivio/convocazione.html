@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup — Convocazione</title>
+<style>
+  :root {
+    /* Sostituibili con il foglio di stile del brand */
+    --bg-page: #EEF1F6;
+    --bg-app: #F5F7FA;
+    --bg-card: #FFFFFF;
+    --primary: #3B82F6;
+    --primary-dark: #2563EB;
+    --success: #22C55E;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --text-h: #111827;
+    --text: #374151;
+    --text-2: #6B7280;
+    --text-3: #9CA3AF;
+    --border: #E5E7EB;
+    --divider: #F3F4F6;
+    --input: #F9FAFB;
+    --font: 'Inter', 'Segoe UI', Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font); font-size: 14px; color: var(--text); background: var(--bg-page);
+    min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; gap: 40px; padding: 24px 16px;
+  }
+  button { font-family: inherit; cursor: pointer; border: 0; background: none; color: inherit; }
+  svg { display: block; flex-shrink: 0; }
+
+  .stage { display: flex; flex-direction: column; align-items: center; gap: 14px; flex-shrink: 0; }
+  .viewtoggle { display: flex; background: var(--bg-card); border: 1px solid var(--border); border-radius: 999px; padding: 3px; box-shadow: 0 1px 2px #00000010; }
+  .viewtoggle button { padding: 7px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--text-2); }
+  .viewtoggle button.active { background: var(--primary); color: #fff; }
+
+  /* ---------- Telefono ---------- */
+  .phone {
+    width: 390px; height: 844px; background: var(--bg-app); border: 10px solid #0F1722; border-radius: 40px;
+    box-shadow: 0 20px 50px rgba(15, 23, 34, 0.25); display: flex; flex-direction: column; overflow: hidden;
+  }
+  .statusbar {
+    height: 28px; display: flex; justify-content: space-between; align-items: center;
+    padding: 0 22px; font-size: 11px; font-weight: 600; color: var(--text-h); background: var(--bg-card);
+  }
+  .topbar { background: var(--bg-card); padding: 8px 16px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .icon-btn { width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center; color: var(--text); }
+  .topbar-title { flex: 1; min-width: 0; }
+  .topbar-title h1 { font-size: 18px; font-weight: 700; color: var(--text-h); line-height: 1.2; }
+  .topbar-title p { font-size: 11px; color: var(--text-2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chip { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+  .chip.ok { background: #22C55E20; color: #15803D; }
+  .chip.warn { background: #F59E0B20; color: #B45309; }
+  .chip.bad { background: #EF444420; color: #B91C1C; }
+  .chip.info { background: #3B82F620; color: var(--primary-dark); }
+  .chip.neutral { background: var(--divider); color: var(--text-2); }
+
+  .scroll { flex: 1; overflow-y: auto; padding: 12px 16px 16px; }
+  .scroll::-webkit-scrollbar { width: 0; }
+
+  /* Evento */
+  .event { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 2px #00000010; margin-bottom: 12px; }
+  .event .t { font-size: 18px; font-weight: 600; color: var(--text-h); }
+  .event .m { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-2); margin-top: 6px; }
+
+  /* Tab */
+  .tabs { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--divider); border-radius: 8px; padding: 3px; margin-bottom: 12px; }
+  .tabs button { padding: 7px 2px; border-radius: 6px; font-size: 11px; font-weight: 600; color: var(--text-2); line-height: 1.25; }
+  .tabs button b { display: block; font-size: 18px; color: var(--text-h); }
+  .tabs button.active { background: var(--bg-card); box-shadow: 0 1px 2px #0000001a; color: var(--text-h); }
+
+  .note {
+    display: flex; gap: 8px; align-items: flex-start; font-size: 11px; color: var(--text-2);
+    background: var(--input); border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; margin-bottom: 10px; line-height: 1.4;
+  }
+  .note svg { margin-top: 1px; color: var(--text-3); }
+  .counts { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+
+  /* Liste */
+  .list { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; box-shadow: 0 1px 2px #00000010; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid var(--divider); }
+  .row:last-child { border-bottom: 0; }
+  .row.me { background: #EFF6FF; }
+  .shirt {
+    position: relative; width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: #fff;
+    font-weight: 700; font-size: 14px; display: grid; place-items: center;
+  }
+  .row.blocked .shirt { background: #CBD5E1; }
+  .badge-dot {
+    position: absolute; top: -3px; right: -3px; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--warning); color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center; border: 2px solid #fff;
+  }
+  .info { flex: 1; min-width: 0; }
+  .info b { display: block; font-size: 14px; color: var(--text-h); font-weight: 600; }
+  .info .sub { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-2); margin-top: 3px; flex-wrap: wrap; }
+  .row.blocked .info b { color: var(--text-2); }
+  .tag-me { font-size: 11px; font-weight: 700; color: var(--primary-dark); background: #3B82F620; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
+  .act {
+    min-width: 32px; height: 32px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card);
+    color: var(--text); display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 600;
+  }
+  .act:hover:not(:disabled) { background: var(--divider); }
+  .act.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .act.primary:hover:not(:disabled) { background: var(--primary-dark); }
+  .act:disabled { background: var(--divider); color: var(--text-3); border-color: var(--divider); cursor: not-allowed; }
+  .acts { display: flex; align-items: center; gap: 6px; }
+  .tp { display: flex; background: var(--divider); border-radius: 6px; padding: 2px; gap: 2px; }
+  .tp button { width: 28px; height: 28px; border-radius: 5px; font-size: 11px; font-weight: 700; color: var(--text-3); }
+  .tp button.on { background: var(--primary); color: #fff; }
+  .tp button:not(.on):hover { background: var(--border); color: var(--text); }
+  .empty { padding: 20px 12px; text-align: center; font-size: 11px; color: var(--text-3); }
+
+  /* Card risposta giocatore */
+  .respond { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 2px #00000010; }
+  .respond h2 { font-size: 18px; font-weight: 600; color: var(--text-h); margin-bottom: 4px; }
+  .respond p { font-size: 11px; color: var(--text-2); margin-bottom: 12px; line-height: 1.4; }
+  .respond .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn { height: 44px; border-radius: 6px; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .btn.primary { background: var(--primary); color: #fff; }
+  .btn.primary:hover { background: var(--primary-dark); }
+  .btn.secondary { background: var(--bg-card); border: 1px solid var(--border); color: var(--text); }
+  .btn.link { height: auto; font-size: 11px; color: var(--primary-dark); font-weight: 600; padding: 4px 0; margin-top: 8px; }
+  .reasons { display: flex; flex-direction: column; gap: 8px; }
+  .reasons .btn { justify-content: flex-start; padding: 0 14px; font-weight: 500; }
+  .state-line { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .notconv { background: var(--input); border-style: dashed; box-shadow: none; }
+
+  .section-head { display: flex; justify-content: space-between; align-items: baseline; margin: 6px 0 8px; }
+  .section-head h2 { font-size: 14px; font-weight: 600; color: var(--text-h); }
+  .section-head span { font-size: 11px; color: var(--text-2); }
+  .foot-note { display: flex; justify-content: center; align-items: center; gap: 5px; font-size: 11px; color: var(--text-3); margin-top: 10px; }
+
+  /* Footer staff */
+  .footer { background: var(--bg-card); border-top: 1px solid var(--border); padding: 10px 16px 18px; }
+  .footer .msg { font-size: 11px; margin-bottom: 8px; color: #B45309; display: flex; align-items: center; gap: 6px; }
+  .footer .msg.done { color: #15803D; }
+  .footer .btn { width: 100%; height: 42px; font-weight: 500; }
+  .footer .btn:disabled { background: #BFDBFE; cursor: not-allowed; }
+  .footer .push { font-size: 11px; color: var(--text-3); text-align: center; margin-top: 8px; }
+
+  /* ---------- Note ---------- */
+  .notes { width: 340px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 1px 2px #00000010; flex-shrink: 0; margin-top: 54px; }
+  .notes h2 { font-size: 18px; font-weight: 700; color: var(--text-h); margin-bottom: 4px; }
+  .notes > p { font-size: 11px; color: var(--text-2); margin-bottom: 14px; }
+  .notes h3 { font-size: 14px; font-weight: 600; color: var(--text-h); margin: 14px 0 6px; }
+  .notes ul { padding-left: 16px; }
+  .notes li { font-size: 11px; line-height: 1.5; margin-bottom: 4px; color: var(--text); }
+
+  @media (max-width: 860px) {
+    .notes { display: none; }
+    body { padding: 12px 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="viewtoggle" id="viewtoggle">
+    <button data-view="staff" class="active">Vista staff</button>
+    <button data-view="player">Vista giocatore</button>
+  </div>
+  <div class="viewtoggle" id="sporttoggle">
+    <button data-sport="calcio" class="active">Calcio a 11</button>
+    <button data-sport="scherma">Scherma</button>
+  </div>
+
+  <div class="phone">
+    <div class="statusbar"><span>9:41</span><span>5G ▮▮▮</span></div>
+
+    <div class="topbar">
+      <button class="icon-btn" aria-label="Indietro">
+        <svg width="20" height="20" viewBox="0 0 20 20" style="transform: rotate(180deg)"><path d="M4 10h12M12 5l5 5-5 5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+      </button>
+      <div class="topbar-title">
+        <h1>Convocazione</h1>
+        <p>Prima squadra · stagione 2026/27</p>
+      </div>
+      <span class="chip info" id="role-chip">Staff</span>
+    </div>
+
+    <div class="scroll" id="content"></div>
+    <div id="footer"></div>
+  </div>
+</div>
+
+<aside class="notes">
+  <h2>Note di interazione</h2>
+  <p>Dettaglio partita, tab Convocazione. Provala: cambia vista in alto e sposta i giocatori.</p>
+
+  <h3>Tre liste, identiche per ogni sport</h3>
+  <ul>
+    <li><b>Convocati</b>: hanno una convocazione per l'evento, con la risposta di ciascuno.</li>
+    <li><b>Convocabili</b>: iscritti attivi senza blocchi, non ancora convocati. Si convoca con un tocco.</li>
+    <li><b>Non convocabili</b>: infortunato, sospeso, ceduto, certificato scaduto o mancante. Calcolata, non inserita a mano.</li>
+    <li>Nessun ruolo né modulo: la convocazione non dipende dallo sport.</li>
+    <li><b>Titolare o panchina</b>: interruttore T / P accanto al convocato, attivo solo se il profilo sport lo prevede (calcio). Cambia sport in alto per vedere la scherma senza interruttore. Un tocco sul valore già attivo lo toglie.</li>
+    <li>Limite titolari dal profilo sport: oltre 11 avviso, non blocco.</li>
+  </ul>
+
+  <h3>Regole</h3>
+  <ul>
+    <li>Certificato in scadenza: warning, resta convocabile.</li>
+    <li>Blocco per certificato scaduto o squalifica: configurabile per società (blocco o warning).</li>
+    <li>"Invia convocazione" notifica solo i nuovi convocati (push, in app, email).</li>
+    <li>Motivo del rifiuto da elenco chiuso, visibile solo allo staff.</li>
+  </ul>
+
+  <h3>Privacy</h3>
+  <ul>
+    <li>Il giocatore vede la lista convocati con le risposte, risponde con un tocco, non vede mai convocabili e non convocabili.</li>
+    <li>Il motivo di un blocco (infortunio, sospensione, certificato) resta allo staff e ai dirigenti.</li>
+    <li>Chi non è convocato vede solo "Non sei in convocazione", senza motivo.</li>
+    <li>Titolare e panchina sono visibili solo allo staff: nella vista giocatore non compaiono.</li>
+  </ul>
+
+  <h3>Tablet e desktop</h3>
+  <ul>
+    <li>Tre colonne affiancate, con trascinamento tra liste.</li>
+  </ul>
+</aside>
+
+<script>
+  /* Demo. w: C convocati, V convocabili, X non convocabili. resp: ok, wait, no. */
+  const ME = 6;
+  const REASONS = ['Impegno personale', 'Lavoro', 'Non disponibile'];
+  let players = [
+    { n: 1,  s: 'Bianchi',    w: 'C', resp: 'ok',   sent: true },
+    { n: 2,  s: 'Ferri',      w: 'C', resp: 'ok',   sent: true },
+    { n: 3,  s: 'Gallo',      w: 'C', resp: 'wait', sent: true },
+    { n: 4,  s: 'Moretti',    w: 'C', resp: 'ok',   sent: true },
+    { n: 5,  s: 'Conti',      w: 'C', resp: 'ok',   sent: true },
+    { n: 6,  s: 'Greco',      w: 'C', resp: 'wait', sent: true },
+    { n: 7,  s: 'Marino',     w: 'C', resp: 'ok',   sent: true },
+    { n: 8,  s: 'Romano',     w: 'C', resp: 'ok',   sent: true },
+    { n: 9,  s: 'Esposito',   w: 'C', resp: 'ok',   sent: true },
+    { n: 10, s: 'Costa',      w: 'C', resp: 'ok',   sent: true, cert: 'warn' },
+    { n: 12, s: 'Sala',       w: 'C', resp: 'ok',   sent: true },
+    { n: 13, s: 'Neri',       w: 'C', resp: 'ok',   sent: true },
+    { n: 14, s: 'Fabbri',     w: 'C', resp: 'ok',   sent: true },
+    { n: 15, s: 'Leone',      w: 'C', resp: 'no',   motivo: 'Lavoro', sent: true },
+    { n: 16, s: 'Riva',       w: 'C', resp: 'ok',   sent: true },
+    { n: 11, s: 'Barbieri',   w: 'V' },
+    { n: 17, s: 'Pellegrini', w: 'V' },
+    { n: 18, s: 'Fontana',    w: 'V', cert: 'warn' },
+    { n: 19, s: 'Rinaldi',    w: 'V' },
+    { n: 20, s: 'De Luca',    w: 'X', block: 'cert' },
+    { n: 21, s: 'Villa',      w: 'X', block: 'inj' },
+    { n: 22, s: 'Gatti',      w: 'X', block: 'sus' }
+  ];
+  const START = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 14], BENCH = [12, 13, 16], MAX_T = 11;
+  players.forEach(p => { if (START.includes(p.n)) p.role = 'T'; else if (BENCH.includes(p.n)) p.role = 'B'; });
+  let view = 'staff', tab = 'C', choosing = false, sport = 'calcio';
+
+  const ICON = {
+    close: '<svg width="14" height="14" viewBox="0 0 20 20"><line x1="4" y1="4" x2="16" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="4" x2="4" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    plus:  '<svg width="14" height="14" viewBox="0 0 20 20"><line x1="10" y1="3" x2="10" y2="17" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><line x1="3" y1="10" x2="17" y2="10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+    lock:  '<svg width="14" height="14" viewBox="0 0 20 20"><rect x="5" y="9" width="10" height="8" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M7 9V6a3 3 0 016 0v3" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>',
+    info:  '<svg width="16" height="16" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.6" fill="none"/><line x1="10" y1="9" x2="10" y2="14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="10" cy="6.2" r="0.9" fill="currentColor"/></svg>',
+    cal:   '<svg width="14" height="14" viewBox="0 0 20 20"><rect x="3" y="4" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"/><line x1="3" y1="8" x2="17" y2="8" stroke="currentColor" stroke-width="1.6"/></svg>',
+    check: '<svg width="16" height="16" viewBox="0 0 20 20"><path d="M3 10l5 5 9-9" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>'
+  };
+
+  const by = w => players.filter(p => p.w === w).sort((a, b) => a.n - b.n);
+  const respChip = p => p.resp === 'ok' ? '<span class="chip ok">Confermato</span>'
+                      : p.resp === 'no' ? '<span class="chip bad">Non disponibile</span>'
+                      : '<span class="chip neutral">In attesa</span>';
+  const blockChip = p => p.block === 'inj' ? '<span class="chip bad">Infortunato</span>'
+                       : p.block === 'sus' ? '<span class="chip bad">Sospeso</span>'
+                       : '<span class="chip bad">Cert. scaduto</span>';
+  const certChip = p => p.cert === 'warn' ? '<span class="chip warn">Cert. 12 gg</span>' : '';
+
+  function row(p, sub, action, cls) {
+    const dot = p.cert === 'warn' ? '<span class="badge-dot">!</span>' : '';
+    const me = p.n === ME && view === 'player' ? '<span class="tag-me">Tu</span>' : '';
+    return '<div class="row ' + (cls || '') + '" data-n="' + p.n + '"><div class="shirt">' + p.n + dot + '</div>' +
+           '<div class="info"><b>' + p.s + me + '</b><div class="sub">' + sub + '</div></div>' + (action || '') + '</div>';
+  }
+
+  /* ---------- Vista staff ---------- */
+  function eventCard() {
+    return '<div class="event"><div class="t">Partita vs Atletico Rossi</div>' +
+      '<div class="m">' + ICON.cal + 'Dom 8 nov · 15:00 · Casa · Ritrovo 13:45, Stadio comunale</div></div>';
+  }
+
+  function renderStaff() {
+    const C = by('C'), V = by('V'), X = by('X');
+    const ok = C.filter(p => p.resp === 'ok').length, wait = C.filter(p => p.resp === 'wait').length, no = C.filter(p => p.resp === 'no').length;
+    let body = '';
+    if (tab === 'C') {
+      const nT = C.filter(p => p.role === 'T').length, nB = C.filter(p => p.role === 'B').length;
+      const tpChips = sport === 'calcio'
+        ? '<span class="chip ' + (nT > MAX_T ? 'warn' : 'info') + '">' + nT + ' titolari' + (nT > MAX_T ? ' (max ' + MAX_T + ')' : '') + '</span><span class="chip neutral">' + nB + ' panchina</span>'
+        : '';
+      body += '<div class="counts"><span class="chip ok">' + ok + ' confermati</span><span class="chip neutral">' + wait + ' in attesa</span><span class="chip bad">' + no + ' non disponibili</span>' + tpChips + '</div>';
+      const tpCtl = p => sport === 'calcio'
+        ? '<div class="tp"><button class="' + (p.role === 'T' ? 'on' : '') + '" data-act="tp" data-v="T" title="Titolare" aria-label="Titolare">T</button><button class="' + (p.role === 'B' ? 'on' : '') + '" data-act="tp" data-v="B" title="Panchina" aria-label="Panchina">P</button></div>'
+        : '';
+      body += C.length ? '<div class="list">' + C.map(p => row(p,
+          respChip(p) + (p.resp === 'no' && p.motivo ? '<span>' + p.motivo + '</span>' : '') + certChip(p) + (p.sent ? '' : '<span class="chip info">Da avvisare</span>'),
+          '<div class="acts">' + tpCtl(p) + '<button class="act" data-act="rm" aria-label="Togli dalla convocazione">' + ICON.close + '</button></div>')).join('') + '</div>'
+        : '<div class="list"><div class="empty">Nessun convocato</div></div>';
+    } else if (tab === 'V') {
+      body += '<div class="note">' + ICON.info + '<span>Iscritti attivi che puoi convocare. Tocca Convoca per aggiungerli.</span></div>';
+      body += V.length ? '<div class="list">' + V.map(p => row(p, certChip(p) || '<span>Idoneo</span>',
+          '<button class="act primary" data-act="add">' + ICON.plus + 'Convoca</button>')).join('') + '</div>'
+        : '<div class="list"><div class="empty">Tutti i convocabili sono stati convocati</div></div>';
+    } else {
+      body += '<div class="note">' + ICON.info + '<span>Elenco calcolato da stato, certificato e squalifiche. Visibile solo a staff e dirigenti.</span></div>';
+      body += '<div class="list">' + X.map(p => row(p, blockChip(p),
+          '<button class="act" disabled aria-label="Non convocabile">' + ICON.lock + '</button>', 'blocked')).join('') + '</div>';
+    }
+    const tabs = '<div class="tabs" id="tabs">' +
+      '<button data-tab="C" class="' + (tab === 'C' ? 'active' : '') + '"><b>' + C.length + '</b>Convocati</button>' +
+      '<button data-tab="V" class="' + (tab === 'V' ? 'active' : '') + '"><b>' + V.length + '</b>Convocabili</button>' +
+      '<button data-tab="X" class="' + (tab === 'X' ? 'active' : '') + '"><b>' + X.length + '</b>Non convocabili</button></div>';
+    document.getElementById('content').innerHTML = eventCard() + tabs + body;
+
+    const pend = C.filter(p => !p.sent).length;
+    document.getElementById('footer').innerHTML = '<div class="footer">' +
+      '<div class="msg' + (pend ? '' : ' done') + '">' + (pend ? (pend === 1 ? '1 nuovo convocato da avvisare' : pend + ' nuovi convocati da avvisare') : 'Tutti i convocati sono stati avvisati') + '</div>' +
+      '<button class="btn primary" data-act="send"' + (pend ? '' : ' disabled') + '>Invia convocazione</button>' +
+      '<div class="push">Notifica push, in app ed email solo ai nuovi convocati</div></div>';
+    document.getElementById('role-chip').textContent = 'Staff';
+  }
+
+  /* ---------- Vista giocatore (Greco, n. 6) ---------- */
+  function renderPlayer() {
+    const C = by('C'), me = players.find(p => p.n === ME);
+    let card;
+    if (me.w !== 'C') {
+      card = '<div class="respond notconv"><h2>Non sei in convocazione</h2><p>Per questa partita non risulti tra i convocati.</p></div>';
+    } else if (choosing) {
+      card = '<div class="respond"><h2>Perché non ci sei?</h2><p>Scegli un motivo. Lo vede solo lo staff.</p><div class="reasons">' +
+        REASONS.map(r => '<button class="btn secondary" data-act="reason" data-r="' + r + '">' + r + '</button>').join('') +
+        '</div><button class="btn link" data-act="cancel">Annulla</button></div>';
+    } else if (me.resp === 'wait') {
+      card = '<div class="respond"><h2>Sei stato convocato</h2><p>Conferma la tua presenza entro venerdì sera.</p>' +
+        '<div class="btns"><button class="btn primary" data-act="yes">' + ICON.check + 'Ci sono</button><button class="btn secondary" data-act="no">Non ci sono</button></div></div>';
+    } else if (me.resp === 'ok') {
+      card = '<div class="respond"><div class="state-line"><span class="chip ok">Confermato</span></div><h2>Ci sei</h2><p>Hai confermato la presenza. Ritrovo alle 13:45.</p><button class="btn link" data-act="change" style="margin-top:0">Cambia risposta</button></div>';
+    } else {
+      card = '<div class="respond"><div class="state-line"><span class="chip bad">Non disponibile</span></div><h2>Non ci sei</h2><p>Hai risposto: ' + me.motivo + '.</p><button class="btn link" data-act="change" style="margin-top:0">Cambia risposta</button></div>';
+    }
+    const list = '<div class="section-head"><h2>Convocati</h2><span>' + C.length + ' giocatori</span></div><div class="list">' +
+      C.map(p => row(p, respChip(p), '', p.n === ME ? 'me' : '')).join('') + '</div>' +
+      '<div class="foot-note">' + ICON.lock + 'Lo staff gestisce le altre liste</div>';
+    document.getElementById('content').innerHTML = eventCard() + card + list;
+    document.getElementById('footer').innerHTML = '';
+    document.getElementById('role-chip').textContent = 'Giocatore';
+  }
+
+  function render() {
+    document.querySelectorAll('#viewtoggle button').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+    document.querySelectorAll('#sporttoggle button').forEach(b => b.classList.toggle('active', b.dataset.sport === sport));
+    view === 'staff' ? renderStaff() : renderPlayer();
+  }
+
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-view],[data-sport],[data-tab],[data-act]');
+    if (!t || t.disabled) return;
+    if (t.dataset.view) { view = t.dataset.view; choosing = false; return render(); }
+    if (t.dataset.sport) { sport = t.dataset.sport; return render(); }
+    if (t.dataset.tab) { tab = t.dataset.tab; return render(); }
+    const r = t.closest('[data-n]');
+    const p = r ? players.find(x => x.n === Number(r.dataset.n)) : null;
+    const me = players.find(x => x.n === ME);
+    switch (t.dataset.act) {
+      case 'add':    p.w = 'C'; p.resp = 'wait'; p.sent = false; break;
+      case 'rm':     p.w = 'V'; delete p.resp; delete p.motivo; delete p.sent; delete p.role; break;
+      case 'tp':     p.role = p.role === t.dataset.v ? undefined : t.dataset.v; break;
+      case 'send':   players.forEach(x => { if (x.w === 'C') x.sent = true; }); break;
+      case 'yes':    me.resp = 'ok'; delete me.motivo; break;
+      case 'no':     choosing = true; break;
+      case 'reason': me.resp = 'no'; me.motivo = t.dataset.r; choosing = false; break;
+      case 'cancel': choosing = false; break;
+      case 'change': me.resp = 'wait'; delete me.motivo; break;
+    }
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>

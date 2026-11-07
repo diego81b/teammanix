@@ -1,0 +1,37 @@
+# TeamManix, overlay sviluppo: api in watch con sorgente montato, db esposto su :5433.
+services:
+  db:
+    ports:
+      - "127.0.0.1:5433:5432"
+
+  api:
+    build:
+      context: apps/api
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    # Configurazione dell'API: apps/api/.env.dev (default versionati), poi apps/api/.env (personale, facoltativo,
+    # non versionato) che li sovrascrive. Qui sotto restano solo i valori legati al container, che hanno la precedenza.
+    # Esempi per apps/api/.env: BREVO_API_KEY e MAIL_FROM_EMAIL (mail vere), E2E_OUTBOX=1 (espone le mail su
+    # /api/__test/outbox, serve agli e2e), STORAGE_DRIVER=s3 con le variabili S3_* di .env.prod.example.
+    env_file:
+      - apps/api/.env.dev
+      - path: apps/api/.env
+        required: false
+    environment:
+      NODE_ENV: development
+      PORT: "3001"
+      DATABASE_URL: postgres://teammanix:${POSTGRES_PASSWORD:-devpassword}@db:5432/teammanix
+      # File sensibili: in sviluppo su disco (volume dedicato, fuori dal sorgente montato). La chiave di cifratura
+      # deriva da JWT_SECRET.
+      STORAGE_DIR: /data/storage
+    volumes:
+      - ./apps/api:/app
+      - /app/node_modules
+      - certificates:/data/storage
+    ports:
+      - "127.0.0.1:3001:3001"
+
+volumes:
+  certificates:

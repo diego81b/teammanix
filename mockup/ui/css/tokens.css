@@ -1,0 +1,346 @@
+/* =========================================================
+   TEAMMANIX · Design tokens
+   Versione 2.0 (mockup) · palette "Petrolio intenso"
+   fondo chiaro "ghiaccio", fondo scuro "petrolio scuro".
+
+   Due livelli:
+   1. Primitivi (--tm-petrol-*, --tm-gray-*, --tm-ice-*, --tm-dk-*): valori
+      grezzi, non usarli nelle pagine né nei componenti.
+   2. Semantici (--tm-bg, --tm-text, --tm-primary, --tm-accent, --tm-success...):
+      gli unici ammessi in app.css e nelle schermate. Il tema scuro
+      ridefinisce solo questi.
+
+   Mappatura Nuxt UI v4: i semantici corrispondono alle variabili
+   --ui-bg, --ui-bg-elevated, --ui-border, --ui-text, --ui-text-muted,
+   --ui-primary ecc. (vedi tabella in components.html).
+   ========================================================= */
+
+/* Font: solo per il mockup. In produzione ospitati localmente (GDPR):
+   rimuovere questa riga, i fallback di sistema sono già dichiarati. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@500;600;700;800&display=swap');
+
+/* ---------- 1. PRIMITIVI (invarianti) ---------- */
+:root {
+  /* Brand: petrolio */
+  --tm-petrol-500: #007A7E;        /* pulsante primario, testo bianco 5,1:1; 3,9:1 rispetto al nero del testo */
+  --tm-petrol-600: #006F76;        /* link, contorni, voce attiva: AA anche sulle superfici attenuate */
+  --tm-petrol-700: #006569;        /* hover */
+  --tm-petrol-800: #005155;        /* premuto */
+  --tm-petrol-50: #EDF5F5;         /* tinta tenue (hover di secondario e ghost, voce attiva) */
+  --tm-petrol-100: #D5EAEA;
+  --tm-petrol-300: #4FD1C9;        /* primario e accento su fondo scuro, testo scuro 9,9:1 */
+  --tm-petrol-200: #74DCD6;        /* hover su fondo scuro */
+  --tm-petrol-400: #3BBDB5;        /* premuto su fondo scuro */
+  --tm-petrol-dk-edge: #3F9A96;    /* contorno del secondario su fondo scuro, almeno 4:1 */
+  --tm-black: #090909;
+  --tm-white: #FFFFFF;
+
+  /* Neutri chiari: ghiaccio (grigio freddo) */
+  --tm-ice-bg: #F4F7F8;
+  --tm-ice-muted: #E9EFF1;
+  --tm-ice-hover: #EFF3F5;
+  --tm-ice-pressed: #E1E9EC;
+  --tm-ice-border: #DAE3E6;
+  --tm-gray-500: #777777;          /* bordi dei controlli: 3,9:1 sulla superficie attenuata */
+  --tm-gray-700: #4A4A4A;          /* testo secondario, 7,6:1 sulla superficie attenuata */
+
+  /* Neutri scuri: petrolio scuro */
+  --tm-dk-bg: #0E1616;
+  --tm-dk-surface: #162020;
+  --tm-dk-surface-muted: #1E2A2A;
+  --tm-dk-surface-raised: #243131;  /* elementi flottanti: superficie più chiara al posto dell'ombra */
+  --tm-dk-hover: #1B2626;
+  --tm-dk-pressed: #2A3838;
+  --tm-dk-border: #2E3E3E;
+  --tm-dk-border-strong: #869494;   /* bordi dei controlli: 4,3:1 sulla superficie rialzata */
+  --tm-dk-text: #F1F4F4;
+  --tm-dk-text-muted: #B3BEBE;      /* 7,1:1 sulla superficie rialzata */
+
+  /* ---------- TIPOGRAFIA ---------- */
+  --tm-font-heading: 'Montserrat', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --tm-font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  --tm-text-xs: 0.75rem;   /* 12px solo metadati e badge */
+  --tm-text-sm: 0.875rem;  /* 14px etichette, pulsanti, testo operativo minimo */
+  --tm-text-md: 1rem;      /* 16px corpo */
+  --tm-text-lg: 1.125rem;  /* 18px titolo sezione mobile */
+  --tm-text-xl: 1.25rem;   /* 20px titolo sezione desktop */
+  --tm-text-2xl: 1.5rem;   /* 24px titolo pagina mobile, numeri */
+  --tm-text-3xl: 2rem;     /* 32px titolo pagina desktop, numeri grandi */
+  --tm-text-4xl: 2.5rem;   /* 40px */
+
+  --tm-weight-regular: 400;
+  --tm-weight-medium: 500;
+  --tm-weight-semibold: 600;
+  --tm-weight-bold: 700;
+
+  --tm-leading-tight: 1.15;
+  --tm-leading-snug: 1.3;
+  --tm-leading-body: 1.5;
+
+  /* ---------- FORMA E SPAZIO ---------- */
+  --tm-radius-sm: 6px;     /* campi */
+  --tm-radius-md: 10px;    /* pulsanti, segmented */
+  --tm-radius-lg: 16px;    /* card, sheet */
+  --tm-radius-pill: 999px; /* badge, switch */
+
+  --tm-space-1: 4px;
+  --tm-space-2: 8px;
+  --tm-space-3: 12px;
+  --tm-space-4: 16px;
+  --tm-space-5: 20px;
+  --tm-space-6: 24px;
+  --tm-space-8: 32px;
+  --tm-space-10: 40px;
+  --tm-space-12: 48px;
+
+  --tm-border-width: 1px;
+  --tm-stroke-icon: 1.75;
+
+  /* ---------- DIMENSIONI FISSE ---------- */
+  --tm-touch: 44px;
+  --tm-header-h: 56px;
+  --tm-tabbar-h: 64px;
+  --tm-sidebar-w: 248px;
+  --tm-content-max: 1120px;
+  --tm-gutter: 16px;
+  --tm-row-min: 56px;
+  --tm-badge-h: 24px;
+  --tm-icon-sm: 20px;
+  --tm-icon-md: 24px;
+  --tm-avatar-sm: 32px;
+  --tm-avatar-md: 40px;
+  --tm-avatar-lg: 64px;
+  --tm-logo-h-header: 28px;
+  --tm-logo-h-auth: 40px;
+  --tm-auth-card-max: 440px;
+  --tm-sheet-max: 560px;
+  --tm-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --tm-safe-top: env(safe-area-inset-top, 0px);
+
+  /* Breakpoint (riferimento: le media query non accettano variabili)
+     sm 640 · md 768 · lg 1024 · xl 1280 */
+
+  /* ---------- MOVIMENTO ---------- */
+  --tm-duration-fast: 150ms;
+  --tm-duration-base: 200ms;
+  --tm-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* ---------- LIVELLI ---------- */
+  --tm-z-base: 0;
+  --tm-z-sticky: 10;
+  --tm-z-header: 100;
+  --tm-z-tabbar: 100;
+  --tm-z-dropdown: 200;
+  --tm-z-sheet: 300;
+  --tm-z-modal: 400;
+  --tm-z-toast: 500;
+}
+
+@media (min-width: 768px) {
+  :root { --tm-gutter: 24px; }
+}
+@media (min-width: 1024px) {
+  :root { --tm-header-h: 64px; }
+}
+
+/* ---------- 2. SEMANTICI · TEMA CHIARO (ghiaccio) ---------- */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  --tm-bg: var(--tm-ice-bg);
+  --tm-surface: var(--tm-white);            /* card, header, tab bar: più chiare del fondo */
+  --tm-surface-muted: var(--tm-ice-muted);
+  --tm-surface-raised: var(--tm-white);
+  --tm-surface-hover: var(--tm-ice-hover);
+  --tm-surface-pressed: var(--tm-ice-pressed);
+  --tm-border: var(--tm-ice-border);
+  --tm-border-strong: var(--tm-gray-500);
+  --tm-divider: var(--tm-ice-border);
+
+  --tm-text: var(--tm-black);
+  --tm-text-muted: var(--tm-gray-700);
+  --tm-text-disabled: var(--tm-gray-700);
+  --tm-text-on-primary: var(--tm-white);
+  --tm-icon-muted: var(--tm-gray-500);
+
+  --tm-primary: var(--tm-petrol-500);
+  --tm-primary-hover: var(--tm-petrol-700);
+  --tm-primary-pressed: var(--tm-petrol-800);
+  --tm-primary-edge: var(--tm-petrol-500);
+  --tm-secondary-text: var(--tm-petrol-600);
+  --tm-secondary-border: var(--tm-petrol-600);
+  --tm-ghost-text: var(--tm-petrol-600);
+  --tm-primary-soft: var(--tm-petrol-50);
+  --tm-primary-soft-pressed: var(--tm-petrol-100);
+
+  --tm-accent: var(--tm-petrol-500);        /* checkbox, radio, interruttore, contatore notifiche */
+  --tm-on-accent: var(--tm-white);
+  --tm-accent-soft: var(--tm-petrol-50);    /* fondo della voce attiva, riga "da avvisare" */
+  --tm-link: var(--tm-petrol-600);
+  --tm-link-hover: var(--tm-petrol-800);
+  --tm-active: var(--tm-petrol-600);
+  --tm-focus: var(--tm-petrol-600);
+
+  /* Stati: base = icona e bordo; -bg = tinta tenue; -text = testo AA su -bg.
+     Successo spostato verso il giallo per staccarsi dal petrolio. */
+  --tm-success: #2E7D1F;
+  --tm-success-bg: #EBF2E9;
+  --tm-success-text: #22601A;
+  --tm-warning: #B26A00;
+  --tm-warning-bg: #F7F0E5;
+  --tm-warning-text: #7A4900;
+  --tm-danger: #C62828;
+  --tm-danger-bg: #F9E9E9;
+  --tm-danger-bg-strong: #F2D3D3;
+  --tm-danger-text: #9B1C1C;
+  --tm-info: #1F5FA8;
+  --tm-info-bg: #E9EFF6;
+  --tm-info-text: #174A85;
+  --tm-squal-bg: #7A4900;          /* squalifica: ambra scura piena, testo bianco 7,5:1 */
+  --tm-squal-text: #FFFFFF;
+  --tm-neutral-bg: var(--tm-ice-muted);
+  --tm-neutral-text: var(--tm-gray-700);
+
+  --tm-overlay: rgba(9, 9, 9, 0.48);
+  --tm-shadow-float: 0 8px 24px rgba(9, 30, 31, 0.12);
+  --tm-skeleton: var(--tm-ice-pressed);
+  --tm-skeleton-shine: var(--tm-ice-hover);
+
+  --tm-logo-light-display: inline-block;
+  --tm-logo-dark-display: none;
+}
+
+/* ---------- 3. SEMANTICI · TEMA SCURO (petrolio scuro) ----------
+   Lo stesso blocco compare due volte: scelta esplicita (data-theme)
+   e preferenza di sistema quando l'utente non ha scelto. Tenerli allineati. */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --tm-bg: var(--tm-dk-bg);
+  --tm-surface: var(--tm-dk-surface);
+  --tm-surface-muted: var(--tm-dk-surface-muted);
+  --tm-surface-raised: var(--tm-dk-surface-raised);
+  --tm-surface-hover: var(--tm-dk-hover);
+  --tm-surface-pressed: var(--tm-dk-pressed);
+  --tm-border: var(--tm-dk-border);
+  --tm-border-strong: var(--tm-dk-border-strong);
+  --tm-divider: var(--tm-dk-border);
+
+  --tm-text: var(--tm-dk-text);
+  --tm-text-muted: var(--tm-dk-text-muted);
+  --tm-text-disabled: var(--tm-dk-text-muted);
+  --tm-text-on-primary: var(--tm-dk-bg);
+  --tm-icon-muted: #8A9696;
+
+  --tm-primary: var(--tm-petrol-300);     /* pulsante chiaro con testo scuro */
+  --tm-primary-hover: var(--tm-petrol-200);
+  --tm-primary-pressed: var(--tm-petrol-400);
+  --tm-primary-edge: var(--tm-petrol-300);
+  --tm-secondary-text: var(--tm-dk-text);
+  --tm-secondary-border: var(--tm-petrol-dk-edge);
+  --tm-ghost-text: var(--tm-dk-text);
+  --tm-primary-soft: #1B2E2E;
+  --tm-primary-soft-pressed: #223838;
+
+  --tm-accent: var(--tm-petrol-300);
+  --tm-on-accent: var(--tm-dk-bg);
+  --tm-accent-soft: #13292A;
+  --tm-link: var(--tm-petrol-300);
+  --tm-link-hover: var(--tm-petrol-200);
+  --tm-active: var(--tm-petrol-300);
+  --tm-focus: var(--tm-petrol-300);
+
+  --tm-success: #9BD46A;
+  --tm-success-bg: #1A2410;
+  --tm-success-text: #B4E28E;
+  --tm-warning: #E6A54A;
+  --tm-warning-bg: #2B2112;
+  --tm-warning-text: #F0BD72;
+  --tm-danger: #FF7B66;
+  --tm-danger-bg: #2E1512;
+  --tm-danger-bg-strong: #43201A;
+  --tm-danger-text: #FF9C8C;
+  --tm-info: #7EB0EA;
+  --tm-info-bg: #142033;
+  --tm-info-text: #A3C6F0;
+  --tm-squal-bg: #F0BD72;
+  --tm-squal-text: #100F0F;
+  --tm-neutral-bg: var(--tm-dk-surface-muted);
+  --tm-neutral-text: var(--tm-dk-text-muted);
+
+  --tm-overlay: rgba(0, 0, 0, 0.64);
+  --tm-shadow-float: none;   /* sul tema scuro le ombre non si vedono: superficie più chiara + bordo */
+  --tm-skeleton: var(--tm-dk-surface-muted);
+  --tm-skeleton-shine: var(--tm-dk-surface-raised);
+
+  --tm-logo-light-display: none;
+  --tm-logo-dark-display: inline-block;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --tm-bg: var(--tm-dk-bg);
+    --tm-surface: var(--tm-dk-surface);
+    --tm-surface-muted: var(--tm-dk-surface-muted);
+    --tm-surface-raised: var(--tm-dk-surface-raised);
+    --tm-surface-hover: var(--tm-dk-hover);
+    --tm-surface-pressed: var(--tm-dk-pressed);
+    --tm-border: var(--tm-dk-border);
+    --tm-border-strong: var(--tm-dk-border-strong);
+    --tm-divider: var(--tm-dk-border);
+
+    --tm-text: var(--tm-dk-text);
+    --tm-text-muted: var(--tm-dk-text-muted);
+    --tm-text-disabled: var(--tm-dk-text-muted);
+    --tm-text-on-primary: var(--tm-dk-bg);
+    --tm-icon-muted: #8A9696;
+
+    --tm-primary: var(--tm-petrol-300);     /* pulsante chiaro con testo scuro */
+    --tm-primary-hover: var(--tm-petrol-200);
+    --tm-primary-pressed: var(--tm-petrol-400);
+    --tm-primary-edge: var(--tm-petrol-300);
+    --tm-secondary-text: var(--tm-dk-text);
+    --tm-secondary-border: var(--tm-petrol-dk-edge);
+    --tm-ghost-text: var(--tm-dk-text);
+    --tm-primary-soft: #1B2E2E;
+    --tm-primary-soft-pressed: #223838;
+
+    --tm-accent: var(--tm-petrol-300);
+    --tm-on-accent: var(--tm-dk-bg);
+    --tm-accent-soft: #13292A;
+    --tm-link: var(--tm-petrol-300);
+    --tm-link-hover: var(--tm-petrol-200);
+    --tm-active: var(--tm-petrol-300);
+    --tm-focus: var(--tm-petrol-300);
+
+    --tm-success: #9BD46A;
+    --tm-success-bg: #1A2410;
+    --tm-success-text: #B4E28E;
+    --tm-warning: #E6A54A;
+    --tm-warning-bg: #2B2112;
+    --tm-warning-text: #F0BD72;
+    --tm-danger: #FF7B66;
+    --tm-danger-bg: #2E1512;
+    --tm-danger-bg-strong: #43201A;
+    --tm-danger-text: #FF9C8C;
+    --tm-info: #7EB0EA;
+    --tm-info-bg: #142033;
+    --tm-info-text: #A3C6F0;
+    --tm-squal-bg: #F0BD72;
+    --tm-squal-text: #100F0F;
+    --tm-neutral-bg: var(--tm-dk-surface-muted);
+    --tm-neutral-text: var(--tm-dk-text-muted);
+
+    --tm-overlay: rgba(0, 0, 0, 0.64);
+    --tm-shadow-float: none;   /* sul tema scuro le ombre non si vedono: superficie più chiara + bordo */
+    --tm-skeleton: var(--tm-dk-surface-muted);
+    --tm-skeleton-shine: var(--tm-dk-surface-raised);
+
+    --tm-logo-light-display: none;
+    --tm-logo-dark-display: inline-block;
+}
+}

@@ -1,0 +1,118 @@
+import { Transform } from 'class-transformer';
+import { ArrayMaxSize, ArrayUnique, IsArray, IsBoolean, IsEmail, IsEnum, IsInt, IsOptional, IsString, IsUUID, Length, MaxLength } from 'class-validator';
+import { StaffRole, EnrollmentStatus, EnrollmentType } from '../entities/enums';
+import { CreateSeasonDto } from '../structure/dto';
+
+const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
+const lowercase = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toLowerCase() : value);
+
+/** Record created by an admin. With surname and birth date it is complete, otherwise to be completed. */
+export class CreatePersonDto {
+  @Transform(trim)
+  @Length(1, 100)
+  name!: string;
+
+  @IsOptional()
+  @Transform(trim)
+  @Length(1, 100)
+  surname?: string;
+
+  /** The check that it is a real, non-future date is in the service. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  birthDate?: string;
+
+  @IsOptional()
+  @Transform(lowercase)
+  @IsEmail()
+  @MaxLength(320)
+  email?: string;
+
+  @IsOptional()
+  @Transform(trim)
+  @Length(5, 30)
+  phone?: string;
+}
+
+export class SearchPeopleDto {
+  @IsOptional()
+  @Transform(trim)
+  @MaxLength(100)
+  q?: string;
+}
+
+export class EnrollmentDto {
+  @IsUUID()
+  personId!: string;
+
+  @IsEnum(EnrollmentType)
+  type!: EnrollmentType;
+
+  @IsOptional()
+  @IsEnum(StaffRole)
+  staffRole?: StaffRole;
+
+  @IsOptional()
+  @Transform(trim)
+  @Length(1, 40)
+  position?: string;
+
+  /** Range and integrality are checked in `validateEnrollment`, to give a precise code. */
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' && value.trim() !== '' ? Number(value) : value))
+  @IsInt()
+  jerseyNumber?: number;
+}
+
+export class EditEnrollmentDto {
+  @IsOptional()
+  @IsEnum(StaffRole)
+  staffRole?: StaffRole;
+
+  @IsOptional()
+  @Transform(trim)
+  @Length(1, 40)
+  position?: string;
+
+  @IsOptional()
+  @IsInt()
+  jerseyNumber?: number;
+
+  @IsOptional()
+  @IsEnum(EnrollmentStatus)
+  status?: EnrollmentStatus;
+}
+
+/** New season (draft) for the same team, plus the enrollments chosen from the origin's roster. */
+export class CloneSeasonDto extends CreateSeasonDto {
+  @IsArray()
+  @ArrayUnique()
+  @ArrayMaxSize(500)
+  @IsUUID('all', { each: true })
+  enrollments!: string[];
+}
+
+/** Omitted fields are copied from the origin enrollment. */
+export class PromoteEnrollmentDto {
+  @IsUUID()
+  seasonId!: string;
+
+  /** Default false: the origin enrollment stays open (rule 9). */
+  @IsOptional()
+  @IsBoolean()
+  closeSource?: boolean;
+
+  @IsOptional()
+  @IsEnum(StaffRole)
+  staffRole?: StaffRole;
+
+  @IsOptional()
+  @Transform(trim)
+  @Length(1, 40)
+  position?: string;
+
+  @IsOptional()
+  @IsInt()
+  jerseyNumber?: number;
+}

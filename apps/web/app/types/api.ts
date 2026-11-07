@@ -1,0 +1,259 @@
+// Types shared with the API (apps/api). Keep them aligned by hand until there is a shared package.
+
+export type Language = 'it' | 'en' | 'fr'
+
+export type ScopeType = 'club' | 'activity' | 'team'
+export type AccessRole = 'admin' | 'manager'
+
+export interface CtxRole {
+  role: AccessRole
+  scope: ScopeType
+  activityId: string | null
+  teamId: string | null
+}
+
+export interface Membership {
+  clubId: string
+  name: string
+  roles: CtxRole[]
+  /** true if the account is linked to a record (player or staff) in this club. */
+  linkedToPerson: boolean
+  /** true if the record exists but the person has not completed it yet. */
+  recordToComplete: boolean
+}
+
+export interface UserDto {
+  id: string
+  email: string
+  name: string
+  surname: string
+  language: Language
+}
+
+/** Response of login, club selection, club creation, invitation acceptance, password change. */
+export interface SessionDto {
+  accessToken: string
+  user: UserDto
+  activeClub: { id: string; name: string } | null
+  memberships: Membership[]
+}
+
+/** Response of GET auth/me (without new token). */
+export interface MeDto {
+  user: UserDto
+  activeClub: Membership | null
+  memberships: Membership[]
+}
+
+export type InvitationRole = 'admin' | 'manager' | 'staff' | 'player'
+
+/** Response of GET inviti/anteprima: what is behind the link, without email. */
+export interface PreviewInvitation {
+  club: string
+  role: InvitationRole
+  scope: ScopeType
+  /** Language chosen by the inviter. */
+  language: Language
+  destination: string | null
+  recordName: string | null
+}
+
+export interface MessageDto {
+  message: string
+}
+
+export interface RecordDto {
+  id: string
+  name: string
+  surname: string | null
+  birthDate: string | null
+  email: string | null
+  phone: string | null
+  toComplete: boolean
+}
+
+// --- Slice 2: structure, people, certificates, invitations, roles, permissions ---
+
+export type SeasonStatus = 'draft' | 'active' | 'closed'
+export type EnrollmentType = 'player' | 'staff'
+export type StaffRole = 'coach' | 'assistant_coach' | 'trainer' | 'escort' | 'other'
+export type EnrollmentStatus = 'available' | 'injured'
+export type CertificateStatus = 'missing' | 'valid' | 'expiring' | 'expired'
+export type CertificateType = 'competitive' | 'not_competitive'
+export type TeamGender = 'male' | 'female' | 'mixed'
+export type InvitationStatus = 'sent' | 'accepted' | 'revoked' | 'expired'
+
+/** Codes only: sport name and positions are translated with `sport.<codice>` and `posizione.<codice>`. */
+export interface SportProfileDto {
+  code: string
+  positions: string[]
+  starterBench: boolean
+  maxStarters: number | null
+  modulesAvailable: string[]
+}
+
+export interface SeasonDto {
+  id: string
+  teamId: string
+  name: string
+  startDate: string
+  endDate: string
+  status: SeasonStatus
+  league: string | null
+}
+
+export interface TeamDto {
+  id: string
+  activityId: string
+  name: string
+  category: string | null
+  gender: TeamGender | null
+}
+
+export interface ActivityDto {
+  id: string
+  name: string
+  sportProfile: string
+  modulesActive: string[]
+}
+
+export type TeamTree = TeamDto & { seasons: SeasonDto[] }
+export type ActivityTree = ActivityDto & { teams: TeamTree[] }
+
+export interface SummaryCertificate {
+  status: CertificateStatus
+  expiry: string | null
+}
+
+export interface RosterRow {
+  id: string
+  personId: string
+  name: string
+  surname: string | null
+  type: EnrollmentType
+  staffRole: StaffRole | null
+  position: string | null
+  jerseyNumber: number | null
+  status: EnrollmentStatus
+  certificate: SummaryCertificate | null
+}
+
+export interface EnrollmentOut {
+  id: string
+  personId: string
+  type: EnrollmentType
+  staffRole: StaffRole | null
+  position: string | null
+  jerseyNumber: number | null
+  status: EnrollmentStatus
+  seasonId: string
+  endedAt: string | null
+}
+
+export interface PersonDto {
+  id: string
+  name: string
+  surname: string | null
+  birthDate: string | null
+  email: string | null
+  phone: string | null
+  toComplete: boolean
+  disabled: boolean
+}
+
+export interface EnrollmentPersonDto {
+  id: string
+  seasonId: string
+  season: string
+  teamId: string
+  team: string
+  activity: string
+  type: EnrollmentType
+  staffRole: StaffRole | null
+  position: string | null
+  jerseyNumber: number | null
+  status: EnrollmentStatus
+  endedAt: string | null
+}
+
+export interface PersonDetail extends PersonDto {
+  certificate: SummaryCertificate | null
+  enrollments: EnrollmentPersonDto[]
+}
+
+export interface CertificateDto {
+  id: string
+  personId: string
+  type: CertificateType
+  issueDate: string
+  expiryDate: string
+  status: CertificateStatus
+  hasFile: boolean
+  fileType: string | null
+}
+
+export interface PersonCertificates extends SummaryCertificate {
+  certificates: CertificateDto[]
+}
+
+export interface ClubSettings {
+  certificatesWithFile: boolean
+}
+
+export interface InvitationDto {
+  id: string
+  email: string
+  role: InvitationRole
+  scope: ScopeType
+  activityId: string | null
+  teamId: string | null
+  personId: string | null
+  status: InvitationStatus
+  language: Language
+  expiresAt: string
+}
+
+export interface RoleDto {
+  id: string
+  userId: string
+  name: string
+  surname: string
+  email: string
+  role: AccessRole
+  scope: ScopeType
+  activityId: string | null
+  teamId: string | null
+  destination: string | null
+}
+
+export type PolicyKey =
+  | 'events.manage'
+  | 'callups.manage'
+  | 'attendances.record'
+  | 'suspensions.manage'
+  | 'people.manage'
+  | 'people.disable'
+  | 'certificates.status'
+  | 'certificates.file'
+
+export type RolePolicy = AccessRole | StaffRole | 'player'
+export type DiffPolicy = Partial<Record<PolicyKey, boolean>>
+
+export interface PermissionDtoRole {
+  role: RolePolicy
+  scope: ScopeType
+  destination: string | null
+  season: string | null
+}
+
+export interface PermissionDto {
+  userId: string
+  name: string
+  surname: string
+  email: string
+  roles: PermissionDtoRole[]
+  diff: DiffPolicy
+  defaultValue: PolicyKey[]
+  effective: PolicyKey[]
+  editable: boolean
+}

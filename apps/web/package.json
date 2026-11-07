@@ -1,0 +1,42 @@
+{
+  "name": "teammanix-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TeamManix web (Nuxt 4 + Nuxt UI 4, SPA)",
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck",
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:nuxt": "vitest run --project nuxt",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^4.0.0",
+    "@nuxtjs/i18n": "^10.6.0",
+    "@pinia/nuxt": "^0.11.0",
+    "@vueuse/core": "^13.0.0",
+    "nuxt": "^4.0.0",
+    "pinia": "^3.0.0",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@nuxt/fonts": "^0.14.0",
+    "@nuxt/test-utils": "^4.3.4",
+    "@playwright/test": "^1.65.0",
+    "@types/node": "^22.20.5",
+    "@vitest/coverage-v8": "^5.1.0",
+    "@vue/test-utils": "^2.5.1",
+    "happy-dom": "^21.0.4",
+    "typescript": "^5.7.2",
+    "vitest": "^5.1.0",
+    "vue-tsc": "^3.0.0"
+  }
+}

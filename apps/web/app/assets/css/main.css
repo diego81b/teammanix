@@ -1,0 +1,83 @@
+@import 'tailwindcss';
+@import '@nuxt/ui';
+@import './tokens.css';
+
+@theme static {
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-heading: 'Montserrat', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Petrol: 500 is the light primary, 300 the dark primary (see tokens.css). */
+  --color-petrol-50: #edf5f5;
+  --color-petrol-100: #d5eaea;
+  --color-petrol-200: #74dcd6;
+  --color-petrol-300: #4fd1c9;
+  --color-petrol-400: #3bbdb5;
+  --color-petrol-500: #007a7e;
+  --color-petrol-600: #006f76;
+  --color-petrol-700: #006569;
+  --color-petrol-800: #005155;
+  --color-petrol-900: #003a3d;
+  --color-petrol-950: #002527;
+
+  /* Cool neutrals: ice (light) and dark petrol (dark). */
+  --color-ice-50: #f4f7f8;
+  --color-ice-100: #e9eff1;
+  --color-ice-200: #dae3e6;
+  --color-ice-300: #b3bec0;
+  --color-ice-400: #869494;
+  --color-ice-500: #677575;
+  --color-ice-600: #4a5757;
+  --color-ice-700: #2e3e3e;
+  --color-ice-800: #1e2a2a;
+  --color-ice-900: #162020;
+  --color-ice-950: #0e1616;
+}
+
+/* Nuxt UI v4 reads --ui-*: we link them to the design system semantic tokens. */
+:root {
+  --ui-radius: 0.4rem;
+  --ui-header-height: var(--tm-header-h);
+
+  --ui-bg: var(--tm-bg);
+  --ui-bg-muted: var(--tm-surface-muted);
+  --ui-bg-elevated: var(--tm-surface);
+  --ui-bg-accented: var(--tm-surface-pressed);
+  --ui-bg-inverted: var(--tm-text);
+  --ui-border: var(--tm-border);
+  --ui-border-muted: var(--tm-border);
+  --ui-border-accented: var(--tm-border-strong);
+  --ui-border-inverted: var(--tm-text);
+  --ui-text-dimmed: var(--tm-text-muted);
+  --ui-text-muted: var(--tm-text-muted);
+  --ui-text-toned: var(--tm-text-muted);
+  --ui-text: var(--tm-text);
+  --ui-text-highlighted: var(--tm-text);
+  --ui-text-inverted: var(--tm-bg);
+
+  --ui-primary: var(--tm-primary);
+  --ui-success: var(--tm-success);
+  --ui-warning: var(--tm-warning);
+  --ui-error: var(--tm-danger);
+  --ui-info: var(--tm-info);
+}
+
+html {
+  font-family: var(--font-sans);
+  background: var(--tm-bg);
+  color: var(--tm-text);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.01em;
+}
+
+/* Logo: two images, only one visible per theme. */
+.tm-logo-light { display: var(--tm-logo-light-display); }
+.tm-logo-dark { display: var(--tm-logo-dark-display); }
+
+/* Uniform visible focus (design system). */
+:focus-visible {
+  outline: 2px solid var(--tm-focus);
+  outline-offset: 2px;
+}
