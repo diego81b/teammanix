@@ -1,25 +1,25 @@
-# Test e flusso TDD
+# Tests and TDD workflow
 
-Regola: ogni funzionalità e ogni bug parte da un test che fallisce. Si scrive il test, si vede rosso, si scrive il codice minimo, si vede verde, si ripulisce.
+Rule: every feature and every bug starts from a failing test. Write the test, see it red, write the minimum code, see it green, clean up.
 
-## Livelli
+## Levels
 
-| Livello | Dove | Cosa prova | Costo |
+| Level | Where | What it covers | Cost |
 |---|---|---|---|
-| Unit API | `apps/api/src/**/*.spec.ts` | Logica pura e classi con dipendenze finte (permessi, token, testi mail, guard) | secondi, senza Docker |
-| Integration API | `apps/api/test/*.int-spec.ts` | App Nest reale, Postgres 16 vero (Testcontainers), `app.inject`. Regole di business, tenant, ruoli, migrazioni | ~1 min, serve Docker |
-| Unit web | `apps/web/tests/unit/*.test.ts` | TypeScript puro: utils, parità delle lingue, contratto con l'API | secondi |
-| Nuxt web | `apps/web/tests/nuxt/*.test.ts` | Store, composable, componenti dentro il runtime Nuxt (happy-dom, API simulata con `registerEndpoint`) | secondi |
-| E2E | `apps/web/e2e/*.spec.ts` | Browser reale (Chrome) su web + API + DB di sviluppo. Pochi percorsi critici | ~20 s |
+| Unit API | `apps/api/src/**/*.spec.ts` | Pure logic and classes with fake dependencies (permissions, tokens, mail texts, guards) | seconds, no Docker |
+| Integration API | `apps/api/test/*.int-spec.ts` | Real Nest app, real Postgres 16 (Testcontainers), `app.inject`. Business rules, tenants, roles, migrations | ~1 min, needs Docker |
+| Unit web | `apps/web/tests/unit/*.test.ts` | Plain TypeScript: utils, language parity, API contract | seconds |
+| Nuxt web | `apps/web/tests/nuxt/*.test.ts` | Stores, composables, components inside the Nuxt runtime (happy-dom, API mocked with `registerEndpoint`) | seconds |
+| E2E | `apps/web/e2e/*.spec.ts` | Real browser (Chrome) against web + API + development DB. Few critical paths | ~20 s |
 
-Piramide: tanti unit, un buon numero di integration, pochissimi e2e. Un e2e si aggiunge solo per un percorso che attraversa tutto lo stack e il cui guasto blocca l'uso dell'app.
+Pyramid: many unit tests, a fair number of integration tests, very few e2e. Add an e2e only for a path that crosses the whole stack and whose failure blocks use of the app.
 
-## Comandi
+## Commands
 
 ```bash
 # API (apps/api)
-npm run test:unit        # veloce, ad ogni salvataggio: npm run test:watch
-npm run test:int         # richiede Docker acceso
+npm run test:unit        # fast, on every save: npm run test:watch
+npm run test:int         # requires Docker running
 npm test                 # unit + integration
 
 # Web (apps/web)
@@ -27,31 +27,31 @@ npm run test:unit
 npm run test:nuxt
 npm test                 # unit + nuxt
 npm run test:coverage
-npm run test:e2e         # vedi sotto
+npm run test:e2e         # see below
 ```
 
-### E2E: prerequisiti
+### E2E: prerequisites
 
-1. Database e API di sviluppo con l'outbox di test acceso (le mail con i token si leggono da `/api/__test/outbox`, attiva solo con `E2E_OUTBOX=1`, acceso in `apps/api/.env.dev`, e mai in produzione):
+1. Development database and API with the test outbox enabled (mails containing tokens are read from `/api/__test/outbox`, active only with `E2E_OUTBOX=1`, which is set in `apps/api/.env.dev` and never in production):
    `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d`
-2. Chrome installato (nessun browser viene scaricato). Il web dev server parte da solo se non è già attivo.
-3. Ogni test usa email uniche: il database di sviluppo non va ripulito. Non puntare mai gli e2e a un ambiente con dati veri.
+2. Chrome installed (no browser is downloaded). The web dev server starts by itself if it is not already running.
+3. Every test uses unique emails: the development database does not need cleaning. Never point the e2e tests at an environment with real data.
 
-Se l'API non è pronta, `e2e/global-setup.ts` si ferma subito con il comando da lanciare.
+If the API is not ready, `e2e/global-setup.ts` stops immediately and prints the command to run.
 
-## Convenzioni
+## Conventions
 
-- **Estrarre la logica in funzioni pure** e testarle per prime. Esempi: `decideAccess` (web, accesso alle rotte), `outboxEnabled`, `token.service`. La guardia o il componente restano un guscio sottile.
-- **API**: un file `*.spec.ts` accanto al sorgente per gli unit; gli integration usano `startEnvironment()` e `newUser()` da `test/helpers.ts`. Un test integration per ogni regola di tenant e per ogni ruolo che deve essere respinto.
-- **Web**: gli errori si testano per `code` dell'API, mai per il testo. `tests/unit/i18n.test.ts` fallisce se en/fr perdono una chiave, un segnaposto, o se l'API introduce un `code` senza traduzione: aggiungere il testo in `it.ts`, `en.ts`, `fr.ts` insieme al codice.
-- **Nuxt test**: i composable che usano `useI18n()` vanno eseguiti dentro `setup` (`inSetup` in `tests/nuxt/helpers.ts`). L'URL dell'API nei test è relativo (`baseApiRelative`) e gli endpoint finti si registrano con prefisso `/api`.
-- **E2E**: dopo `page.goto` usare `go()` (aspetta l'idratazione, in sviluppo i click prima vengono persi). Selezionare per ruolo e testo visibile, come farebbe una persona.
-- Un bug trovato in uso o in revisione si riproduce prima con un test, nel livello più basso che lo cattura, poi si corregge.
+- **Extract logic into pure functions** and test them first. Examples: `decideAccess` (web, route access), `outboxEnabled`, `token.service`. The guard or component stays a thin shell.
+- **API**: one `*.spec.ts` file next to the source for unit tests; integration tests use `startEnvironment()` and `newUser()` from `test/helpers.ts`. One integration test for every tenant rule and for every role that must be rejected.
+- **Web**: test errors by the API `code`, never by the text. `tests/unit/i18n.test.ts` fails if en/fr lose a key or a placeholder, or if the API introduces a `code` without a translation: add the text in `it.ts`, `en.ts`, `fr.ts` together with the code.
+- **Nuxt tests**: composables that use `useI18n()` must run inside `setup` (`inSetup` in `tests/nuxt/helpers.ts`). The API URL in tests is relative (`baseApiRelative`) and fake endpoints are registered with the `/api` prefix.
+- **E2E**: after `page.goto` use `go()` (it waits for hydration; in development, clicks made earlier are lost). Select by role and visible text, as a person would.
+- A bug found in use or in review is first reproduced with a test, at the lowest level that catches it, and then fixed.
 
-## Per ogni fetta nuova
+## For every new slice
 
-1. Scrivere le regole di business come test unit/integration (rosso): permessi per ruolo e ambito, isolamento tra società, validazioni, codici di errore.
-2. Implementare backend fino al verde.
-3. Scrivere i test Vitest di store e composable, poi la UI. Aggiungere i testi nelle tre lingue.
-4. Un e2e solo se nasce un percorso critico nuovo.
-5. Prima di chiudere: `npm test` in entrambe le app e `npm run test:e2e`.
+1. Write the business rules as unit/integration tests (red): permissions by role and scope, isolation between companies, validations, error codes.
+2. Implement the backend until green.
+3. Write the Vitest tests for stores and composables, then the UI. Add the texts in the three languages.
+4. An e2e only if a new critical path appears.
+5. Before closing: `npm test` in both apps and `npm run test:e2e`.

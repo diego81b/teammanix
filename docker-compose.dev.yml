@@ -1,4 +1,4 @@
-# TeamManix, overlay sviluppo: api in watch con sorgente montato, db esposto su :5433.
+# TeamManix, development overlay: api in watch mode with mounted source, db exposed on :5433.
 services:
   db:
     ports:
@@ -11,10 +11,11 @@ services:
     restart: unless-stopped
     depends_on:
       db: { condition: service_healthy }
-    # Configurazione dell'API: apps/api/.env.dev (default versionati), poi apps/api/.env (personale, facoltativo,
-    # non versionato) che li sovrascrive. Qui sotto restano solo i valori legati al container, che hanno la precedenza.
-    # Esempi per apps/api/.env: BREVO_API_KEY e MAIL_FROM_EMAIL (mail vere), E2E_OUTBOX=1 (espone le mail su
-    # /api/__test/outbox, serve agli e2e), STORAGE_DRIVER=s3 con le variabili S3_* di .env.prod.example.
+    # API configuration: apps/api/.env.dev (versioned defaults), then apps/api/.env (personal, optional,
+    # not versioned), which overrides them. Only container-bound values remain below, and they take precedence.
+    # Examples for apps/api/.env: BREVO_API_KEY and MAIL_FROM_EMAIL (real mail), E2E_OUTBOX=1 (exposes the mail on
+    # /api/__test/outbox, needed by the e2e tests), STORAGE_DRIVER=s3 with the S3_* variables listed in
+    # docker-compose.prod.yml.
     env_file:
       - apps/api/.env.dev
       - path: apps/api/.env
@@ -23,8 +24,8 @@ services:
       NODE_ENV: development
       PORT: "3001"
       DATABASE_URL: postgres://teammanix:${POSTGRES_PASSWORD:-devpassword}@db:5432/teammanix
-      # File sensibili: in sviluppo su disco (volume dedicato, fuori dal sorgente montato). La chiave di cifratura
-      # deriva da JWT_SECRET.
+      # Sensitive files: on disk in development (dedicated volume, outside the mounted source). The encryption key
+      # is derived from JWT_SECRET.
       STORAGE_DIR: /data/storage
     volumes:
       - ./apps/api:/app

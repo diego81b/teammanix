@@ -1,13 +1,13 @@
-# TeamManix, produzione su Coolify (Hetzner). File STANDALONE, non un overlay:
+# TeamManix, production on Coolify (Hetzner). STANDALONE file, not an overlay:
 #   docker compose -f docker-compose.prod.yml up -d --build
 #
-# Il DB è una risorsa Postgres gestita da Coolify (non definita qui): DATABASE_URL arriva dalle variabili
-# d'ambiente dell'applicazione in Coolify. Backup: schedulati dalla risorsa DB di Coolify (S3 esterno).
-# Routing e TLS: Traefik di Coolify. Le label di porta servono perché Traefik ha exposedbydefault=false;
-# Coolify aggiunge dominio e TLS al deploy.
-# Migrazioni e seed (idempotenti) girano all'avvio del container prima dell'api: se falliscono il
-# container non parte e Coolify mantiene la versione precedente.
-# Frontend: quando esiste, si aggiunge come secondo servizio con lo stesso schema di label.
+# The DB is a Postgres resource managed by Coolify (not defined here): DATABASE_URL comes from the application's
+# environment variables in Coolify. Backups: scheduled by Coolify's DB resource (external S3).
+# Routing and TLS: Coolify's Traefik. The port labels are needed because Traefik has exposedbydefault=false;
+# Coolify adds domain and TLS at deploy time.
+# Migrations and seed (idempotent) run at container start, before the api: if they fail, the
+# container does not start and Coolify keeps the previous version.
+# Frontend: when it exists, add it as a second service with the same label scheme.
 name: teammanix
 
 services:
@@ -23,23 +23,23 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3001"
-      DATABASE_URL: ${DATABASE_URL:?impostare DATABASE_URL}
-      JWT_SECRET: ${JWT_SECRET:?impostare JWT_SECRET}
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
-      APP_URL: ${APP_URL:?impostare APP_URL}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?impostare ALLOWED_ORIGINS}
-      BREVO_API_KEY: ${BREVO_API_KEY:?impostare BREVO_API_KEY}
-      MAIL_FROM_EMAIL: ${MAIL_FROM_EMAIL:?impostare MAIL_FROM_EMAIL}
+      APP_URL: ${APP_URL:?set APP_URL}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?set ALLOWED_ORIGINS}
+      BREVO_API_KEY: ${BREVO_API_KEY:?set BREVO_API_KEY}
+      MAIL_FROM_EMAIL: ${MAIL_FROM_EMAIL:?set MAIL_FROM_EMAIL}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-TeamManix}
-      # File sensibili (certificati medici e altri documenti): cifrati dall'app (AES-256-GCM) prima dell'upload su un
-      # bucket S3 compatibile (Cloudflare R2, Hetzner, MinIO). Senza queste variabili l'API non parte.
+      # Sensitive files (medical certificates and other documents): encrypted by the app (AES-256-GCM) before upload to an
+      # S3-compatible bucket (Cloudflare R2, Hetzner, MinIO). Without these variables the API does not start.
       STORAGE_DRIVER: s3
-      STORAGE_ENCRYPTION_KEY: ${STORAGE_ENCRYPTION_KEY:?impostare STORAGE_ENCRYPTION_KEY}
-      S3_ENDPOINT: ${S3_ENDPOINT:?impostare S3_ENDPOINT}
+      STORAGE_ENCRYPTION_KEY: ${STORAGE_ENCRYPTION_KEY:?set STORAGE_ENCRYPTION_KEY}
+      S3_ENDPOINT: ${S3_ENDPOINT:?set S3_ENDPOINT}
       S3_REGION: ${S3_REGION:-auto}
-      S3_BUCKET: ${S3_BUCKET:?impostare S3_BUCKET}
-      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?impostare S3_ACCESS_KEY_ID}
-      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?impostare S3_SECRET_ACCESS_KEY}
+      S3_BUCKET: ${S3_BUCKET:?set S3_BUCKET}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?set S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?set S3_SECRET_ACCESS_KEY}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001/api/health || exit 1"]
       interval: 30s

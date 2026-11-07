@@ -1,4 +1,4 @@
-# TeamManix, base SVILUPPO: solo il database. Si combina con docker-compose.dev.yml:
+# TeamManix, DEVELOPMENT base: database only. Combine it with docker-compose.dev.yml:
 #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 name: teammanix
 
