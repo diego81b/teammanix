@@ -32,7 +32,7 @@ describe('auth', () => {
     expect(existing.status).toBe(202);
     expect(existing.body).toEqual(fresh.body);
     // The owner gets a different mail: verification the first time, the notice the second.
-    const mail = t.mail.outbox.filter((m) => m.a === 'anti@test.it').map((m) => m.subject);
+    const mail = t.mail.outbox.filter((m) => m.to === 'anti@test.it').map((m) => m.subject);
     expect(mail).toEqual(['TeamManix: conferma la tua email', 'TeamManix: hai già un account']);
   });
 
@@ -46,7 +46,7 @@ describe('auth', () => {
       expect(second.status).toBe(202);
       expect(second.body).toEqual(before.body);
       // Two verification mails, no "you already have an account" notice.
-      const mail = t.mail.outbox.filter((m) => m.a === 'sov@test.it').map((m) => m.subject);
+      const mail = t.mail.outbox.filter((m) => m.to === 'sov@test.it').map((m) => m.subject);
       expect(mail).toEqual(['TeamManix: conferma la tua email', 'TeamManix: conferma la tua email']);
 
       expect((await t.req('POST', '/auth/verify-email', { body: { token: t.tokenFromMail('sov@test.it') } })).status).toBe(200);
@@ -70,7 +70,7 @@ describe('auth', () => {
     it('the language is the one from the last request', async () => {
       await register('language-sov@test.it', { password: PASSWORD, name: 'A', language: 'it' });
       await register('language-sov@test.it', { password: PASSWORD, name: 'A', language: 'fr' });
-      const last = [...t.mail.outbox].reverse().find((m) => m.a === 'language-sov@test.it');
+      const last = [...t.mail.outbox].reverse().find((m) => m.to === 'language-sov@test.it');
       expect(last?.subject).toBe('TeamManix : confirmez votre adresse e-mail');
       expect(await t.orm.em.fork().findOneOrFail('User', { email: 'language-sov@test.it' })).toMatchObject({ language: 'fr' });
     });
@@ -85,7 +85,7 @@ describe('auth', () => {
       await t.newUser('verified@test.it', 'Original');
       const r = await register('verified@test.it', { password: 'new-password-123', name: 'Intruso' });
       expect(r.status).toBe(202);
-      expect(t.mail.outbox.filter((m) => m.a === 'verified@test.it').at(-1)?.subject).toBe('TeamManix: hai già un account');
+      expect(t.mail.outbox.filter((m) => m.to === 'verified@test.it').at(-1)?.subject).toBe('TeamManix: hai già un account');
       const login = await t.req('POST', '/auth/login', { body: { email: 'verified@test.it', password: PASSWORD } });
       expect(login.status).toBe(200);
       expect(login.body.user.name).toBe('Original');
@@ -99,7 +99,7 @@ describe('auth', () => {
       expect(r.status).toBe(202);
       const u = await t.orm.em.fork().findOneOrFail('User', { email: 'disatt@test.it' });
       expect(u).toMatchObject({ name: 'Original' });
-      expect(t.mail.outbox.filter((m) => m.a === 'disatt@test.it').at(-1)?.subject).toBe('TeamManix: hai già un account');
+      expect(t.mail.outbox.filter((m) => m.to === 'disatt@test.it').at(-1)?.subject).toBe('TeamManix: hai già un account');
     });
   });
 
@@ -205,7 +205,7 @@ describe('auth', () => {
 
   describe('language', () => {
     const base = { password: PASSWORD, name: 'Awa', surname: 'Diop', acceptTerms: true };
-    const last = (a: string) => t.mail.outbox.filter((m) => m.a === a).at(-1)!;
+    const last = (a: string) => t.mail.outbox.filter((m) => m.to === a).at(-1)!;
 
     it('registration in French: verification email in French and language saved', async () => {
       const r = await t.req('POST', '/auth/registration', { body: { ...base, email: 'awa@test.it', language: 'fr' } });

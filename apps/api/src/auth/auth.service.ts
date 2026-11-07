@@ -48,7 +48,7 @@ export class AuthService {
     if (existing && (existing.emailVerifiedAt || existing.deactivatedAt)) {
       // The language is the one of the request, not the stored one: whoever writes now reads it.
       await this.mail.send({
-        a: existing.email,
+        to: existing.email,
         ...TEXTS_MAIL.alreadyRegistered[dto.language ?? existing.language]({ link: `${appConfig().appUrl}/login` }),
       });
       return { message: MESSAGE_NEUTRAL };
@@ -146,7 +146,7 @@ export class AuthService {
     if (user && !user.deactivatedAt) {
       const token = await this.tokens.reset(user.id, user.passwordHash);
       await this.mail.send({
-        a: user.email,
+        to: user.email,
         ...TEXTS_MAIL.resetPassword[user.language]({ link: `${appConfig().appUrl}/reset-password?token=${token}` }),
       });
     }
@@ -182,7 +182,7 @@ export class AuthService {
   private async sendVerify(user: User): Promise<void> {
     const token = await this.tokens.emailVerify(user.id, user.passwordHash);
     await this.mail.send({
-      a: user.email,
+      to: user.email,
       ...TEXTS_MAIL.verifyEmail[user.language]({ name: user.name, link: `${appConfig().appUrl}/verify-email?token=${token}` }),
     });
   }

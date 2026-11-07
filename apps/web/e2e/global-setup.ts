@@ -4,7 +4,7 @@ const API = process.env.E2E_API_URL ?? 'http://localhost:3001/api'
 export default async function globalSetup() {
   let r: Response
   try {
-    r = await fetch(`${API}/__test/outbox?a=ping@e2e.test`)
+    r = await fetch(`${API}/__test/outbox?to=ping@e2e.test`)
   }
   catch {
     throw new Error(`API not reachable at ${API}. Start it: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d`)

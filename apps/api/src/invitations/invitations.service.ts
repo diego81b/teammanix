@@ -150,7 +150,7 @@ export class InvitationsService {
   private async sendMail(invitation: Invitation, clubId: string, token: string): Promise<void> {
     const club = await this.em.findOneOrFail(Club, clubId);
     await this.mail.send({
-      a: invitation.email,
+      to: invitation.email,
       ...TEXTS_MAIL.invitation[invitation.language]({ club: club.name, days: INVITATION_DAYS, link: `${appConfig().appUrl}/invitation?token=${token}` }),
     });
   }

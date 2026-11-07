@@ -112,12 +112,12 @@ describe('clubs and invitations', () => {
     const a = await admin('fr-admin@test.it', 'Club Dakar');
     // Without a language in the body: inherits the inviter's (Italian).
     await t.req('POST', '/invitations', { token: a.token, body: { email: 'it-inv@test.it', role: 'manager' } });
-    expect(t.mail.outbox.filter((m) => m.a === 'it-inv@test.it').at(-1)!.subject).toBe('Invito a Club Dakar su TeamManix');
+    expect(t.mail.outbox.filter((m) => m.to === 'it-inv@test.it').at(-1)!.subject).toBe('Invito a Club Dakar su TeamManix');
 
     const fr = await t.req('POST', '/invitations', { token: a.token, body: { email: 'fr-inv@test.it', role: 'manager', language: 'fr' } });
     expect(fr.status).toBe(201);
     expect(fr.body.language).toBe('fr');
-    const mail = t.mail.outbox.filter((m) => m.a === 'fr-inv@test.it').at(-1)!;
+    const mail = t.mail.outbox.filter((m) => m.to === 'fr-inv@test.it').at(-1)!;
     expect(mail.subject).toBe('Invitation à Club Dakar sur TeamManix');
     expect(mail.text).toContain('Vous avez reçu une invitation');
 
@@ -146,7 +146,7 @@ describe('clubs and invitations', () => {
     const existingToken = t.tokenInvitation('existing@test.it');
     const newToken = t.tokenInvitation('new@test.it');
     // The mail does not change with the account's existence (same structure, no hint).
-    const body = (a: string) => t.mail.outbox.filter((m) => m.a === a).at(-1)!.text.replace(/token=\S+/, 'token=#');
+    const body = (a: string) => t.mail.outbox.filter((m) => m.to === a).at(-1)!.text.replace(/token=\S+/, 'token=#');
     expect(body('existing@test.it')).toBe(body('new@test.it'));
 
     const fresh = await t.newUser('new@test.it');
@@ -192,7 +192,7 @@ describe('clubs and invitations', () => {
     await t.req('POST', '/invitations', { token: a.token, body: { email: 'gio@test.it', role: 'player', personId: p1 } });
     const inv2 = await t.req('POST', '/invitations', { token: a.token, body: { email: 'gio@test.it', role: 'player', personId: p2 } });
     expect(inv2.status).toBe(201);
-    const mails = t.mail.outbox.filter((m) => m.a === 'gio@test.it' && m.subject.startsWith('Invito'));
+    const mails = t.mail.outbox.filter((m) => m.to === 'gio@test.it' && m.subject.startsWith('Invito'));
     const [tok1, tok2] = mails.map((m) => /token=(\S+)/.exec(m.text)![1]!);
 
     const g = await t.newUser('gio@test.it');

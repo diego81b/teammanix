@@ -12,13 +12,13 @@ export interface Environment {
   orm: MikroORM;
   /** Temporary folder for encrypted files, removed on close. */
   storageDir: string;
-  mail: { outbox: { a: string; subject: string; text: string }[] };
+  mail: { outbox: { to: string; subject: string; text: string }[] };
   close: () => Promise<void>;
   req: (method: string, url: string, options?: { body?: unknown; token?: string }) => Promise<{ status: number; body: any }>;
   /** Registers, verifies and logs in. Returns the session. */
   newUser: (email: string, name?: string) => Promise<any>;
-  tokenFromMail: (a: string, subject?: string) => string;
-  tokenInvitation: (a: string) => string;
+  tokenFromMail: (to: string, subject?: string) => string;
+  tokenInvitation: (to: string) => string;
 }
 
 export async function startEnvironment(): Promise<Environment> {
@@ -55,14 +55,14 @@ export async function startEnvironment(): Promise<Environment> {
     return { status: r.statusCode, body };
   };
 
-  const tokenFromMail = (a: string, subject = ''): string => {
-    const m = [...mail.outbox].reverse().find((x) => x.a === a.toLowerCase() && x.subject.startsWith(subject));
+  const tokenFromMail = (to: string, subject = ''): string => {
+    const m = [...mail.outbox].reverse().find((x) => x.to === to.toLowerCase() && x.subject.startsWith(subject));
     const t = m && /token=(\S+)/.exec(m.text)?.[1];
-    if (!t) throw new Error(`nessuna mail con token per ${a}`);
+    if (!t) throw new Error(`no mail with token for ${to}`);
     return t;
   };
 
-  const tokenInvitation = (a: string) => tokenFromMail(a, 'Invito');
+  const tokenInvitation = (to: string) => tokenFromMail(to, 'Invito');
 
   const newUser = async (email: string, name = 'Mario') => {
     const r = await req('POST', '/auth/registration', {

@@ -2,7 +2,7 @@ import { BrevoClient } from '@getbrevo/brevo';
 import { Injectable, Logger } from '@nestjs/common';
 
 export interface Mail {
-  a: string;
+  to: string;
   subject: string;
   text: string;
 }
@@ -41,7 +41,7 @@ export class MailService {
     }
     if (!this.brevo) {
       // The body contains links with tokens: it goes in the logs only without a real transport and outside production.
-      this.logger.log(`mail to ${mail.a}: ${mail.subject}\n${mail.text}`);
+      this.logger.log(`mail to ${mail.to}: ${mail.subject}\n${mail.text}`);
       return true;
     }
     try {
@@ -49,12 +49,12 @@ export class MailService {
         subject: mail.subject,
         textContent: mail.text,
         sender: this.sender,
-        to: [{ email: mail.a }],
+        to: [{ email: mail.to }],
       });
-      this.logger.log(`mail to ${mail.a}: ${mail.subject}`);
+      this.logger.log(`mail to ${mail.to}: ${mail.subject}`);
       return true;
     } catch (err) {
-      this.logger.error(`send failed to ${mail.a} (${mail.subject}): ${(err as Error).message}`);
+      this.logger.error(`send failed to ${mail.to} (${mail.subject}): ${(err as Error).message}`);
       return false;
     }
   }

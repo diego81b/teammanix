@@ -16,10 +16,10 @@ describe('test outbox (E2E_OUTBOX=1)', () => {
     await scope.req('POST', '/auth/registration', {
       body: { email: 'outbox@test.it', password: 'password-long-123', name: 'O', surname: 'B', acceptTerms: true },
     });
-    const r = await scope.req('GET', '/__test/outbox?a=Outbox@Test.it');
+    const r = await scope.req('GET', '/__test/outbox?to=Outbox@Test.it');
     expect(r.status).toBe(200);
     expect(r.body).toHaveLength(1);
-    expect(r.body[0].a).toBe('outbox@test.it');
+    expect(r.body[0].to).toBe('outbox@test.it');
     expect(r.body[0].text).toMatch(/token=/);
   });
 

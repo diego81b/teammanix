@@ -8,9 +8,9 @@ export class OutboxController {
 
   @Public()
   @Get()
-  list(@Query('a') a?: string) {
-    if (!a) return [];
-    const recipient = a.toLowerCase();
-    return this.mail.outbox.filter((m) => m.a.toLowerCase() === recipient);
+  list(@Query('to') to?: string) {
+    if (!to) return [];
+    const recipient = to.toLowerCase();
+    return this.mail.outbox.filter((m) => m.to.toLowerCase() === recipient);
   }
 }

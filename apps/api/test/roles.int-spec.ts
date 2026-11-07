@@ -66,9 +66,9 @@ describe('invitations (resend) and access roles', () => {
     it('the mail goes out in the invitation language', async () => {
       const a = await admin('rei-3@test.it');
       const inv = await t.req('POST', '/invitations', { token: a.token, body: { email: 'fr@test.it', role: 'manager', language: 'fr' } });
-      const before = t.mail.outbox.filter((m) => m.a === 'fr@test.it').length;
+      const before = t.mail.outbox.filter((m) => m.to === 'fr@test.it').length;
       await t.req('POST', `/invitations/${inv.body.id}/resend`, { token: a.token });
-      const mail = t.mail.outbox.filter((m) => m.a === 'fr@test.it');
+      const mail = t.mail.outbox.filter((m) => m.to === 'fr@test.it');
       expect(mail).toHaveLength(before + 1);
       expect(mail.at(-1)!.subject.startsWith('Invitation')).toBe(true);
     });
