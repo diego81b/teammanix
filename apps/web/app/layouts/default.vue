@@ -83,9 +83,10 @@ const colorMode = useColorMode()
 const { t } = useI18n()
 const { locale, languages, set } = useLanguage()
 
-// Administration items are for the admin only (the API rejects them for others anyway). Items for other roles arrive with later slices.
+// Administration items are for the admin only (the API rejects them for others anyway). The calendar is for every role.
 const items = computed(() => [
   { label: t('shell.home'), icon: 'i-tm-home', to: '/' },
+  { label: t('shell.calendar'), icon: 'i-tm-calendar', to: '/calendar' },
   ...(session.isAdmin
     ? [
         { label: t('shell.structure'), icon: 'i-tm-building', to: '/structure' },

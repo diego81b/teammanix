@@ -52,7 +52,7 @@ const invalidData = () => new BadRequestException({ message: 'Invalid data', cod
 const outsideSeason = () => new BadRequestException({ message: 'The event falls outside the season dates', code: 'EVENT_OUTSIDE_SEASON' });
 const seasonClosed = () => new ConflictException({ message: 'The season is closed', code: 'SEASON_CLOSED' });
 
-function toEventDto(e: Event, teamId: string): EventDto {
+export function toEventDto(e: Event, teamId: string): EventDto {
   return {
     id: e.id,
     seasonId: e.season.id,

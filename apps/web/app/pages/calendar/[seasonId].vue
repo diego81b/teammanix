@@ -17,40 +17,18 @@
           <h1 class="text-2xl font-bold">{{ $t('events.title') }}</h1>
           <UButton v-if="data.access.canManage" size="lg" class="min-h-11" icon="i-tm-plus" :label="$t('events.newEvent')" @click="openNew" />
         </div>
+        <CalendarSwitch :current="seasonId" :seasons="data.seasons" :has-mine="data.mine.length > 0" />
         <UAlert v-if="!data.access.canManage" color="neutral" variant="subtle" icon="i-tm-lock" :title="$t('events.readOnly')" />
         <UAlert v-if="errorAction" color="error" variant="subtle" icon="i-tm-error" :title="errorAction" />
       </div>
 
-      <p v-if="groups.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">
-        {{ $t('events.empty') }}
-      </p>
-
-      <section v-for="g in groups" :key="g.day" class="space-y-2" :aria-label="formatDay(g.day, locale)">
-        <h2 class="text-sm font-semibold text-muted first-letter:uppercase">{{ formatDay(g.day, locale) }}</h2>
-        <ul class="space-y-2">
-          <li v-for="e in g.events" :key="e.id" class="flex items-start gap-3 rounded-lg border border-default bg-elevated p-3">
-            <UIcon :name="icon(e.type)" class="mt-1 size-5 shrink-0 text-muted" aria-hidden="true" />
-            <div class="min-w-0 flex-1 space-y-1">
-              <p class="flex flex-wrap items-center gap-2">
-                <span class="font-semibold" :class="e.status === 'cancelled' ? 'line-through' : ''">{{ heading(e) }}</span>
-                <UBadge v-if="e.seriesId" color="neutral" variant="subtle" icon="i-tm-calendar" :label="$t('events.seriesBadge')" />
-                <UBadge v-if="e.status !== 'scheduled'" :color="e.status === 'cancelled' ? 'error' : 'warning'" variant="subtle" :label="$t(`events.status.${e.status}`)" />
-              </p>
-              <p class="text-sm text-muted">
-                {{ splitInstant(e.start).time }} - {{ splitInstant(e.end).time }}
-                <template v-if="e.title && e.opponent"> · {{ e.opponent.name }}</template>
-                <template v-if="e.venue"> · {{ e.venue.name }}</template>
-                <template v-if="e.homeAway"> · {{ $t(`events.homeAway.${e.homeAway}`) }}</template>
-                <template v-if="e.competition"> · {{ e.competition }}</template>
-              </p>
-              <p v-if="e.note" class="text-sm">{{ e.note }}</p>
-            </div>
-            <UDropdownMenu v-if="data.access.canManage && menu(e).length" :items="menu(e)" :content="{ align: 'end' }">
-              <UButton color="neutral" variant="ghost" icon="i-tm-dots-v" class="min-h-11 min-w-11" :aria-label="$t('events.actionsFor', { name: heading(e) })" />
-            </UDropdownMenu>
-          </li>
-        </ul>
-      </section>
+      <CalendarView :events="data.list">
+        <template #actions="{ event }">
+          <UDropdownMenu v-if="data.access.canManage && menu(event as EventDto).length" :items="menu(event as EventDto)" :content="{ align: 'end' }">
+            <UButton color="neutral" variant="ghost" icon="i-tm-dots-v" class="min-h-11 min-w-11" :aria-label="$t('events.actionsFor', { name: eventHeading(event, key => t(key)) })" />
+          </UDropdownMenu>
+        </template>
+      </CalendarView>
 
       <EventForm v-model:open="open.form" :team-id="data.access.teamId" :season-id="seasonId" :event="choice" @saved="load" />
       <UModal
@@ -75,28 +53,28 @@
 
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui'
-import type { EventDto, EventType } from '~/types/api'
-import { formatDay } from '~/utils/date'
-import { eventActions, groupByDay, splitInstant } from '~/utils/event'
+import type { EventDto } from '~/types/api'
+import { eventHeading } from '~/utils/calendar'
+import { eventActions } from '~/utils/event'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const route = useRoute()
 const session = useSessionStore()
 const events = useEvents()
+const calendar = useCalendar()
 const seasonId = computed(() => String(route.params.seasonId))
 const back = computed(() => (session.isAdmin ? `/seasons/${seasonId.value}` : '/'))
 
 const { data, loading, error, reload: load } = useLoad(async () => {
-  const [list, access] = await Promise.all([events.list(seasonId.value), events.access(seasonId.value)])
-  return { list, access }
+  const [list, access, mine, seasons] = await Promise.all([
+    events.list(seasonId.value),
+    events.access(seasonId.value),
+    calendar.mine(),
+    calendar.seasons(),
+  ])
+  return { list, access, mine, seasons }
 })
-const groups = computed(() => groupByDay(data.value?.list ?? []))
 useHead({ title: () => `${t('events.title')} · TeamManix` })
-
-const ICONS: Record<EventType, string> = { training: 'i-tm-training', match: 'i-tm-match', other: 'i-tm-calendar' }
-const icon = (type: EventType) => ICONS[type]
-/** Title if there is one, else opponent for a match, else the type name. */
-const heading = (e: EventDto) => e.title || (e.opponent ? `${t('events.type.match')}: ${e.opponent.name}` : t(`events.type.${e.type}`))
 
 const open = reactive({ form: false, confirm: false })
 const choice = ref<EventDto | null>(null)

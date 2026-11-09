@@ -15,3 +15,15 @@ export function formatDay(day: string, language: string): string {
   if (Number.isNaN(d.getTime())) return '-'
   return new Intl.DateTimeFormat(LOCALE[language] ?? 'it-IT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(d).replace(',', '')
 }
+
+/** Month and year ("ottobre 2026"). `month` is 1 to 12. */
+export function formatMonth(m: { year: number, month: number }, language: string): string {
+  const d = new Date(Date.UTC(m.year, m.month - 1, 1))
+  return new Intl.DateTimeFormat(LOCALE[language] ?? 'it-IT', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(d)
+}
+
+/** Short weekday names, Monday first. 2026-10-05 is a Monday. */
+export function weekdayLabels(language: string): string[] {
+  const f = new Intl.DateTimeFormat(LOCALE[language] ?? 'it-IT', { weekday: 'short', timeZone: 'UTC' })
+  return Array.from({ length: 7 }, (_, i) => f.format(new Date(Date.UTC(2026, 9, 5 + i))))
+}

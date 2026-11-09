@@ -313,3 +313,20 @@ export interface SeriesDto {
   durationMinutes: number
   eventCount: number
 }
+
+/** An event in the personal calendar or the home: the event plus where it belongs. */
+export interface CalendarEntryDto extends EventDto {
+  teamName: string
+  seasonName: string
+  seasonStatus: SeasonStatus
+}
+
+/** A team season whose calendar the person can open. */
+export interface CalendarSeasonDto {
+  seasonId: string
+  seasonName: string
+  seasonStatus: SeasonStatus
+  teamId: string
+  teamName: string
+  activityName: string
+}

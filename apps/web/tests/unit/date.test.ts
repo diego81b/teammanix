@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDate, formatDay } from '../../app/utils/date'
+import { formatDate, formatDay, formatMonth, weekdayLabels } from '../../app/utils/date'
 
 describe('formatDate', () => {
   it('formats an ISO date without shifting the timezone', () => {
@@ -20,4 +20,19 @@ describe('formatDay', () => {
     expect(formatDay('2026-10-06', 'en')).toBe('Tuesday 6 October')
   })
   it('without a valid day it returns a dash', () => expect(formatDay('', 'it')).toBe('-'))
+})
+
+describe('formatMonth and weekdayLabels', () => {
+  it('names the month and year in the language', () => {
+    expect(formatMonth({ year: 2026, month: 10 }, 'it')).toBe('ottobre 2026')
+    expect(formatMonth({ year: 2026, month: 10 }, 'en')).toBe('October 2026')
+    expect(formatMonth({ year: 2027, month: 1 }, 'fr')).toBe('janvier 2027')
+  })
+  it('gives seven short weekday names starting on Monday', () => {
+    const it = weekdayLabels('it')
+    expect(it).toHaveLength(7)
+    expect(it[0]!.toLowerCase()).toMatch(/^lun/)
+    expect(it[6]!.toLowerCase()).toMatch(/^dom/)
+    expect(weekdayLabels('en')[0]).toBe('Mon')
+  })
 })
