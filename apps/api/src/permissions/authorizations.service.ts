@@ -6,6 +6,7 @@ import { Activity } from '../entities/activity.entity';
 import { SeasonStatus, EnrollmentType } from '../entities/enums';
 import { Enrollment } from '../entities/enrollment.entity';
 import { Event } from '../entities/event.entity';
+import { EventSeries } from '../entities/event-series.entity';
 import { Team } from '../entities/team.entity';
 import { Season } from '../entities/season.entity';
 import { targetFromActivity, targetFromClub, targetFromTeam, sourcesFrom } from './sources';
@@ -18,7 +19,8 @@ export type Goal =
   | { teamId: string }
   | { seasonId: string }
   | { enrollmentId: string }
-  | { eventId: string };
+  | { eventId: string }
+  | { seriesId: string };
 
 /**
  * Applies the policies (rule 14) with the role's scope. The handler says which policy is needed and what the
@@ -72,6 +74,11 @@ export class AuthorizationsService {
       const ev = await this.em.findOne(Event, { id: on.eventId, club: clubId }, { ...options, populate: ['season.team.activity'] });
       if (!ev) throw new NotFoundException({ message: 'Event not found', code: 'EVENT_NOT_FOUND' });
       return targetFromTeam(ev.season.team.activity.id, ev.season.team.id);
+    }
+    if ('seriesId' in on) {
+      const sr = await this.em.findOne(EventSeries, { id: on.seriesId, club: clubId }, { ...options, populate: ['season.team.activity'] });
+      if (!sr) throw new NotFoundException({ message: 'Series not found', code: 'SERIES_NOT_FOUND' });
+      return targetFromTeam(sr.season.team.activity.id, sr.season.team.id);
     }
     const i = await this.em.findOne(Enrollment, { id: on.enrollmentId, club: clubId }, { ...options, populate: ['season.team.activity'] });
     if (!i) throw new NotFoundException({ message: 'Enrollment not found', code: 'ENROLLMENT_NOT_FOUND' });

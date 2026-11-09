@@ -1,5 +1,6 @@
-import type { EventDto, OpponentDto, VenueDto } from '../types/api'
+import type { EventDto, OpponentDto, SeriesDto, VenueDto } from '../types/api'
 import type { EventPayload } from '../utils/event'
+import type { SeriesCreatePayload, SeriesEditPayload } from '../utils/series'
 
 /** Events, venues and opponents (slice 3). Writes need `events.manage` in the team; the API decides. */
 export function useEvents() {
@@ -15,6 +16,13 @@ export function useEvents() {
       api<EventDto>(`/teams/${teamId}/events`, { method: 'POST', body: { ...data } }),
     edit: (id: string, data: Partial<EventPayload>) =>
       api<EventDto>(`/events/${id}`, { method: 'PATCH', body: { ...data } }),
+    /** Recurring trainings: the API creates the real events. */
+    createSeries: (teamId: string, data: SeriesCreatePayload) =>
+      api<SeriesDto>(`/teams/${teamId}/series`, { method: 'POST', body: { ...data } }),
+    series: (id: string) => api<SeriesDto>(`/series/${id}`),
+    /** "All future ones". "Only this one" is `edit` on the event. */
+    editSeries: (id: string, data: SeriesEditPayload) =>
+      api<SeriesDto>(`/series/${id}`, { method: 'PATCH', body: { ...data } }),
     cancel: (id: string) => api<EventDto>(`/events/${id}/cancel`, { method: 'POST', body: {} }),
     postpone: (id: string) => api<EventDto>(`/events/${id}/postpone`, { method: 'POST', body: {} }),
     createVenue: (data: { name: string, address?: string }) =>

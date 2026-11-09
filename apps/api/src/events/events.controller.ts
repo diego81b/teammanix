@@ -3,8 +3,9 @@ import type { AuthContext } from '../common/auth-context';
 import { CurrentAuth } from '../common/decorators';
 import { EventStatus } from '../entities/enums';
 import { CatalogService } from './catalog.service';
-import { CreateEventDto, CreateVenueDto, EditEventDto, EditVenueDto } from './dto';
+import { CreateEventDto, CreateSeriesDto, CreateVenueDto, EditEventDto, EditSeriesDto, EditVenueDto } from './dto';
 import { EventsService } from './events.service';
+import { SeriesService } from './series.service';
 
 /** Writes need the `events.manage` policy in the scope of the team (rule 14); reads follow ANALISI section 6. */
 @Controller()
@@ -12,6 +13,7 @@ export class EventsController {
   constructor(
     private readonly events: EventsService,
     private readonly catalog: CatalogService,
+    private readonly series: SeriesService,
   ) {}
 
   @Get('venues')
@@ -37,6 +39,22 @@ export class EventsController {
   @Post('teams/:id/events')
   create(@CurrentAuth() a: AuthContext, @Param('id', ParseUUIDPipe) id: string, @Body() dto: CreateEventDto) {
     return this.events.create(a, id, dto);
+  }
+
+  @Post('teams/:id/series')
+  createSeries(@CurrentAuth() a: AuthContext, @Param('id', ParseUUIDPipe) id: string, @Body() dto: CreateSeriesDto) {
+    return this.series.create(a, id, dto);
+  }
+
+  @Get('series/:id')
+  getSeries(@CurrentAuth() a: AuthContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.series.get(a, id);
+  }
+
+  /** "All future ones". Editing "only this one" is `PATCH events/:id`. */
+  @Patch('series/:id')
+  editSeries(@CurrentAuth() a: AuthContext, @Param('id', ParseUUIDPipe) id: string, @Body() dto: EditSeriesDto) {
+    return this.series.edit(a, id, dto);
   }
 
   @Get('seasons/:id/events')

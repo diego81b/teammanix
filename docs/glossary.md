@@ -28,6 +28,8 @@ Code is in English. Italian stays only in user-facing texts (i18n locales, email
 | avversario | opponent | |
 | impianto | venue | |
 | evento | event | |
+| serie (di allenamenti) | series | weekly rule that creates real events; `occurrenceDate` is the slot of an event in it |
+| eccezione | exception | event of a series edited by hand, skipped by "all future ones" |
 | tutore | guardian | |
 | scheda | record | person record to complete |
 | tema, lingua | theme, language | |

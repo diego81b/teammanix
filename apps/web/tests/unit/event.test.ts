@@ -10,7 +10,7 @@ const form = (over: Partial<EventForm> = {}): EventForm => ({
 const event = (over: Partial<EventDto> = {}): EventDto => ({
   id: 'e1', seasonId: 's1', teamId: 't1', type: 'training', title: null,
   start: '2026-10-06T16:00:00.000Z', end: '2026-10-06T17:30:00.000Z', venue: null, note: null,
-  status: 'scheduled', opponent: null, homeAway: null, competition: null, ...over,
+  status: 'scheduled', opponent: null, homeAway: null, competition: null, seriesId: null, exception: false, ...over,
 })
 
 describe('toInstant and splitInstant', () => {

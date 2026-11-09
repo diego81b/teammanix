@@ -33,6 +33,10 @@ export interface EventDto {
   venue: { id: string; name: string } | null;
   note: string | null;
   status: EventStatus;
+  /** The series that made it, or null for an event planned one by one. */
+  seriesId: string | null;
+  /** Edited by hand: "all future ones" does not touch it. */
+  exception: boolean;
   opponent: { id: string; name: string } | null;
   homeAway: HomeAway | null;
   competition: string | null;
@@ -60,6 +64,8 @@ function toEventDto(e: Event, teamId: string): EventDto {
     venue: e.venue ? { id: e.venue.id, name: e.venue.name } : null,
     note: e.note,
     status: e.status,
+    seriesId: e.series?.id ?? null,
+    exception: e.exception,
     opponent: e.opponent ? { id: e.opponent.id, name: e.opponent.name } : null,
     homeAway: e.homeAway,
     competition: e.competition,
@@ -154,6 +160,8 @@ export class EventsService {
     e.competition = fields.competition;
     if (dto.title !== undefined) e.title = dto.title;
     if (dto.note !== undefined) e.note = dto.note;
+    // A session changed by hand no longer follows its series ("all future ones" skips it).
+    if (e.series) e.exception = true;
     // Giving a postponed event new dates schedules it again.
     if (e.status === EventStatus.POSTPONED && datesChanged) e.status = EventStatus.SCHEDULED;
     await this.em.flush();

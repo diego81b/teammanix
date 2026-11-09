@@ -5437,6 +5437,22 @@
           "enumItems": [],
           "mappedType": "uuid"
         },
+        "occurrence_date": {
+          "name": "occurrence_date",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 0,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "date"
+        },
         "exception": {
           "name": "exception",
           "type": "boolean",
@@ -5681,6 +5697,15 @@
           "constraint": false,
           "primary": false,
           "unique": false
+        },
+        {
+          "keyName": "events_series_occurrence_uq",
+          "columnNames": [],
+          "composite": false,
+          "constraint": false,
+          "primary": false,
+          "unique": false,
+          "expression": "create unique index \"events_series_occurrence_uq\" on \"events\" (\"series_id\", \"occurrence_date\") where \"series_id\" is not null"
         },
         {
           "keyName": "events_club_id_start_index",

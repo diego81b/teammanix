@@ -289,4 +289,27 @@ export interface EventDto {
   opponent: { id: string, name: string } | null
   homeAway: HomeAway | null
   competition: string | null
+  /** The series that made it, or null for an event planned one by one. */
+  seriesId: string | null
+  /** Edited by hand: "all future ones" does not touch it. */
+  exception: boolean
+}
+
+export type Weekday = 'MO' | 'TU' | 'WE' | 'TH' | 'FR' | 'SA' | 'SU'
+
+/** Recurring trainings: a weekly rule that makes real events. Days are club-local, the time is the club's wall clock. */
+export interface SeriesDto {
+  id: string
+  seasonId: string
+  teamId: string
+  type: EventType
+  title: string | null
+  venue: { id: string, name: string } | null
+  weekdays: Weekday[]
+  intervalWeeks: number
+  startDate: string
+  endDate: string
+  timeStart: string
+  durationMinutes: number
+  eventCount: number
 }

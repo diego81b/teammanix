@@ -33,6 +33,7 @@
             <div class="min-w-0 flex-1 space-y-1">
               <p class="flex flex-wrap items-center gap-2">
                 <span class="font-semibold" :class="e.status === 'cancelled' ? 'line-through' : ''">{{ heading(e) }}</span>
+                <UBadge v-if="e.seriesId" color="neutral" variant="subtle" icon="i-tm-calendar" :label="$t('events.seriesBadge')" />
                 <UBadge v-if="e.status !== 'scheduled'" :color="e.status === 'cancelled' ? 'error' : 'warning'" variant="subtle" :label="$t(`events.status.${e.status}`)" />
               </p>
               <p class="text-sm text-muted">

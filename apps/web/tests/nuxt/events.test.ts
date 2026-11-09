@@ -60,6 +60,18 @@ describe('useEvents', () => {
     expect((await ev.postpone('e1')).status).toBe('postponed')
   })
 
+  it('creates, reads and edits a series with the right paths', async () => {
+    endpoint('/teams/t1/series', { id: 'sr1', eventCount: 4 })
+    endpoint('/series/sr1', { id: 'sr1', timeStart: '19:00' })
+    const ev = useEvents()
+    const body = { type: 'training' as const, title: null, venueId: null, weekdays: ['TU' as const, 'TH' as const], intervalWeeks: 1, startDate: '2026-10-06', timeStart: '18:00', durationMinutes: 90 }
+    expect((await ev.createSeries('t1', body)).eventCount).toBe(4)
+    expect(last['POST /teams/t1/series']).toMatchObject({ method: 'POST', body })
+    expect((await ev.series('sr1')).timeStart).toBe('19:00')
+    await ev.editSeries('sr1', { title: null, venueId: null, weekdays: ['MO'], intervalWeeks: 2, endDate: null, timeStart: '19:00', durationMinutes: 60 })
+    expect(last['PATCH /series/sr1']).toMatchObject({ method: 'PATCH', body: { weekdays: ['MO'], endDate: null, timeStart: '19:00' } })
+  })
+
   it('creates and edits a venue', async () => {
     endpoint('/venues', { id: 'v1' })
     endpoint('/venues/v1', { id: 'v1' })

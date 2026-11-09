@@ -13,6 +13,10 @@ import { HomeAway, EventStatus, EventType } from './enums';
 @Entity({ tableName: 'events' })
 @Index({ properties: ['season', 'start'] })
 @Index({ properties: ['club', 'start'] })
+@Index({
+  name: 'events_series_occurrence_uq',
+  expression: `create unique index "events_series_occurrence_uq" on "events" ("series_id", "occurrence_date") where "series_id" is not null`,
+})
 @Check({ name: 'events_end_after_start', expression: '"end" > "start"' })
 @Check({
   name: 'events_fields_only_match',
@@ -24,6 +28,13 @@ export class Event extends TenantEntity {
 
   @ManyToOne(() => EventSeries, { nullable: true, index: true, deleteRule: 'set null' })
   series: Rel<EventSeries> | null = null;
+
+  /**
+   * Local day of the series slot this event fills. Set when the event is generated and never changed by a manual edit,
+   * so a session moved by hand or cancelled still holds its slot and regeneration does not create it twice.
+   */
+  @Property({ type: 'date', nullable: true })
+  occurrenceDate: string | null = null;
 
   /** true if an event of a series was edited by hand and regeneration must not touch it. */
   @Property({ default: false })

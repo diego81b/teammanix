@@ -2558,7 +2558,7 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
-          "unique": false,
+          "unique": true,
           "length": null,
           "precision": null,
           "scale": null,
@@ -2787,6 +2787,22 @@
           "comment": null,
           "enumItems": [],
           "mappedType": "integer"
+        },
+        "occurrence_date": {
+          "name": "occurrence_date",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 0,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "date"
         }
       },
       "name": "events",
@@ -2843,6 +2859,18 @@
           "keyName": "events_series_id_index",
           "unique": false,
           "primary": false
+        },
+        {
+          "columnNames": [
+            "series_id",
+            "occurrence_date"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "events_series_occurrence_uq",
+          "unique": true,
+          "primary": false,
+          "expression": "CREATE UNIQUE INDEX events_series_occurrence_uq ON public.events USING btree (series_id, occurrence_date) WHERE (series_id IS NOT NULL)"
         }
       ],
       "checks": [
