@@ -330,3 +330,94 @@ export interface CalendarSeasonDto {
   teamName: string
   activityName: string
 }
+
+export type CallupSeverity = 'hard' | 'confirm' | 'warning'
+
+/** Why a player cannot be called up or should be looked at. The code is translated as `callup.reason.<code>`. */
+export interface CallupReason {
+  code: string
+  severity: CallupSeverity
+  /** ISO day until which the block lasts, when known. */
+  until?: string
+}
+
+export type CallupResponse = 'pending' | 'confirmed' | 'declined'
+export type Placement = 'starter' | 'bench'
+
+/** Row of the lists seen by staff, managers and admin. */
+export interface CallupRow {
+  enrollmentId: string
+  personId: string
+  name: string
+  surname: string | null
+  jerseyNumber: number | null
+  position: string | null
+  status: EnrollmentStatus
+  /** Only for called-up people. */
+  response: CallupResponse | null
+  placement: Placement | null
+  /** The call-up was already sent. */
+  notified: boolean
+  reasons: CallupReason[]
+}
+
+export interface StaffCallups {
+  event: EventDto
+  view: 'manage' | 'read'
+  starterBench: boolean
+  blockCertificate: boolean
+  calledUp: CallupRow[]
+  callable: CallupRow[]
+  notCallable: CallupRow[]
+  /** Every staff member of the season with their answer. */
+  staff: StaffAnswerRow[]
+  /** The club asks for it and no coach declared available. */
+  noCoachWarning: boolean
+}
+
+export type ReasonDecline = 'commitment_personal' | 'work' | 'not_available'
+
+/** A staff member of the season and their answer for the event: null = no answer yet. */
+export interface StaffAnswerRow {
+  enrollmentId: string
+  name: string
+  surname: string | null
+  staffRole: StaffRole | null
+  response: CallupResponse | null
+  mine: boolean
+}
+
+export interface AvailableStaff {
+  enrollmentId: string
+  name: string
+  surname: string | null
+  staffRole: StaffRole | null
+}
+
+export interface AnswerResult {
+  enrollmentId: string
+  response: CallupResponse
+  reason: ReasonDecline | null
+  responseAt: string | null
+}
+
+/** One change of answer, with its date. For staff, managers and the admin. */
+export interface AnswerChange {
+  from: CallupResponse
+  fromReason: ReasonDecline | null
+  to: CallupResponse
+  reason: ReasonDecline | null
+  changedAt: string
+}
+
+/** What the player gets: who is called up and the answers, nothing else. */
+export interface PlayerCallups {
+  event: EventDto
+  view: 'player'
+  iAmCalledUp: boolean
+  calledUp: { enrollmentId: string, name: string, surname: string | null, jerseyNumber: number | null, response: CallupResponse, mine: boolean }[]
+  /** Only the staff who declared available. */
+  staff: AvailableStaff[]
+}
+
+export type CallupsDto = StaffCallups | PlayerCallups

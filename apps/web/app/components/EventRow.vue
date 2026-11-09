@@ -16,6 +16,15 @@
         <template v-if="event.competition"> · {{ event.competition }}</template>
       </p>
       <p v-if="event.note" class="text-sm">{{ event.note }}</p>
+      <NuxtLink
+        v-if="event.status !== 'cancelled'"
+        :to="`/events/${event.id}/callup`"
+        class="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-primary hover:underline"
+        :aria-label="$t('callup.openFor', { name: title })"
+      >
+        <UIcon name="i-tm-users" class="size-4" aria-hidden="true" />
+        {{ $t('callup.open') }}
+      </NuxtLink>
     </div>
     <slot name="actions" />
   </li>

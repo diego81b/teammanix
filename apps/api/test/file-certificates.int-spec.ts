@@ -43,24 +43,28 @@ describe('medical certificates (file and settings)', () => {
   const fileOnDisk = async (clubId: string) => readdir(join(t.storageDir, clubId)).catch(() => [] as string[]);
 
   describe('club settings', () => {
-    it('by default the file is not enabled and the block for an expired certificate is', async () => {
+    it('by default the file is not enabled, the block for an expired certificate is and the no-coach warning is', async () => {
       const a = await context('im-1@test.it', false);
       const r = await t.req('GET', '/club/current/settings', { token: a.token });
-      expect([r.status, r.body]).toEqual([200, { certificatesWithFile: false, blockCertificateExpired: true }]);
+      expect([r.status, r.body]).toEqual([200, { certificatesWithFile: false, blockCertificateExpired: true, warnNoCoachAvailable: true, coachRoles: ['coach'] }]);
     });
 
     it('the admin edits them, even one at a time', async () => {
       const a = await context('im-2@test.it', false);
       const r1 = await t.req('PATCH', '/club/current/settings', { token: a.token, body: { certificatesWithFile: true } });
-      expect(r1.body).toEqual({ certificatesWithFile: true, blockCertificateExpired: true });
+      expect(r1.body).toEqual({ certificatesWithFile: true, blockCertificateExpired: true, warnNoCoachAvailable: true, coachRoles: ['coach'] });
       const r2 = await t.req('PATCH', '/club/current/settings', { token: a.token, body: { blockCertificateExpired: false } });
-      expect(r2.body).toEqual({ certificatesWithFile: true, blockCertificateExpired: false });
-      expect((await t.req('GET', '/club/current/settings', { token: a.token })).body).toEqual(r2.body);
+      expect(r2.body).toEqual({ certificatesWithFile: true, blockCertificateExpired: false, warnNoCoachAvailable: true, coachRoles: ['coach'] });
+      const r3 = await t.req('PATCH', '/club/current/settings', { token: a.token, body: { warnNoCoachAvailable: false } });
+      expect(r3.body).toEqual({ certificatesWithFile: true, blockCertificateExpired: false, warnNoCoachAvailable: false, coachRoles: ['coach'] });
+      const r4 = await t.req('PATCH', '/club/current/settings', { token: a.token, body: { coachRoles: ['coach', 'assistant_coach'] } });
+      expect(r4.body).toEqual({ certificatesWithFile: true, blockCertificateExpired: false, warnNoCoachAvailable: false, coachRoles: ['coach', 'assistant_coach'] });
+      expect((await t.req('GET', '/club/current/settings', { token: a.token })).body).toEqual(r4.body);
     });
 
     it('validation and access: empty or wrong body 400, no token 401, non-admin 403', async () => {
       const a = await context('im-3@test.it', false);
-      for (const body of [{}, { certificatesWithFile: 'si' }, { other: true }]) {
+      for (const body of [{}, { certificatesWithFile: 'si' }, { other: true }, { coachRoles: [] }, { coachRoles: ['king'] }, { coachRoles: ['coach', 'coach'] }, { coachRoles: 'coach' }]) {
         const r = await t.req('PATCH', '/club/current/settings', { token: a.token, body });
         expect([r.status, r.body.code]).toEqual([400, 'INVALID_DATA']);
       }

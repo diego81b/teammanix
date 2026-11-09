@@ -201,7 +201,7 @@
         },
         {
           "name": "access_scope_consistent_roles",
-          "columnName": "activity_id",
+          "columnName": "team_id",
           "definition": "CHECK ((((scope = 'club'::text) AND (activity_id IS NULL) AND (team_id IS NULL)) OR ((scope = 'activity'::text) AND (activity_id IS NOT NULL) AND (team_id IS NULL)) OR ((scope = 'team'::text) AND (team_id IS NOT NULL))))",
           "expression": "((scope = 'club'::text) AND (activity_id IS NULL) AND (team_id IS NULL)) OR ((scope = 'activity'::text) AND (activity_id IS NOT NULL) AND (team_id IS NULL)) OR ((scope = 'team'::text) AND (team_id IS NOT NULL))"
         }
@@ -1012,6 +1012,311 @@
           "autoincrement": false,
           "primary": false,
           "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "enrollment_id": {
+          "name": "enrollment_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "from_response": {
+          "name": "from_response",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [
+            "pending",
+            "confirmed",
+            "declined"
+          ],
+          "mappedType": "enum"
+        },
+        "from_reason": {
+          "name": "from_reason",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [
+            "commitment_personal",
+            "work",
+            "not_available"
+          ],
+          "mappedType": "enum"
+        },
+        "to_response": {
+          "name": "to_response",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [
+            "pending",
+            "confirmed",
+            "declined"
+          ],
+          "mappedType": "enum"
+        },
+        "to_reason": {
+          "name": "to_reason",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [
+            "commitment_personal",
+            "work",
+            "not_available"
+          ],
+          "mappedType": "enum"
+        },
+        "changed_by_id": {
+          "name": "changed_by_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "changed_at": {
+          "name": "changed_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "callup_response_changes",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "club_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "callup_response_changes_club_id_index",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "event_id",
+            "enrollment_id",
+            "created_at"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "callup_response_changes_event_id_enrollment_id_created_at_index",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "callup_response_changes_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {
+        "callup_response_changes_changed_by_id_foreign": {
+          "columnNames": [
+            "changed_by_id"
+          ],
+          "constraintName": "callup_response_changes_changed_by_id_foreign",
+          "localTableName": "public.callup_response_changes",
+          "referencedTableName": "public.users",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "set null"
+        },
+        "callup_response_changes_club_id_foreign": {
+          "columnNames": [
+            "club_id"
+          ],
+          "constraintName": "callup_response_changes_club_id_foreign",
+          "localTableName": "public.callup_response_changes",
+          "referencedTableName": "public.clubs",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
+        },
+        "callup_response_changes_enrollment_id_foreign": {
+          "columnNames": [
+            "enrollment_id"
+          ],
+          "constraintName": "callup_response_changes_enrollment_id_foreign",
+          "localTableName": "public.callup_response_changes",
+          "referencedTableName": "public.enrollments",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
+        },
+        "callup_response_changes_event_id_foreign": {
+          "columnNames": [
+            "event_id"
+          ],
+          "constraintName": "callup_response_changes_event_id_foreign",
+          "localTableName": "public.callup_response_changes",
+          "referencedTableName": "public.events",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
+        }
+      },
+      "nativeEnums": {},
+      "comment": null
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "gen_random_uuid()",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
           "unique": true,
           "length": null,
           "precision": null,
@@ -1177,7 +1482,7 @@
       "checks": [
         {
           "name": "callups_check",
-          "columnName": "response",
+          "columnName": "reason",
           "definition": "CHECK (((reason IS NULL) OR (response = 'declined'::text)))",
           "expression": "(reason IS NULL) OR (response = 'declined'::text)"
         }
@@ -1355,6 +1660,38 @@
           "comment": null,
           "enumItems": [],
           "mappedType": "boolean"
+        },
+        "warn_no_coach_available": {
+          "name": "warn_no_coach_available",
+          "type": "bool",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "true",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "coach_roles": {
+          "name": "coach_roles",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "'[\"coach\"]'",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "json"
         }
       },
       "name": "clubs",
@@ -2110,7 +2447,7 @@
       "checks": [
         {
           "name": "enrollments_check",
-          "columnName": "type",
+          "columnName": "staff_role",
           "definition": "CHECK (((type = 'staff'::text) OR (staff_role IS NULL)))",
           "expression": "(type = 'staff'::text) OR (staff_role IS NULL)"
         }
@@ -2882,7 +3219,7 @@
         },
         {
           "name": "events_fields_only_match",
-          "columnName": "opponent_id",
+          "columnName": "own_score",
           "definition": "CHECK (((type = 'match'::text) OR ((opponent_id IS NULL) AND (home_away IS NULL) AND (own_score IS NULL) AND (opponent_score IS NULL))))",
           "expression": "(type = 'match'::text) OR ((opponent_id IS NULL) AND (home_away IS NULL) AND (own_score IS NULL) AND (opponent_score IS NULL))"
         }

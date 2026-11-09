@@ -188,19 +188,28 @@ export class CertificatesService {
    * it only shows the status, so it writes no audit.
    */
   async summary(personIds: string[]): Promise<Map<string, SummaryCertificate>> {
+    const expiries = await this.expiries(personIds);
+    const today = todayIso();
+    return new Map(
+      personIds.map((id) => {
+        const expiry = expiries.get(id) ?? null;
+        return [id, { status: certificateStatus(expiry, today), expiry }];
+      }),
+    );
+  }
+
+  /**
+   * Furthest expiry of each person, null without a certificate. For rules that judge the certificate on a day
+   * other than today (the call-up counts it on the day of the event). Like `summary`, it writes no audit.
+   */
+  async expiries(personIds: string[]): Promise<Map<string, string | null>> {
     const byKey = new Map<string, MedicalCertificate[]>();
     if (personIds.length) {
       for (const c of await this.em.find(MedicalCertificate, { person: { $in: personIds } })) {
         byKey.set(c.person.id, [...(byKey.get(c.person.id) ?? []), c]);
       }
     }
-    const today = todayIso();
-    return new Map(
-      personIds.map((id) => {
-        const expiry = currentCertificate(byKey.get(id) ?? [])?.expiryDate ?? null;
-        return [id, { status: certificateStatus(expiry, today), expiry }];
-      }),
-    );
+    return new Map(personIds.map((id) => [id, currentCertificate(byKey.get(id) ?? [])?.expiryDate ?? null]));
   }
 
   private async person(id: string): Promise<Person> {

@@ -21,6 +21,9 @@ Code is in English. Italian stays only in user-facing texts (i18n locales, email
 | certificato medico | medical certificate | health data (GDPR art. 9) |
 | scadenza | expiry | |
 | convocazione | callup | |
+| convocabile | callable | not yet called up, no blocking reason |
+| non convocabile | not callable | has at least one blocking reason (hard or confirm) |
+| titolare / panchina | starter / bench | `Placement`, only for sports with `starterBench` |
 | presenza | attendance | |
 | squalifica | suspension | |
 | sanzione | sanction | |

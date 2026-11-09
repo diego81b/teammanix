@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuditModule } from './audit/audit.service';
 import { AuthModule } from './auth/auth.module';
+import { CallupsModule } from './callups/callups.module';
 import { CertificatesModule } from './certificates/certificates.module';
 import { EventsModule } from './events/events.module';
 import { HealthController } from './health.controller';
@@ -37,6 +38,7 @@ import { StructureModule } from './structure/structure.module';
     RolesModule,
     StructureModule,
     EventsModule,
+    CallupsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
