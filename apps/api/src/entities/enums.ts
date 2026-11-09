@@ -106,6 +106,8 @@ export enum EventType {
 export enum EventStatus {
   SCHEDULED = 'scheduled',
   CANCELLED = 'cancelled',
+  /** Moved to a date not yet set. Kept apart from cancelled: neither counts as served for suspensions (rule 13). */
+  POSTPONED = 'postponed',
   CONCLUDED = 'concluded',
 }
 

@@ -7,3 +7,11 @@ export function formatDate(iso: string | null | undefined, language: string): st
   if (Number.isNaN(d.getTime())) return '-'
   return new Intl.DateTimeFormat(LOCALE[language] ?? 'it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }).format(d)
 }
+
+/** Local day `YYYY-MM-DD` as weekday, day and month ("martedì 6 ottobre"). */
+export function formatDay(day: string, language: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return '-'
+  const d = new Date(`${day}T00:00:00Z`)
+  if (Number.isNaN(d.getTime())) return '-'
+  return new Intl.DateTimeFormat(LOCALE[language] ?? 'it-IT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(d).replace(',', '')
+}

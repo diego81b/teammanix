@@ -257,3 +257,36 @@ export interface PermissionDto {
   effective: PolicyKey[]
   editable: boolean
 }
+
+// --- Slice 3: events ---
+
+export type EventType = 'training' | 'match' | 'other'
+export type EventStatus = 'scheduled' | 'cancelled' | 'postponed' | 'concluded'
+export type HomeAway = 'home' | 'away' | 'neutral'
+
+export interface VenueDto {
+  id: string
+  name: string
+  address: string | null
+}
+
+export interface OpponentDto {
+  id: string
+  name: string
+}
+
+export interface EventDto {
+  id: string
+  seasonId: string
+  teamId: string
+  type: EventType
+  title: string | null
+  start: string
+  end: string
+  venue: { id: string, name: string } | null
+  note: string | null
+  status: EventStatus
+  opponent: { id: string, name: string } | null
+  homeAway: HomeAway | null
+  competition: string | null
+}

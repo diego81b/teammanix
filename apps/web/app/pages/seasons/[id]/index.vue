@@ -25,6 +25,15 @@
           </div>
           <div class="flex flex-wrap gap-2">
             <UButton
+              color="neutral"
+              variant="outline"
+              size="lg"
+              class="min-h-11"
+              icon="i-tm-calendar"
+              :to="`/calendar/${context.season.id}`"
+              :label="$t('events.calendar')"
+            />
+            <UButton
               v-if="context.season.status === 'draft'"
               size="lg"
               class="min-h-11"

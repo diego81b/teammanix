@@ -1,5 +1,7 @@
 import { RequestContext } from '@mikro-orm/core';
 import { MembershipsService } from '../src/auth/memberships.service';
+import { EventType } from '../src/entities/enums';
+import { Event } from '../src/entities/event.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
 import { AuthorizationsService, type Goal } from '../src/permissions/authorizations.service';
 import type { PolicyKey } from '../src/permissions/policy';
@@ -225,6 +227,28 @@ describe('authorizations: policies applied by scope', () => {
       expect(await outcome(all.userId, s.clubId, 'attendances.record', { enrollmentId: other.enrollmentId })).toBe(DENIED);
       const r = await outcome(all.userId, s.clubId, 'attendances.record', { enrollmentId: '00000000-0000-4000-8000-000000000000' });
       expect(r).toBe('404:ENROLLMENT_NOT_FOUND');
+    });
+
+    it('an event resolves to its team, and one of another club is 404', async () => {
+      const s = await club('au-16@test.it');
+      const other = await club('au-16b@test.it');
+      const all = await coach(s, s.s1.seasonId, 'au-16all@test.it');
+      const em = t.orm.em.fork();
+      const newEvent = (c: { clubId: string }, seasonId: string) =>
+        em.create(Event, {
+          club: c.clubId,
+          season: seasonId,
+          type: EventType.TRAINING,
+          start: new Date('2026-10-06T16:00:00Z'),
+          end: new Date('2026-10-06T17:00:00Z'),
+        } as never);
+      const mine = newEvent(s, s.s1.seasonId);
+      const ofOtherTeam = newEvent(s, s.s2.seasonId);
+      const ofOtherClub = newEvent(other, other.s1.seasonId);
+      await em.flush();
+      expect(await outcome(all.userId, s.clubId, 'events.manage', { eventId: mine.id })).toBe('ok');
+      expect(await outcome(all.userId, s.clubId, 'events.manage', { eventId: ofOtherTeam.id })).toBe(DENIED);
+      expect(await outcome(all.userId, s.clubId, 'events.manage', { eventId: ofOtherClub.id })).toBe('404:EVENT_NOT_FOUND');
     });
   });
 });

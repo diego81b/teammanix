@@ -1065,22 +1065,22 @@
           "unique": false
         },
         {
-          "keyName": "seasons_one_draft_for_team_uq",
-          "columnNames": [],
-          "composite": false,
-          "constraint": false,
-          "primary": false,
-          "unique": false,
-          "expression": "create unique index \"seasons_one_draft_per_team_uq\" on \"seasons\" (\"team_id\") where \"status\" = 'draft'"
-        },
-        {
-          "keyName": "seasons_one_active_for_team_uq",
+          "keyName": "seasons_one_active_per_team_uq",
           "columnNames": [],
           "composite": false,
           "constraint": false,
           "primary": false,
           "unique": false,
           "expression": "create unique index \"seasons_one_active_per_team_uq\" on \"seasons\" (\"team_id\") where \"status\" = 'active'"
+        },
+        {
+          "keyName": "seasons_one_draft_per_team_uq",
+          "columnNames": [],
+          "composite": false,
+          "constraint": false,
+          "primary": false,
+          "unique": false,
+          "expression": "create unique index \"seasons_one_draft_per_team_uq\" on \"seasons\" (\"team_id\") where \"status\" = 'draft'"
         },
         {
           "keyName": "seasons_team_id_start_date_index",
@@ -4991,6 +4991,17 @@
           "unique": false
         },
         {
+          "keyName": "venues_club_id_name_unique",
+          "columnNames": [
+            "club_id",
+            "name"
+          ],
+          "composite": true,
+          "constraint": true,
+          "primary": false,
+          "unique": true
+        },
+        {
           "keyName": "venues_pkey",
           "columnNames": [
             "id"
@@ -5558,6 +5569,7 @@
           "enumItems": [
             "scheduled",
             "cancelled",
+            "postponed",
             "concluded"
           ],
           "mappedType": "enum"
