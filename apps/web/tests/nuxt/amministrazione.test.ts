@@ -71,6 +71,14 @@ describe('useStructure', () => {
     expect(last['PATCH /seasons/s1']?.body).toEqual({ league: 'Elite' })
   })
 
+  it('clones a season carrying the remaining suspensions only when asked', async () => {
+    endpoint('/seasons/s1/clone', { season: { id: 's2' }, enrollments: 1, suspensions: 1 })
+    const s = useStructure()
+    const r = await s.clone('s1', { name: 'N', startDate: '2026-09-01', endDate: '2027-06-30', enrollments: ['i1'], carrySuspensions: true })
+    expect(last['POST /seasons/s1/clone']?.body).toMatchObject({ carrySuspensions: true })
+    expect(r.suspensions).toBe(1)
+  })
+
   it('activates, closes and clones a season', async () => {
     endpoint('/seasons/s1/active', {})
     endpoint('/seasons/s1/close', {})

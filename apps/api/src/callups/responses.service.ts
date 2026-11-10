@@ -8,11 +8,12 @@ import { Callup } from '../entities/callup.entity';
 import { CallupResponseChange } from '../entities/callup-response-change.entity';
 import { Club } from '../entities/club.entity';
 import { Enrollment } from '../entities/enrollment.entity';
-import { CallupResponse, EnrollmentType, ReasonDecline, type StaffRole } from '../entities/enums';
+import { CallupResponse, EnrollmentType, EventType, ReasonDecline, type StaffRole } from '../entities/enums';
 import { Event } from '../entities/event.entity';
 import { User } from '../entities/user.entity';
 import { localDate } from '../events/event.rules';
 import { AuthorizationsService } from '../permissions/authorizations.service';
+import { loadMatches, loadSuspensions, suspensionBlock } from '../suspensions/suspension.loader';
 import { checkAnswer, isChange, noCoachAvailable } from './callup.rules';
 import type { AnswerDto } from './dto';
 import { loadEvent, openEvent, permissionDenied, viewFor } from './event-access';
@@ -35,6 +36,8 @@ export interface StaffRow {
   mine: boolean;
   /** Only on the viewer's own row: the declared absence that covers the event, with its end (null: no end). */
   absence?: { until: string | null } | null;
+  /** Only on the viewer's own row: the suspension that covers the match (rule 13), so the button can say why it is disabled. */
+  suspension?: { match: number; total: number; until: string | null } | null;
 }
 
 export interface StaffBlock {
@@ -102,6 +105,7 @@ export class ResponsesService {
     // The absence is shown to its owner only, so the button can say why it is disabled. Staff read the dates elsewhere.
     const absences = await this.em.find(Absence, { enrollment: { $in: viewerEnrollmentIds } });
     const onDay = localDate(event.start);
+    const own = await this.ownSuspensions(event, viewerEnrollmentIds);
     const rows: StaffRow[] = enrollments.map((e) => ({
       enrollmentId: e.id,
       name: e.person.name,
@@ -109,10 +113,19 @@ export class ResponsesService {
       staffRole: e.staffRole,
       response: answers.get(e.id) ?? null,
       mine: viewerEnrollmentIds.includes(e.id),
-      ...(viewerEnrollmentIds.includes(e.id) ? { absence: blockOn(absences.filter((x) => x.enrollment.id === e.id), onDay) } : {}),
+      ...(viewerEnrollmentIds.includes(e.id) ? { absence: blockOn(absences.filter((x) => x.enrollment.id === e.id), onDay), suspension: own(e.id) } : {}),
     }));
     const club = await this.em.findOneOrFail(Club, event.club.id, { fields: ['warnNoCoachAvailable', 'coachRoles'] });
     return { rows, noCoachWarning: club.warnNoCoachAvailable && noCoachAvailable(rows, club.coachRoles) };
+  }
+
+  /** For matches only: the suspension that covers the event for each of these enrollments. Trainings are never blocked. */
+  private async ownSuspensions(event: Event, enrollmentIds: string[]): Promise<(enrollmentId: string) => { match: number; total: number; until: string | null } | null> {
+    if (event.type !== EventType.MATCH) return () => null;
+    const grouped = await loadSuspensions(this.em, enrollmentIds);
+    const matches = grouped.size > 0 ? await loadMatches(this.em, event.season.id) : [];
+    const now = new Date();
+    return (id) => suspensionBlock(grouped.get(id), matches, event.id, now);
   }
 
   private async answer(a: AuthContext, eventId: string, kind: EnrollmentType, dto: AnswerDto): Promise<AnswerResult> {
@@ -138,6 +151,11 @@ export class ResponsesService {
     if (kind === EnrollmentType.STAFF && dto.response === CallupResponse.CONFIRMED) {
       const mine = await this.em.find(Absence, { enrollment: enrollment.id });
       if (blockOn(mine, localDate(event.start))) throw new ConflictException({ message: 'You are in a declared absence', code: 'IN_ABSENCE' });
+    }
+
+    // Rule 13: for a match they are suspended from a staff member cannot say "available" either, and nothing overrides it.
+    if (kind === EnrollmentType.STAFF && dto.response === CallupResponse.CONFIRMED && (await this.ownSuspensions(event, [enrollment.id]))(enrollment.id)) {
+      throw new ConflictException({ message: 'You are suspended for this match', code: 'SUSPENDED' });
     }
 
     const was = { response: callup?.response ?? CallupResponse.PENDING, reason: callup?.reason ?? null };

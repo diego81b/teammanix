@@ -33,7 +33,8 @@ export function useStructure() {
       api<SeasonDto>(`/seasons/${id}`, { method: 'PATCH', body: { ...data } }),
     active: (id: string) => api<SeasonDto>(`/seasons/${id}/active`, { method: 'POST', body: {} }),
     close: (id: string) => api<SeasonDto>(`/seasons/${id}/close`, { method: 'POST', body: {} }),
-    clone: (id: string, data: SeasonData & { enrollments: string[] }) =>
-      api<{ season: SeasonDto, enrollments: number }>(`/seasons/${id}/clone`, { method: 'POST', body: { ...data } }),
+    /** `carrySuspensions`: what is left of the suspensions by matches of the chosen people moves to the new season (rule 13). */
+    clone: (id: string, data: SeasonData & { enrollments: string[], carrySuspensions?: boolean }) =>
+      api<{ season: SeasonDto, enrollments: number, suspensions: number }>(`/seasons/${id}/clone`, { method: 'POST', body: { ...data } }),
   }
 }

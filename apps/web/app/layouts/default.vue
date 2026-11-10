@@ -109,6 +109,7 @@ const menu = computed<DropdownMenuItem[][]>(() => [
   [{ label: session.user?.email ?? '', type: 'label' }],
   [
     { label: t('shell.absences'), icon: 'i-tm-calendar', to: '/absences' },
+    { label: t('shell.suspensions'), icon: 'i-tm-ban', to: '/suspensions' },
     { label: t('common.changeClub'), icon: 'i-tm-building', to: '/select-club' },
   ],
   [

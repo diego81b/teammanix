@@ -15,7 +15,10 @@
         </NuxtLink>
         <div class="flex flex-wrap items-center justify-between gap-3">
           <h1 class="text-2xl font-bold">{{ $t('events.title') }}</h1>
-          <UButton v-if="data.access.canManage" size="lg" class="min-h-11" icon="i-tm-plus" :label="$t('events.newEvent')" @click="openNew" />
+          <div class="flex flex-wrap gap-2">
+            <UButton v-if="data.access.canSuspend" color="neutral" variant="outline" size="lg" class="min-h-11" icon="i-tm-ban" :label="$t('suspensions.title')" :to="`/suspensions/${seasonId}`" />
+            <UButton v-if="data.access.canManage" size="lg" class="min-h-11" icon="i-tm-plus" :label="$t('events.newEvent')" @click="openNew" />
+          </div>
         </div>
         <CalendarSwitch :current="seasonId" :seasons="data.seasons" :has-mine="data.mine.length > 0" />
         <UAlert v-if="!data.access.canManage" color="neutral" variant="subtle" icon="i-tm-lock" :title="$t('events.readOnly')" />

@@ -13,6 +13,7 @@ import {
   reasonKey,
   reasonLabel,
   absenceNotice,
+  suspensionNotice,
   rowAction,
   togglePlacement,
   unsentCount,
@@ -148,6 +149,15 @@ describe('reasonLabel: the text of a reason', () => {
   it('a declared absence with an end says "not available until"', () => {
     expect(reasonLabel({ code: 'absence', severity: 'hard', until: '2026-11-15' }, t, fmt)).toBe('callup.reason.absenceUntil:{"date":"<2026-11-15>"}')
   })
+  it('a suspension says which match of how many', () => {
+    expect(reasonLabel({ code: 'suspended', severity: 'hard', match: 2, total: 3 }, t, fmt)).toBe('callup.reason.suspendedMatch:{"match":"2","total":"3"}')
+  })
+  it('a suspension by period adds the last day', () => {
+    expect(reasonLabel({ code: 'suspended', severity: 'hard', match: 1, total: 2, until: '2026-11-30' }, t, fmt)).toBe('callup.reason.suspendedMatch:{"match":"1","total":"2"} · <2026-11-30>')
+  })
+  it('a suspension without the count falls back to the plain text', () => {
+    expect(reasonLabel({ code: 'suspended', severity: 'hard' }, t, fmt)).toBe('callup.reason.suspended')
+  })
   it('a declared absence with no end has no date', () => {
     expect(reasonLabel({ code: 'absence', severity: 'hard' }, t, fmt)).toBe('callup.reason.absence')
     expect(reasonLabel({ code: 'absence', severity: 'hard', until: null }, t, fmt)).toBe('callup.reason.absence')
@@ -162,5 +172,16 @@ describe('absenceNotice: the own staff row during a declared absence', () => {
   it('names the end, or none for until further notice', () => {
     expect(absenceNotice({ absence: { until: '2026-11-15' } })).toEqual({ key: 'callup.inAbsenceUntil', until: '2026-11-15' })
     expect(absenceNotice({ absence: { until: null } })).toEqual({ key: 'callup.inAbsence', until: null })
+  })
+})
+
+describe('suspensionNotice: the own staff row on a covered match', () => {
+  it('is null without a suspension', () => {
+    expect(suspensionNotice({ suspension: null })).toBeNull()
+    expect(suspensionNotice({})).toBeNull()
+  })
+  it('carries the match number, the count and the last day of a period', () => {
+    expect(suspensionNotice({ suspension: { match: 1, total: 2, until: null } })).toEqual({ match: 1, total: 2, until: null })
+    expect(suspensionNotice({ suspension: { match: 2, total: 2, until: '2026-11-30' } })).toEqual({ match: 2, total: 2, until: '2026-11-30' })
   })
 })

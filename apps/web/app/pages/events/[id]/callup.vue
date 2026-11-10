@@ -136,6 +136,18 @@
                   @click="askConfirm(r)"
                 />
               </template>
+              <!-- Rule 13: from a match the suspension counts from the next one. Only who can record sees it. -->
+              <UButton
+                v-if="canSuspendHere && !isSuspendedHere(r)"
+                color="neutral"
+                variant="ghost"
+                size="lg"
+                class="min-h-11"
+                icon="i-tm-ban"
+                :label="$t('callup.suspend')"
+                :aria-label="$t('callup.suspendAria', { name: personName(r) })"
+                @click="askSuspend(r)"
+              />
             </div>
             <!-- Starter or bench: staff only, only for sports that use it. -->
             <div v-if="data.view === 'manage' && data.starterBench && tab === 'calledUp'" class="flex gap-2" role="group" :aria-label="$t('callup.placementAria', { name: personName(r) })">
@@ -179,6 +191,13 @@
               icon="i-tm-info"
               :title="ownAbsence.until ? $t(ownAbsence.key, { date: formatDate(ownAbsence.until, locale) }) : $t(ownAbsence.key)"
             />
+            <UAlert
+              v-if="ownSuspension"
+              color="error"
+              variant="subtle"
+              icon="i-tm-ban"
+              :title="$t('callup.suspendedNotice', { match: ownSuspension.match, total: ownSuspension.total })"
+            />
             <div class="flex gap-2">
               <UButton
                 class="min-h-11 flex-1 justify-center"
@@ -186,7 +205,7 @@
                 :variant="ownStaff.response === 'confirmed' ? 'solid' : 'outline'"
                 :color="ownStaff.response === 'confirmed' ? 'success' : 'neutral'"
                 :aria-pressed="ownStaff.response === 'confirmed'"
-                :disabled="ownAbsence !== null"
+                :disabled="ownAbsence !== null || ownSuspension !== null"
                 :loading="answering === 'staff-confirmed'"
                 :label="$t('callup.setAvailable')"
                 @click="declare('confirmed')"
@@ -241,6 +260,14 @@
         </div>
       </template>
 
+      <SuspensionForm
+        v-model:open="open.suspend"
+        :fixed="suspending ? { enrollmentId: suspending.enrollmentId, name: personName(suspending) } : null"
+        :origin="{ eventId: data.event.id, label: eventHeading(data.event, key => t(key)) }"
+        :used="used"
+        @saved="load"
+      />
+
       <UModal v-model:open="open.confirm" :title="$t('callup.confirmTitle')" :description="pending ? $t('callup.confirmText', { name: personName(pending) }) : ''">
         <template #footer>
           <UButton color="neutral" variant="outline" size="lg" :label="$t('common.back')" @click="open.confirm = false" />
@@ -292,7 +319,7 @@
 <script setup lang="ts">
 import type { AnswerChange, CallupReason, CallupResponse, CallupRow, Placement, ReasonDecline, StaffAnswerRow, StaffCallups } from '~/types/api'
 import {
-  DECLINE_REASONS, blockers, callupCounts, canSend, formatChangeTime, groupStaff, historyParts, myAnswer, ownStaffRow, reasonLabel, absenceNotice, rowAction, togglePlacement, unsentCount, warnings,
+  DECLINE_REASONS, blockers, callupCounts, canSend, formatChangeTime, groupStaff, historyParts, myAnswer, ownStaffRow, reasonLabel, absenceNotice, suspensionNotice, rowAction, togglePlacement, unsentCount, warnings,
   type CallupList,
 } from '~/utils/callup'
 import { eventHeading } from '~/utils/calendar'
@@ -303,6 +330,7 @@ const { t, locale } = useI18n()
 const route = useRoute()
 const toast = useToast()
 const callups = useCallups()
+const events = useEvents()
 const eventId = computed(() => String(route.params.id))
 
 const { data, loading, error, reload: load } = useLoad(() => callups.lists(eventId.value))
@@ -326,7 +354,7 @@ const reasonText = (r: CallupReason) => reasonLabel(r, t, day => formatDate(day,
 const errorAction = ref('')
 const busy = ref('')
 const sending = ref(false)
-const open = reactive({ confirm: false, decline: false, history: false })
+const open = reactive({ confirm: false, decline: false, history: false, suspend: false })
 const pending = ref<CallupRow | null>(null)
 
 /** One action, then the lists are read again: the API recomputes who is in which list. */
@@ -381,6 +409,7 @@ const staffRows = computed<StaffAnswerRow[]>(() => {
 })
 const ownStaff = computed(() => (staff.value ? ownStaffRow(staff.value.staff) : null))
 const ownAbsence = computed(() => (ownStaff.value ? absenceNotice(ownStaff.value) : null))
+const ownSuspension = computed(() => (ownStaff.value ? suspensionNotice(ownStaff.value) : null))
 const STAFF_COLOR = { available: 'success', notAvailable: 'error', noAnswer: 'neutral' } as const
 const STAFF_LABEL = { available: 'staffAvailable', notAvailable: 'staffNotAvailable', noAnswer: 'staffNoAnswer' } as const
 const staffState = (s: Pick<StaffAnswerRow, 'response'>) => (s.response === 'confirmed' ? 'available' : s.response === 'declined' ? 'notAvailable' : 'noAnswer')
@@ -447,5 +476,25 @@ async function showHistory(who: { enrollmentId: string, name: string, surname: s
   }
 }
 
-onMounted(load)
+// Rule 13: a suspension can start from a match, by who may record it in the team. For the screen only: the API checks again.
+const canSuspend = ref(false)
+const used = ref<string[]>([])
+const suspending = ref<CallupRow | null>(null)
+const canSuspendHere = computed(() => canSuspend.value && data.value?.event.type === 'match' && staff.value !== null)
+const isSuspendedHere = (r: CallupRow) => r.reasons.some(x => x.code === 'suspended')
+
+async function askSuspend(r: CallupRow) {
+  suspending.value = r
+  open.suspend = true
+  used.value = await events.competitions(data.value?.event.seasonId ?? '').catch(() => [])
+}
+
+async function readAccess() {
+  await load()
+  if (data.value && data.value.view !== 'player' && data.value.event.type === 'match') {
+    canSuspend.value = await events.access(data.value.event.seasonId).then(a => a.canSuspend).catch(() => false)
+  }
+}
+
+onMounted(readAccess)
 </script>

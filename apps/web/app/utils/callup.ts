@@ -11,10 +11,14 @@ export const warnings = (r: Pick<CallupRow, 'reasons'>): CallupReason[] => r.rea
 export const reasonKey = (code: string): string => `callup.reason.${code}`
 
 /**
- * The text of a reason. A declared absence reads "not available until [date]" and, with no end, just "not available"; any
+ * The text of a reason. A suspension reads "match k of N" (and the last day for a period). A declared absence reads "not available until [date]" and, with no end, just "not available"; any
  * other reason with an end date appends it. `t` and `fmt` are the translation and the date format of the caller.
  */
 export function reasonLabel(r: CallupReason, t: (key: string, params?: Record<string, string>) => string, fmt: (day: string) => string): string {
+  if (r.code === 'suspended' && r.match !== undefined && r.total !== undefined) {
+    const base = t(`${reasonKey('suspended')}Match`, { match: String(r.match), total: String(r.total) })
+    return r.until ? `${base} · ${fmt(r.until)}` : base
+  }
   if (r.code === 'absence') return r.until ? t(`${reasonKey('absence')}Until`, { date: fmt(r.until) }) : t(reasonKey('absence'))
   return r.until ? `${t(reasonKey(r.code))} · ${fmt(r.until)}` : t(reasonKey(r.code))
 }
@@ -24,6 +28,9 @@ export function absenceNotice(row: Pick<StaffAnswerRow, 'absence'>): { key: stri
   if (!row.absence) return null
   return row.absence.until ? { key: 'callup.inAbsenceUntil', until: row.absence.until } : { key: 'callup.inAbsence', until: null }
 }
+
+/** The own staff row on a covered match: which match of how many, and the last day for a period. Null when not suspended. */
+export const suspensionNotice = (row: Pick<StaffAnswerRow, 'suspension'>): { match: number, total: number, until: string | null } | null => row.suspension ?? null
 
 export type RowAction = 'add' | 'add_confirm' | 'remove' | 'none'
 

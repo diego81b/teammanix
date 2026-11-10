@@ -1,5 +1,5 @@
 import type { CtxRole } from '../common/auth-context';
-import { CallupResponse, EnrollmentStatus, StaffRole, type EventType, type ReasonDecline } from '../entities/enums';
+import { CallupResponse, EnrollmentStatus, EventType, StaffRole, type ReasonDecline } from '../entities/enums';
 import type { CertificateStatus } from '../certificates/certificate.rules';
 import { canReadSeasonEvents, type SeasonTarget } from '../events/visibility';
 
@@ -17,8 +17,11 @@ export interface Reason {
   /** Stable code, translated by the frontend as `callup.reason.<code>`. */
   code: string;
   severity: Severity;
-  /** ISO day until which the block lasts, when known (declared absence). */
+  /** ISO day until which the block lasts, when known (declared absence, suspension by period). */
   until?: string;
+  /** Suspension: position of the match among the covered ones, and how many there are. */
+  match?: number;
+  total?: number;
 }
 
 /** What the reasons are computed from. Providers read what they need; new blocks add fields here. */
@@ -27,6 +30,8 @@ export interface Candidate {
   certificate: CertificateStatus;
   /** Declared absence that covers the day of the event: `until` is the end of the continuous block, null when open ended. */
   absence?: { until: string | null } | null;
+  /** Suspension that covers this match (rule 13): its place in the count, and the end day for a period. Matches only. */
+  suspension?: { match: number; total: number; until: string | null } | null;
 }
 
 export interface EventContext {
@@ -35,10 +40,7 @@ export interface EventContext {
   blockCertificate: boolean;
 }
 
-/**
- * A source of reasons. Suspensions (rule 13) arrive in a later slice as a new provider, without touching `evaluate`,
- * `canCallUp` or `partition`.
- */
+/** A source of reasons. A new block is a new provider, without touching `evaluate`, `canCallUp` or `partition`. */
 export type ReasonProvider = (candidate: Candidate, ctx: EventContext) => Reason[];
 
 export const statusProvider: ReasonProvider = (c) => (c.status === EnrollmentStatus.INJURED ? [{ code: 'injured', severity: 'hard' }] : []);
@@ -59,7 +61,16 @@ export const certificateProvider: ReasonProvider = (c, ctx) => {
 export const absenceProvider: ReasonProvider = (c) =>
   c.absence ? [{ code: 'absence', severity: 'hard', ...(c.absence.until ? { until: c.absence.until } : {}) }] : [];
 
-export const DEFAULT_PROVIDERS: readonly ReasonProvider[] = [statusProvider, certificateProvider, absenceProvider];
+/**
+ * A suspension (rule 13) refuses the call-up for the matches it covers, with no override, and only for matches: for a
+ * training or any other event the player stays callable.
+ */
+export const suspensionProvider: ReasonProvider = (c, ctx) =>
+  c.suspension && ctx.eventType === EventType.MATCH
+    ? [{ code: 'suspended', severity: 'hard', match: c.suspension.match, total: c.suspension.total, ...(c.suspension.until ? { until: c.suspension.until } : {}) }]
+    : [];
+
+export const DEFAULT_PROVIDERS: readonly ReasonProvider[] = [statusProvider, certificateProvider, absenceProvider, suspensionProvider];
 
 export function evaluate(candidate: Candidate, ctx: EventContext, providers: readonly ReasonProvider[] = DEFAULT_PROVIDERS): Reason[] {
   return providers.flatMap((p) => p(candidate, ctx));

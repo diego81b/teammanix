@@ -17,6 +17,7 @@ import { PermissionsModule } from './permissions/permissions.module';
 import { RolesModule } from './roles/roles.module';
 import { ClubModule } from './club/club.module';
 import { StructureModule } from './structure/structure.module';
+import { SuspensionsModule } from './suspensions/suspensions.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { StructureModule } from './structure/structure.module';
     EventsModule,
     CallupsModule,
     AbsencesModule,
+    SuspensionsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

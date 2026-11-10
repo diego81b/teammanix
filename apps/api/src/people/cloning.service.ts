@@ -3,9 +3,12 @@ import { EntityManager } from '@mikro-orm/postgresql';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import type { AuthContext } from '../common/auth-context';
-import { AuditAction, EnrollmentStatus, SeasonStatus } from '../entities/enums';
+import { AuditAction, EnrollmentStatus, SeasonStatus, SuspensionForm } from '../entities/enums';
 import { Enrollment } from '../entities/enrollment.entity';
 import { Season } from '../entities/season.entity';
+import { Suspension } from '../entities/suspension.entity';
+import { loadMatches, loadSuspensions, suspensionData } from '../suspensions/suspension.loader';
+import { residue } from '../suspensions/suspension.rules';
 import { type SeasonDto, draftExists, toSeasonDto } from '../structure/structure.service';
 import { editable, periodValid } from '../structure/season.rules';
 import type { CloneSeasonDto, PromoteEnrollmentDto } from './dto-admin';
@@ -28,9 +31,10 @@ export class CloningService {
   /**
    * Guided cloning: the new season is born as a draft in the same team, with only the chosen enrollments (proposed by
    * the origin roster, which excludes closed and disabled ones). Type, role, position and jersey are copied. Status goes back to
-   * "available". Events and communications are not copied. All in a single flush: either everything or nothing.
+   * "available". Events and communications are not copied. With `carrySuspensions` the matches the origin season could not
+   * cover come along as new suspensions by matches (rule 13). All in a single flush: either everything or nothing.
    */
-  async clone(a: AuthContext, seasonId: string, dto: CloneSeasonDto): Promise<{ season: SeasonDto; enrollments: number }> {
+  async clone(a: AuthContext, seasonId: string, dto: CloneSeasonDto): Promise<{ season: SeasonDto; enrollments: number; suspensions: number }> {
     const source = await this.em.findOne(Season, seasonId);
     if (!source) throw seasonNotFound();
     if (!periodValid(dto.startDate, dto.endDate)) {
@@ -54,8 +58,9 @@ export class CloningService {
       status: SeasonStatus.DRAFT,
       league: dto.league ?? null,
     });
+    const fresher = new Map<string, Enrollment>();
     for (const i of choices) {
-      this.em.create(Enrollment, {
+      const created = this.em.create(Enrollment, {
         club: a.clubId as string,
         season: fresh,
         person: i.person,
@@ -65,14 +70,62 @@ export class CloningService {
         jerseyNumber: i.jerseyNumber,
         status: EnrollmentStatus.AVAILABLE,
       });
+      fresher.set(i.id, created);
     }
+    const carried = dto.carrySuspensions ? await this.carrySuspensions(a, source, dto.startDate, fresher) : [];
     try {
       await this.em.flush();
     } catch (e) {
       if (e instanceof UniqueConstraintViolationException) throw draftExists();
       throw e;
     }
-    return { season: toSeasonDto(fresh), enrollments: choices.length };
+    for (const c of carried) {
+      await this.audit.register({
+        action: AuditAction.SUSPENSION_CREATED,
+        userId: a.userId,
+        clubId: a.clubId,
+        entity: 'suspension',
+        entityId: c.suspension.id,
+        meta: { carriedFrom: c.from, matchCount: c.suspension.matchCount, startDate: c.suspension.startDate, competitions: c.suspension.competitions },
+      });
+    }
+    return { season: toSeasonDto(fresh), enrollments: choices.length, suspensions: carried.length };
+  }
+
+  /**
+   * Suspensions by matches with matches left over: the count minus the matches the origin season covers, whether played or
+   * still ahead (those stay in the origin season). They start on the first day of the new season, in the same competitions,
+   * for the enrollments chosen. A period never carries over.
+   */
+  private async carrySuspensions(
+    a: AuthContext,
+    source: Season,
+    startDate: string,
+    fresher: Map<string, Enrollment>,
+  ): Promise<{ suspension: Suspension; from: string }[]> {
+    const grouped = await loadSuspensions(this.em, [...fresher.keys()]);
+    if (grouped.size === 0) return [];
+    const matches = await loadMatches(this.em, source.id);
+    const now = new Date();
+    const out: { suspension: Suspension; from: string }[] = [];
+    for (const [sourceId, list] of grouped) {
+      for (const s of list.filter((x) => x.form === SuspensionForm.MATCHES)) {
+        const left = residue(suspensionData(s), matches, now);
+        if (left < 1) continue;
+        const suspension = this.em.create(Suspension, {
+          club: a.clubId as string,
+          enrollment: fresher.get(sourceId) as Enrollment,
+          form: SuspensionForm.MATCHES,
+          startDate,
+          matchCount: left,
+          endDate: null,
+          competitions: [...s.competitions],
+          originEvent: null,
+        });
+        out.push({ suspension, from: s.id });
+      }
+    }
+    return out;
   }
 
   /**

@@ -143,6 +143,12 @@ export enum AttendanceOutcome {
   LATE = 'late',
 }
 
+/** Two forms of suspension (rule 13): a period covering every match, or a number of matches from a start. */
+export enum SuspensionForm {
+  PERIOD = 'period',
+  MATCHES = 'matches',
+}
+
 export enum NotificationType {
   CALLUP = 'callup',
   EVENT_MODIFIED = 'event_modified',
@@ -179,4 +185,7 @@ export enum AuditAction {
   ABSENCE_CREATED = 'absence_created',
   ABSENCE_MODIFIED = 'absence_modified',
   ABSENCE_CANCELLED = 'absence_cancelled',
+  SUSPENSION_CREATED = 'suspension_created',
+  SUSPENSION_MODIFIED = 'suspension_modified',
+  SUSPENSION_CANCELLED = 'suspension_cancelled',
 }

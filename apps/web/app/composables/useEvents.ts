@@ -8,7 +8,7 @@ export function useEvents() {
   return {
     list: (seasonId: string) => api<EventDto[]>(`/seasons/${seasonId}/events`),
     /** The team of the season and whether the person can plan events in it now, to show or hide the actions. */
-    access: (seasonId: string) => api<{ teamId: string, canManage: boolean }>(`/seasons/${seasonId}/events-access`),
+    access: (seasonId: string) => api<{ teamId: string, canManage: boolean, canSuspend: boolean }>(`/seasons/${seasonId}/events-access`),
     competitions: (seasonId: string) => api<string[]>(`/seasons/${seasonId}/competitions`),
     venues: () => api<VenueDto[]>('/venues'),
     opponents: (teamId: string) => api<OpponentDto[]>(`/teams/${teamId}/opponents`),

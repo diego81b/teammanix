@@ -339,6 +339,9 @@ export interface CallupReason {
   severity: CallupSeverity
   /** ISO day until which the block lasts, when known. */
   until?: string | null
+  /** A suspension: this is match `match` of `total`. */
+  match?: number
+  total?: number
 }
 
 export type CallupResponse = 'pending' | 'confirmed' | 'declined'
@@ -387,6 +390,8 @@ export interface StaffAnswerRow {
   mine: boolean
   /** Only on the viewer's own row: the declared absence that covers the event (`until` null: no end). */
   absence?: { until: string | null } | null
+  /** Only on the viewer's own row: the suspension that covers the match (`until` set for a period). */
+  suspension?: { match: number, total: number, until: string | null } | null
 }
 
 export interface AvailableStaff {
@@ -454,4 +459,58 @@ export interface MyEnrollmentAbsences {
   seasonStart: string
   seasonEnd: string
   absences: AbsenceOut[]
+}
+
+export type SuspensionFormKind = 'period' | 'matches'
+
+/** A match a suspension covers now, in calendar order: match `number` of `of`, `served` once it is played. */
+export interface CoveredMatch {
+  eventId: string
+  start: string
+  number: number
+  of: number
+  served: boolean
+}
+
+export interface SuspensionOut {
+  id: string
+  enrollmentId: string
+  form: SuspensionFormKind
+  startDate: string
+  matchCount: number | null
+  endDate: string | null
+  competitions: string[]
+  originEventId: string | null
+  covered: CoveredMatch[]
+  served: number
+  remaining: number
+  completed: boolean
+}
+
+/** A suspension in the team list, with who it is for. */
+export interface SeasonSuspension extends SuspensionOut {
+  personId: string
+  name: string
+  surname: string | null
+  type: EnrollmentType
+}
+
+export interface MyEnrollmentSuspensions {
+  enrollmentId: string
+  type: EnrollmentType
+  teamName: string
+  seasonName: string
+  seasonStatus: SeasonStatus
+  suspensions: SuspensionOut[]
+}
+
+/** What the team screen needs to write: the season, who can be suspended and whether the reader may record. */
+export interface SuspensionContext {
+  seasonName: string
+  teamName: string
+  status: SeasonStatus
+  seasonStart: string
+  seasonEnd: string
+  canManage: boolean
+  people: { enrollmentId: string, name: string, surname: string | null, type: EnrollmentType }[]
 }

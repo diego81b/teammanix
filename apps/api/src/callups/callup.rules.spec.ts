@@ -10,6 +10,7 @@ import {
   noCoachAvailable,
   partition,
   statusProvider,
+  suspensionProvider,
   viewOf,
   type Candidate,
   type Reason,
@@ -249,6 +250,41 @@ describe('declared absence (rule 10)', () => {
 
   it('a player in absence goes to the not callable list', () => {
     const row = { enrollmentId: 'a', calledUp: false, reasons: evaluate({ ...fit, absence: { until: null } }, ctx) };
+    expect(partition([row]).notCallable).toHaveLength(1);
+  });
+});
+
+describe('suspension provider', () => {
+  const match = { ...ctx, eventType: EventType.MATCH };
+  const block = { match: 1, total: 2, until: null };
+
+  it('no suspension, no reason', () => {
+    expect(suspensionProvider(fit, match)).toEqual([]);
+    expect(suspensionProvider({ ...fit, suspension: null }, match)).toEqual([]);
+  });
+
+  it('a suspended player is blocked for the match, with its place in the count', () => {
+    expect(suspensionProvider({ ...fit, suspension: block }, match)).toEqual([{ code: 'suspended', severity: 'hard', match: 1, total: 2 }]);
+  });
+
+  it('a period gives the day it ends', () => {
+    expect(suspensionProvider({ ...fit, suspension: { match: 1, total: 1, until: '2026-11-20' } }, match)).toEqual([
+      { code: 'suspended', severity: 'hard', match: 1, total: 1, until: '2026-11-20' },
+    ]);
+  });
+
+  it.each([EventType.TRAINING, EventType.OTHER])('a suspended player stays callable for a %s', (eventType) => {
+    expect(evaluate({ ...fit, suspension: block }, { ...ctx, eventType })).toEqual([]);
+  });
+
+  it('nobody can call up a suspended player for a match, a confirmation does not change it', () => {
+    const reasons = evaluate({ ...fit, suspension: block }, match);
+    expect(canCallUp(reasons, false)).toBe('NOT_CALLABLE');
+    expect(canCallUp(reasons, true)).toBe('NOT_CALLABLE');
+  });
+
+  it('a suspended player goes to the not callable list of the match', () => {
+    const row = { enrollmentId: 'a', calledUp: false, reasons: evaluate({ ...fit, suspension: block }, match) };
     expect(partition([row]).notCallable).toHaveLength(1);
   });
 });

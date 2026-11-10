@@ -122,6 +122,7 @@
           </dl>
           <p class="text-sm text-muted">{{ $t('season.statusReset') }}</p>
 
+          <UCheckbox v-model="carrySuspensions" :label="$t('season.carrySuspensions')" :description="$t('season.carrySuspensionsText')" />
           <UCheckbox v-model="activeImmediately" :label="$t('season.activeImmediately')" :description="$t('season.activeImmediatelyText')" />
 
           <UAlert
@@ -196,6 +197,7 @@ const step = ref(0)
 const choices = ref<string[]>([])
 const formData = reactive({ name: '', startDate: '', endDate: '', league: '' })
 const activeImmediately = ref(false)
+const carrySuspensions = ref(true)
 
 // Initial values only once, as soon as the data arrives.
 let initialized = false
@@ -235,6 +237,7 @@ async function confirm() {
         endDate: formData.endDate,
         ...(formData.league.trim() ? { league: formData.league.trim() } : {}),
         enrollments: choices.value,
+        ...(carrySuspensions.value ? { carrySuspensions: true } : {}),
       })
       newId.value = r.season.id
     }

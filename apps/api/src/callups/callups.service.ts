@@ -9,9 +9,10 @@ import { Absence } from '../entities/absence.entity';
 import { Callup } from '../entities/callup.entity';
 import { Club } from '../entities/club.entity';
 import { Enrollment } from '../entities/enrollment.entity';
-import { CallupResponse, EnrollmentStatus, EnrollmentType, EventStatus, Placement, type StaffRole } from '../entities/enums';
+import { CallupResponse, EnrollmentStatus, EnrollmentType, EventStatus, EventType, Placement, type StaffRole } from '../entities/enums';
 import { Event } from '../entities/event.entity';
 import { localDate } from '../events/event.rules';
+import { loadMatches, loadSuspensions, suspensionBlock } from '../suspensions/suspension.loader';
 import { toEventDto, type EventDto } from '../events/events.service';
 import { AuthorizationsService } from '../permissions/authorizations.service';
 import type { CallUpDto, PlacementDto } from './dto';
@@ -203,6 +204,10 @@ export class CallupsService {
     const busy = await this.busyPeople(event, personIds);
     // Absences hang on the enrollment, so they reach only the team of that enrollment.
     const absences = await this.em.find(Absence, { enrollment: { $in: enrollments.map((e) => e.id) } });
+    // Suspensions (rule 13) hang on the enrollment and reach matches only: a training never loads them.
+    const suspensions = event.type === EventType.MATCH ? await loadSuspensions(this.em, enrollments.map((e) => e.id)) : new Map();
+    const matches = suspensions.size > 0 ? await loadMatches(this.em, event.season.id) : [];
+    const now = new Date();
     const club = await this.em.findOneOrFail(Club, event.club.id, { fields: ['blockCertificateExpired'] });
     // The certificate counts on the day of the event, not today.
     const onDay = localDate(event.start);
@@ -211,7 +216,8 @@ export class CallupsService {
     return enrollments.map((e) => {
       const callup = callups.get(e.id);
       const absence = blockOn(absences.filter((x) => x.enrollment.id === e.id), onDay);
-      const reasons = evaluate({ status: e.status, certificate: certificateStatus(expiries.get(e.person.id) ?? null, onDay), absence }, ctx);
+      const suspension = suspensionBlock(suspensions.get(e.id), matches, event.id, now);
+      const reasons = evaluate({ status: e.status, certificate: certificateStatus(expiries.get(e.person.id) ?? null, onDay), absence, suspension }, ctx);
       if (busy.has(e.person.id)) reasons.push({ code: 'busy_elsewhere', severity: 'warning' });
       return {
         enrollmentId: e.id,

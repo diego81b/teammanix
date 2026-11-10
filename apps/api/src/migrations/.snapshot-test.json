@@ -156,7 +156,7 @@
       "checks": [
         {
           "name": "absences_check",
-          "columnName": "start_date",
+          "columnName": "end_date",
           "definition": "CHECK (((end_date IS NULL) OR (end_date >= start_date)))",
           "expression": "(end_date IS NULL) OR (end_date >= start_date)"
         }
@@ -1009,7 +1009,10 @@
             "terms_accepted",
             "absence_created",
             "absence_modified",
-            "absence_cancelled"
+            "absence_cancelled",
+            "suspension_created",
+            "suspension_modified",
+            "suspension_cancelled"
           ],
           "mappedType": "enum"
         },
@@ -1673,7 +1676,7 @@
       "checks": [
         {
           "name": "callups_check",
-          "columnName": "reason",
+          "columnName": "response",
           "definition": "CHECK (((reason IS NULL) OR (response = 'declined'::text)))",
           "expression": "(reason IS NULL) OR (response = 'declined'::text)"
         }
@@ -3410,7 +3413,7 @@
         },
         {
           "name": "events_fields_only_match",
-          "columnName": "opponent_score",
+          "columnName": "opponent_id",
           "definition": "CHECK (((type = 'match'::text) OR ((opponent_id IS NULL) AND (home_away IS NULL) AND (own_score IS NULL) AND (opponent_score IS NULL))))",
           "expression": "(type = 'match'::text) OR ((opponent_id IS NULL) AND (home_away IS NULL) AND (own_score IS NULL) AND (opponent_score IS NULL))"
         }
@@ -4036,7 +4039,7 @@
       "checks": [
         {
           "name": "invitations_admin_only_club",
-          "columnName": "role",
+          "columnName": "scope",
           "definition": "CHECK (((role <> 'admin'::text) OR (scope = 'club'::text)))",
           "expression": "(role <> 'admin'::text) OR (scope = 'club'::text)"
         },
@@ -4338,7 +4341,7 @@
       "checks": [
         {
           "name": "medical_certificates_check",
-          "columnName": "issue_date",
+          "columnName": "expiry_date",
           "definition": "CHECK ((expiry_date >= issue_date))",
           "expression": "expiry_date >= issue_date"
         }
@@ -5469,13 +5472,13 @@
       "checks": [
         {
           "name": "people_check",
-          "columnName": "email",
+          "columnName": "phone",
           "definition": "CHECK (((email IS NOT NULL) OR (phone IS NOT NULL)))",
           "expression": "(email IS NOT NULL) OR (phone IS NOT NULL)"
         },
         {
           "name": "people_complete_consistent",
-          "columnName": "surname",
+          "columnName": "birth_date",
           "definition": "CHECK (((completed_at IS NULL) OR ((surname IS NOT NULL) AND (birth_date IS NOT NULL))))",
           "expression": "(completed_at IS NULL) OR ((surname IS NOT NULL) AND (birth_date IS NOT NULL))"
         }
@@ -6131,6 +6134,274 @@
       ],
       "checks": [],
       "foreignKeys": {},
+      "nativeEnums": {},
+      "comment": null
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "gen_random_uuid()",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "enrollment_id": {
+          "name": "enrollment_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "form": {
+          "name": "form",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [
+            "period",
+            "matches"
+          ],
+          "mappedType": "enum"
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 0,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "date"
+        },
+        "match_count": {
+          "name": "match_count",
+          "type": "int4",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": 32,
+          "scale": 0,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
+        "end_date": {
+          "name": "end_date",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 0,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "date"
+        },
+        "competitions": {
+          "name": "competitions",
+          "type": "text[]",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "'{}'",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "array"
+        },
+        "origin_event_id": {
+          "name": "origin_event_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        }
+      },
+      "name": "suspensions",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "club_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "suspensions_club_id_index",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "enrollment_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "suspensions_enrollment_id_index",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "suspensions_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [
+        {
+          "name": "suspensions_shape",
+          "columnName": "start_date",
+          "definition": "CHECK ((((form = 'matches'::text) AND (match_count >= 1) AND (end_date IS NULL)) OR ((form = 'period'::text) AND (match_count IS NULL) AND (end_date IS NOT NULL) AND (end_date >= start_date) AND (cardinality(competitions) = 0))))",
+          "expression": "((form = 'matches'::text) AND (match_count >= 1) AND (end_date IS NULL)) OR ((form = 'period'::text) AND (match_count IS NULL) AND (end_date IS NOT NULL) AND (end_date >= start_date) AND (cardinality(competitions) = 0))"
+        }
+      ],
+      "foreignKeys": {
+        "suspensions_club_id_foreign": {
+          "columnNames": [
+            "club_id"
+          ],
+          "constraintName": "suspensions_club_id_foreign",
+          "localTableName": "public.suspensions",
+          "referencedTableName": "public.clubs",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
+        },
+        "suspensions_enrollment_id_foreign": {
+          "columnNames": [
+            "enrollment_id"
+          ],
+          "constraintName": "suspensions_enrollment_id_foreign",
+          "localTableName": "public.suspensions",
+          "referencedTableName": "public.enrollments",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
+        },
+        "suspensions_origin_event_id_foreign": {
+          "columnNames": [
+            "origin_event_id"
+          ],
+          "constraintName": "suspensions_origin_event_id_foreign",
+          "localTableName": "public.suspensions",
+          "referencedTableName": "public.events",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "set null"
+        }
+      },
       "nativeEnums": {},
       "comment": null
     },

@@ -91,6 +91,11 @@ export class CloneSeasonDto extends CreateSeasonDto {
   @ArrayMaxSize(500)
   @IsUUID('all', { each: true })
   enrollments!: string[];
+
+  /** Carries to the new season what is left of the suspensions by matches of the chosen enrollments (rule 13). Default false. */
+  @IsOptional()
+  @IsBoolean()
+  carrySuspensions?: boolean;
 }
 
 /** Omitted fields are copied from the origin enrollment. */

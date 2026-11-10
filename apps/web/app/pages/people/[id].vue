@@ -102,6 +102,8 @@
 
       <PersonCertificates v-if="!person.disabled" :person-id="person.id" />
 
+      <PersonSuspensions :person="person" />
+
       <DisablePerson v-model:open="open.disable" :person="{ id: person.id, name: fullName(person) }" @done="load" />
     </template>
   </div>
