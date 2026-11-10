@@ -9,11 +9,12 @@ import { Absence } from '../entities/absence.entity';
 import { Callup } from '../entities/callup.entity';
 import { Club } from '../entities/club.entity';
 import { Enrollment } from '../entities/enrollment.entity';
-import { CallupResponse, EnrollmentStatus, EnrollmentType, EventStatus, EventType, Placement, type StaffRole } from '../entities/enums';
+import { CallupResponse, EnrollmentStatus, EnrollmentType, EventStatus, EventType, NotificationType, Placement, type StaffRole } from '../entities/enums';
 import { Event } from '../entities/event.entity';
 import { localDate } from '../events/event.rules';
 import { loadMatches, loadSuspensions, suspensionBlock } from '../suspensions/suspension.loader';
 import { toEventDto, type EventDto } from '../events/events.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { AuthorizationsService } from '../permissions/authorizations.service';
 import type { CallUpDto, PlacementDto } from './dto';
 import { canCallUp, evaluate, partition, type Reason } from './callup.rules';
@@ -78,6 +79,7 @@ export class CallupsService {
     private readonly authz: AuthorizationsService,
     private readonly certificates: CertificatesService,
     private readonly responses: ResponsesService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async lists(a: AuthContext, eventId: string): Promise<StaffLists | PlayerLists> {
@@ -167,8 +169,8 @@ export class CallupsService {
   }
 
   /**
-   * Marks as sent the call-ups not sent yet and says who they are. Delivery (in app, email, push) is the notifications
-   * slice: it will start from this list. People removed after a send are not told.
+   * Marks as sent the call-ups not sent yet, says who they are and notifies the players that have an account.
+   * People removed after a send are not told.
    */
   async send(a: AuthContext, eventId: string): Promise<{ notified: { enrollmentId: string; personId: string }[] }> {
     await this.authz.request(a, 'callups.manage', { eventId });
@@ -180,11 +182,17 @@ export class CallupsService {
         notifiedAt: null,
         enrollment: { type: EnrollmentType.PLAYER, endedAt: null, person: { disabledAt: null } },
       },
-      { populate: ['enrollment.person'] },
+      { populate: ['enrollment.person.user'] },
     );
     const now = new Date();
     for (const c of pending) c.notifiedAt = now;
     await this.em.flush();
+    await this.notifications.notifyEvent(
+      a.clubId as string,
+      event,
+      NotificationType.CALLUP,
+      pending.flatMap((c) => (c.enrollment.person.user ? [c.enrollment.person.user.id] : [])),
+    );
     return { notified: pending.map((c) => ({ enrollmentId: c.enrollment.id, personId: c.enrollment.person.id })) };
   }
 

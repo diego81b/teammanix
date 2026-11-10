@@ -7,8 +7,8 @@ import type { AuthContext } from '../common/auth-context';
 import { Club } from '../entities/club.entity';
 import { Enrollment } from '../entities/enrollment.entity';
 import { AuditAction, CallupResponse, EnrollmentType, NotificationType, ReasonDecline, SeasonStatus } from '../entities/enums';
-import { Notification } from '../entities/notification.entity';
 import { canPlanEvents, editableEvent, localDate } from '../events/event.rules';
+import { NotificationsService } from '../notifications/notifications.service';
 import { canReadSeasonEvents } from '../events/visibility';
 import { ResponsesService } from '../callups/responses.service';
 import type { AbsenceDto, DeclineDto } from './dto';
@@ -62,6 +62,7 @@ export class AbsencesService {
     private readonly em: EntityManager,
     private readonly audit: AuditService,
     private readonly responses: ResponsesService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /** The open enrollments of the logged in person, in seasons that are not closed, with their absences as entered. */
@@ -217,8 +218,8 @@ export class AbsencesService {
   }
 
   /**
-   * In-app notification to the staff of the season, the person excluded. Delivery by email and push is the notifications
-   * slice. Params hold the club, the name and the dates: no reason, nothing a lock screen should not show.
+   * Notifies the staff of the season, the person excluded. Params hold the club, the name and the dates: no reason,
+   * nothing a lock screen should not show.
    */
   private async notifyStaff(a: AuthContext, enrollment: Enrollment, absence: Absence): Promise<void> {
     const staff = await this.em.find(
@@ -236,9 +237,12 @@ export class AbsencesService {
       from: absence.startDate,
       ...(absence.endDate ? { until: absence.endDate } : {}),
     };
-    for (const user of users.values()) {
-      this.em.create(Notification, { club: a.clubId as string, user, type: NotificationType.ABSENCE_DECLARED, params, link: null, dedupKey: `absence:${absence.id}`, readAt: null, emailSentAt: null, pushSentAt: null });
-    }
-    await this.em.flush();
+    await this.notifications.notify({
+      clubId: a.clubId as string,
+      userIds: [...users.keys()],
+      type: NotificationType.ABSENCE_DECLARED,
+      params,
+      dedupKey: `absence:${absence.id}`,
+    });
   }
 }

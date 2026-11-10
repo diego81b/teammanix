@@ -155,6 +155,8 @@ export enum NotificationType {
   EVENT_CANCELLED = 'event_cancelled',
   CERTIFICATE_EXPIRING = 'certificate_expiring',
   CERTIFICATE_EXPIRED = 'certificate_expired',
+  /** Digest for staff with the certificates permission: how many certificates of their people are due. Counts only. */
+  CERTIFICATES_DUE = 'certificates_due',
   ABSENCE_DECLARED = 'absence_declared',
 }
 

@@ -8,6 +8,7 @@ import { EventSeries } from '../entities/event-series.entity';
 import { Event } from '../entities/event.entity';
 import { Season } from '../entities/season.entity';
 import { validIsoDate } from '../structure/season.rules';
+import { NotificationsService } from '../notifications/notifications.service';
 import { AuthorizationsService } from '../permissions/authorizations.service';
 import { CatalogService } from './catalog.service';
 import type { CreateSeriesDto, EditSeriesDto } from './dto';
@@ -89,6 +90,7 @@ export class SeriesService {
     private readonly em: EntityManager,
     private readonly authz: AuthorizationsService,
     private readonly catalog: CatalogService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async create(a: AuthContext, teamId: string, dto: CreateSeriesDto): Promise<SeriesDto> {
@@ -180,8 +182,12 @@ export class SeriesService {
       new Date(),
     );
     const byId = new Map(rows.map((e) => [e.id, e]));
+    const moved: string[] = [];
     for (const { id: eventId, occurrence } of plan.update) {
       const e = byId.get(eventId) as Event;
+      if (e.start.getTime() !== occurrence.start.getTime() || e.end.getTime() !== occurrence.end.getTime() || e.venue?.id !== (series.venue?.id ?? undefined)) {
+        moved.push(e.id);
+      }
       e.start = occurrence.start;
       e.end = occurrence.end;
       e.title = series.title;
@@ -190,6 +196,8 @@ export class SeriesService {
     for (const o of plan.create) this.newEvent(series, o);
     await this.dropOrphans(plan.orphans.map((orphanId) => byId.get(orphanId) as Event));
     await this.em.flush();
+    // One notification per player, not one per regenerated session.
+    await this.notifications.notifyCalledUpSeries(a.clubId as string, series.title, moved);
     return this.toDto(series, await this.em.count(Event, { series: id }));
   }
 

@@ -3344,9 +3344,26 @@
             "event_cancelled",
             "certificate_expiring",
             "certificate_expired",
+            "certificates_due",
             "absence_declared"
           ],
           "mappedType": "enum"
+        },
+        "in_app": {
+          "name": "in_app",
+          "type": "boolean",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "true",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "boolean"
         },
         "params": {
           "name": "params",

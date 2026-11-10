@@ -1,10 +1,12 @@
 import { EntityManager } from '@mikro-orm/postgresql';
 import { BadRequestException, ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
 import type { AuthContext } from '../common/auth-context';
-import { EventStatus, EventType, HomeAway, SeasonStatus } from '../entities/enums';
+import { EventStatus, EventType, HomeAway, NotificationType, SeasonStatus } from '../entities/enums';
 import { Enrollment } from '../entities/enrollment.entity';
 import { Event } from '../entities/event.entity';
 import { Season } from '../entities/season.entity';
+import { isNotableEventChange, type EventFacts } from '../notifications/notification.rules';
+import { NotificationsService } from '../notifications/notifications.service';
 import { AuthorizationsService } from '../permissions/authorizations.service';
 import { CatalogService } from './catalog.service';
 import type { CreateEventDto, EditEventDto } from './dto';
@@ -52,6 +54,16 @@ const invalidData = () => new BadRequestException({ message: 'Invalid data', cod
 const outsideSeason = () => new BadRequestException({ message: 'The event falls outside the season dates', code: 'EVENT_OUTSIDE_SEASON' });
 const seasonClosed = () => new ConflictException({ message: 'The season is closed', code: 'SEASON_CLOSED' });
 
+/** What a player plans around, to tell whether an edit is worth a notification. */
+const facts = (e: Event): EventFacts => ({
+  type: e.type,
+  start: e.start,
+  end: e.end,
+  venueId: e.venue?.id ?? null,
+  opponentId: e.opponent?.id ?? null,
+  homeAway: e.homeAway,
+});
+
 export function toEventDto(e: Event, teamId: string): EventDto {
   return {
     id: e.id,
@@ -82,6 +94,7 @@ export class EventsService {
     private readonly em: EntityManager,
     private readonly authz: AuthorizationsService,
     private readonly catalog: CatalogService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async create(a: AuthContext, teamId: string, dto: CreateEventDto): Promise<EventDto> {
@@ -129,6 +142,7 @@ export class EventsService {
     const end = dto.end === undefined ? e.end : parseInstant(dto.end);
     if (!start || !end) throw invalidData();
     const datesChanged = start.getTime() !== e.start.getTime() || end.getTime() !== e.end.getTime();
+    const before = facts(e);
 
     // Leaving the match type drops the stored match fields; the request can then not set them again.
     const kept = clearMatchFields({
@@ -165,6 +179,7 @@ export class EventsService {
     // Giving a postponed event new dates schedules it again.
     if (e.status === EventStatus.POSTPONED && datesChanged) e.status = EventStatus.SCHEDULED;
     await this.em.flush();
+    if (isNotableEventChange(before, facts(e))) await this.notifications.notifyCalledUp(a.clubId as string, e, NotificationType.EVENT_MODIFIED);
     return toEventDto(e, e.season.team.id);
   }
 
@@ -176,6 +191,11 @@ export class EventsService {
     if (!canChangeStatus(e.status, to)) throw new ConflictException({ message: 'The event cannot change to this status', code: 'EVENT_STATUS_INVALID' });
     e.status = to;
     await this.em.flush();
+    await this.notifications.notifyCalledUp(
+      a.clubId as string,
+      e,
+      to === EventStatus.CANCELLED ? NotificationType.EVENT_CANCELLED : NotificationType.EVENT_MODIFIED,
+    );
     return toEventDto(e, e.season.team.id);
   }
 

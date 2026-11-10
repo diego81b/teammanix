@@ -14,7 +14,18 @@
       <span v-if="session.active" class="ml-2 hidden truncate text-sm font-semibold sm:block" style="font-family: var(--font-heading)">
         {{ session.active.name }}
       </span>
-      <div class="ml-auto">
+      <div class="ml-auto flex items-center gap-1">
+        <UChip :text="badge" :show="!!badge" size="2xl" color="error" inset>
+          <UButton
+            to="/notifications"
+            color="neutral"
+            variant="ghost"
+            size="lg"
+            icon="i-tm-bell"
+            :aria-label="badge ? $t('shell.notificationsUnread', { count: notifications.unread }) : $t('shell.notifications')"
+            class="min-h-11 min-w-11"
+          />
+        </UChip>
         <UDropdownMenu :items="menu" :content="{ align: 'end' }">
           <UButton
             color="neutral"
@@ -82,6 +93,24 @@ const route = useRoute()
 const colorMode = useColorMode()
 const { t } = useI18n()
 const { locale, languages, set } = useLanguage()
+const notifications = useNotificationsStore()
+const push = usePush()
+const badge = computed(() => unreadBadge(notifications.unread))
+
+// The bell follows the server: on start, on every navigation, when the tab comes back and once a minute while it stays open.
+const refresh = () => void notifications.refresh()
+const onVisible = () => { if (document.visibilityState === 'visible') refresh() }
+let timer: ReturnType<typeof setInterval> | undefined
+onMounted(() => {
+  refresh()
+  document.addEventListener('visibilitychange', onVisible)
+  timer = setInterval(() => { if (document.visibilityState === 'visible') refresh() }, 60_000)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', onVisible)
+  clearInterval(timer)
+})
+watch(() => [route.path, session.activeClubId], refresh)
 
 // Administration items are for the admin only (the API rejects them for others anyway). The calendar is for every role.
 const items = computed(() => [
@@ -108,6 +137,8 @@ const themes = computed(() => [
 const menu = computed<DropdownMenuItem[][]>(() => [
   [{ label: session.user?.email ?? '', type: 'label' }],
   [
+    { label: t('shell.notifications'), icon: 'i-tm-bell', to: '/notifications' },
+    { label: t('shell.profile'), icon: 'i-tm-user', to: '/profile' },
     { label: t('shell.absences'), icon: 'i-tm-calendar', to: '/absences' },
     { label: t('shell.suspensions'), icon: 'i-tm-ban', to: '/suspensions' },
     { label: t('common.changeClub'), icon: 'i-tm-building', to: '/select-club' },
@@ -141,6 +172,9 @@ const menu = computed<DropdownMenuItem[][]>(() => [
     label: t('common.logout'),
     icon: 'i-tm-logout',
     onSelect: async () => {
+      // This device must stop receiving the alerts of the account that leaves; needs the token, so before clearing.
+      await push.release()
+      notifications.set(0)
       session.clear()
       await navigateTo('/login')
     },

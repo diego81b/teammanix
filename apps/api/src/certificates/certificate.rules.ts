@@ -10,6 +10,9 @@ const days = (iso: string): number => {
   return Date.UTC(a, m - 1, g) / 86_400_000;
 };
 
+/** Calendar days from `today` to `expiry`: negative once the expiry is past. */
+export const daysUntil = (expiry: string, today: string): number => days(expiry) - days(today);
+
 /** Status from the expiry of the current certificate. On the expiry day the certificate is still valid. */
 export function certificateStatus(expiry: string | null, today: string): CertificateStatus {
   if (!expiry) return 'missing';

@@ -8,8 +8,9 @@ import { User } from './user.entity';
  * Belongs to the account and has no tenant filter, because the athlete manages them all from a single screen
  * while inside a single club. Queries filter user explicitly.
  *
- * If the row is missing, defaults apply: all channels active. Sending checks the row before creating
- * the Notification (inApp), before the mail (email) and before the push (push).
+ * If the row is missing, defaults apply: all channels active. `NotificationsService` combines the row with what the
+ * type sends by default (`resolveChannels`): nothing is stored when every channel is off, and with in-app off but email
+ * or push on the Notification is stored with `inApp = false`, hidden from the center.
  * All notifications can be opted out of: none is required by law in the MVP.
  * The row is deleted when detaching from a club.
  */

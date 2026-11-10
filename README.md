@@ -110,7 +110,7 @@ Conventions:
 `docker-compose.prod.yml` is a standalone file, not an overlay. Create a Docker Compose application in Coolify that points to it.
 
 - **Database.** A Coolify PostgreSQL resource with scheduled S3 backups. `DATABASE_URL` is the resource internal URL.
-- **Variables.** Set in the Coolify application. Required ones are listed in `docker-compose.prod.yml`: `DATABASE_URL`, `JWT_SECRET`, `APP_URL`, `ALLOWED_ORIGINS`, `BREVO_API_KEY`, `MAIL_FROM_EMAIL`, `STORAGE_ENCRYPTION_KEY` and the `S3_*` group.
+- **Variables.** Set in the Coolify application. Required ones are listed in `docker-compose.prod.yml`: `DATABASE_URL`, `JWT_SECRET`, `APP_URL`, `ALLOWED_ORIGINS`, `BREVO_API_KEY`, `MAIL_FROM_EMAIL`, `STORAGE_ENCRYPTION_KEY` and the `S3_*` group. Web Push is optional: set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` as secrets (pair generated with `npx web-push generate-vapid-keys`, different from development). Without them the app works and push is not offered.
 - **Sensitive files** (medical certificates and other documents). Use a dedicated private S3 compatible bucket, for example Cloudflare R2 with EU jurisdiction. Files are encrypted by the app with `STORAGE_ENCRYPTION_KEY` before upload, so the provider only sees opaque bytes. Enable versioning or replication for backups (the DB backups do not cover the bucket). Keep the key outside Coolify: losing it makes every file unreadable, and changing it requires re-encrypting existing files. A DPA with the storage provider is required.
 - **Domain and TLS.** Assigned in Coolify to the `api` service (port 3001), routed by Traefik.
 - **Migrations and seed.** They run when the container starts. If they fail the container does not start and Coolify keeps the previous version.

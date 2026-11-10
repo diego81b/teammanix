@@ -1,6 +1,7 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuditModule } from './audit/audit.service';
 import { AuthModule } from './auth/auth.module';
@@ -11,6 +12,7 @@ import { EventsModule } from './events/events.module';
 import { HealthController } from './health.controller';
 import { InvitationsModule } from './invitations/invitations.module';
 import { MailModule } from './mail/mail.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import config from './mikro-orm.config';
 import { PeopleModule } from './people/people.module';
 import { PermissionsModule } from './permissions/permissions.module';
@@ -29,7 +31,9 @@ import { SuspensionsModule } from './suspensions/suspensions.module';
       }),
     }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: process.env.NODE_ENV === 'test' ? 100_000 : 300 }]),
+    ScheduleModule.forRoot(),
     MailModule,
+    NotificationsModule,
     AuditModule,
     AuthModule,
     ClubModule,

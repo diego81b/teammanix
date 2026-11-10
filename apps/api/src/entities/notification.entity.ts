@@ -4,7 +4,7 @@ import { User } from './user.entity';
 import { NotificationType } from './enums';
 
 /**
- * In-app notification. Email and push sending starts from the same row, respecting NotificationPreference.
+ * Notification stored by `NotificationsService`. In-app, email and push all start from the same row, respecting NotificationPreference.
  *
  * It stores no rendered text: it stores `type` and `params`. The frontend translates into the user's current language
  * (key `notifications.<type>.title` and `.body`), so a language change also translates the history.
@@ -15,12 +15,19 @@ import { NotificationType } from './enums';
 @Entity({ tableName: 'notifications' })
 @Index({ properties: ['user', 'readAt', 'createdAt'] })
 @Unique({ properties: ['user', 'dedupKey'] })
-export class Notification extends TenantEntity {
+export class Notification extends TenantEntity<'inApp'> {
   @ManyToOne(() => User, { deleteRule: 'cascade' })
   user!: Rel<User>;
 
   @Enum({ items: () => NotificationType, length: 30 })
   type!: NotificationType;
+
+  /**
+   * Whether the notification center shows it. False when the person turned in-app off but kept email or push:
+   * the row still exists, because both deliver from it.
+   */
+  @Property({ default: true })
+  inApp: boolean = true;
 
   /** Values that fill the translated text, for example { club, event, date }. Strings and numbers only. */
   @Property({ type: 'json' })

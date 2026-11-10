@@ -1,6 +1,15 @@
-import { currentCertificate, DAYS_EXPIRING, certificateStatus, validateCertificateDates } from './certificate.rules';
+import { currentCertificate, DAYS_EXPIRING, certificateStatus, daysUntil, validateCertificateDates } from './certificate.rules';
 
 const TODAY = '2026-11-06';
+
+describe('daysUntil', () => {
+  it('counts calendar days, negative once past, across months and years', () => {
+    expect(daysUntil('2026-11-06', TODAY)).toBe(0);
+    expect(daysUntil('2026-11-16', TODAY)).toBe(10);
+    expect(daysUntil('2026-11-05', TODAY)).toBe(-1);
+    expect(daysUntil('2027-01-05', '2026-12-06')).toBe(30);
+  });
+});
 
 describe('certificateStatus', () => {
   it('missing without an expiry', () => {

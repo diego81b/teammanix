@@ -4855,6 +4855,7 @@
             "event_cancelled",
             "certificate_expiring",
             "certificate_expired",
+            "certificates_due",
             "absence_declared"
           ],
           "mappedType": "enum"
@@ -4954,6 +4955,22 @@
           "comment": null,
           "enumItems": [],
           "mappedType": "datetime"
+        },
+        "in_app": {
+          "name": "in_app",
+          "type": "bool",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "true",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "boolean"
         }
       },
       "name": "notifications",
