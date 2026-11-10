@@ -158,6 +158,12 @@ describe('useCertificates', () => {
     expect(last['DELETE /certificates/c1']?.method).toBe('DELETE')
   })
 
+  it('reads the players due in a season: names, status and dates', async () => {
+    const row = { personId: 'p1', name: 'Anna', surname: 'Rossi', status: 'expiring', expiry: '2026-12-01', daysLeft: 20 }
+    endpoint('/seasons/s1/certificates-due', [row])
+    expect(await useCertificates().due('s1')).toEqual([row])
+  })
+
   it('uploads the file as a raw binary body with its type', async () => {
     let type: string | undefined
     let byte = 0

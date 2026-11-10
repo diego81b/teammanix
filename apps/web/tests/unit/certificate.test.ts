@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkFile, daysToExpiry, MAX_BYTE_FILE, variantCertificate } from '../../app/utils/certificate'
+import { checkFile, daysToExpiry, dueText, MAX_BYTE_FILE, variantCertificate } from '../../app/utils/certificate'
 
 describe('daysToExpiry', () => {
   it('without expiry it is null', () => expect(daysToExpiry(null, '2026-11-06')).toBeNull())
@@ -15,6 +15,16 @@ describe('variantCertificate', () => {
     ['expired', 'error'],
     ['missing', 'neutral'],
   ] as const)('%s usa %s', (status, v) => expect(variantCertificate(status)).toBe(v))
+})
+
+describe('dueText', () => {
+  it.each([
+    [-5, { key: 'expiredAgo', count: 5 }],
+    [-1, { key: 'expiredYesterday', count: 1 }],
+    [0, { key: 'today', count: 0 }],
+    [1, { key: 'tomorrow', count: 1 }],
+    [20, { key: 'inDays', count: 20 }],
+  ] as const)('%s days left reads %j', (daysLeft, text) => expect(dueText(daysLeft)).toEqual(text))
 })
 
 describe('checkFile', () => {

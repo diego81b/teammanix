@@ -1,4 +1,4 @@
-import type { PersonCertificates, CertificateDto, ClubSettings, CertificateType } from '../types/api'
+import type { PersonCertificates, CertificateDto, CertificateDue, ClubSettings, CertificateType } from '../types/api'
 
 export interface CertificateData {
   type: CertificateType
@@ -11,6 +11,8 @@ export function useCertificates() {
   const api = useApi()
   return {
     list: (personId: string) => api<PersonCertificates>(`/people/${personId}/certificates`),
+    /** Players of the team whose certificate expires within 30 days or has expired: status and dates only. Needs the certificates permission in the team. */
+    due: (seasonId: string) => api<CertificateDue[]>(`/seasons/${seasonId}/certificates-due`),
     create: (personId: string, data: CertificateData) =>
       api<CertificateDto>(`/people/${personId}/certificates`, { method: 'POST', body: { ...data } }),
     edit: (id: string, data: Partial<CertificateData>) =>

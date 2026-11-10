@@ -866,6 +866,15 @@ const en: typeof it = {
     noneCurrent: 'No current or upcoming absences.',
     past: 'Past absences ({count})',
   },
+  certificatesDue: {
+    title: 'Certificates to check',
+    intro: 'Players whose medical certificate expires within 30 days or has expired. You only see status and dates, never the file. Whoever has the certificates permission can see it.',
+    toCalendar: 'Calendar',
+    none: 'No certificate expiring or expired.',
+    expiresOn: 'Expires on {date}',
+    expiredOn: 'Expired on {date}',
+    when: { today: 'expires today', tomorrow: 'expires tomorrow', inDays: 'in {count} days', expiredYesterday: 'expired yesterday', expiredAgo: 'expired {count} days ago' },
+  },
   suspensions: {
     title: 'Suspensions',
     mineTitle: 'My suspensions',

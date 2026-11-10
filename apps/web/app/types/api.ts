@@ -461,6 +461,17 @@ export interface MyEnrollmentAbsences {
   absences: AbsenceOut[]
 }
 
+/** A player whose certificate expires within 30 days or has expired: status and dates, never the file. */
+export interface CertificateDue {
+  personId: string
+  name: string
+  surname: string | null
+  status: 'expiring' | 'expired'
+  expiry: string
+  /** Negative once expired. */
+  daysLeft: number
+}
+
 /** A person of the season with declared absences, dates only and merged, for staff, managers and the admin. */
 export interface SeasonAbsences {
   enrollmentId: string

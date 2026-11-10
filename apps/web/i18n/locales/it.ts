@@ -870,6 +870,15 @@ const it = {
     noneCurrent: 'Nessuna assenza in corso o in arrivo.',
     past: 'Assenze concluse ({count})',
   },
+  certificatesDue: {
+    title: 'Certificati da controllare',
+    intro: 'Giocatori con il certificato medico in scadenza entro 30 giorni o già scaduto. Vedi solo stato e date, mai il file. Lo vede chi ha il permesso sui certificati.',
+    toCalendar: 'Calendario',
+    none: 'Nessun certificato in scadenza o scaduto.',
+    expiresOn: 'Scade il {date}',
+    expiredOn: 'Scaduto il {date}',
+    when: { today: 'scade oggi', tomorrow: 'scade domani', inDays: 'tra {count} giorni', expiredYesterday: 'scaduto ieri', expiredAgo: 'scaduto da {count} giorni' },
+  },
   suspensions: {
     title: 'Squalifiche',
     mineTitle: 'Le mie squalifiche',

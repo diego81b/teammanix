@@ -34,4 +34,14 @@ export function checkFile(f: { type: string, size: number }): FileError | null {
   return null
 }
 
+export type DueKey = 'expiredAgo' | 'expiredYesterday' | 'today' | 'tomorrow' | 'inDays'
+
+/** Which sentence says how far a certificate is from its expiry; `count` is the number of days it names. */
+export function dueText(daysLeft: number): { key: DueKey, count: number } {
+  if (daysLeft < -1) return { key: 'expiredAgo', count: -daysLeft }
+  if (daysLeft === -1) return { key: 'expiredYesterday', count: 1 }
+  if (daysLeft === 0) return { key: 'today', count: 0 }
+  return daysLeft === 1 ? { key: 'tomorrow', count: 1 } : { key: 'inDays', count: daysLeft }
+}
+
 export const todayIso = (): string => new Date().toISOString().slice(0, 10)
