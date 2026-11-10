@@ -10,5 +10,6 @@ import { ResponsesService } from './responses.service';
   imports: [PermissionsModule, CertificatesModule],
   controllers: [CallupsController, ResponsesController],
   providers: [CallupsService, ResponsesService],
+  exports: [ResponsesService],
 })
 export class CallupsModule {}

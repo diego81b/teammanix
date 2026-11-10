@@ -1,6 +1,7 @@
 import { AccessRoleType, CallupResponse, EnrollmentStatus, EventType, ReasonDecline, ScopeType } from '../entities/enums';
 import type { CtxRole } from '../common/auth-context';
 import {
+  absenceProvider,
   canCallUp,
   certificateProvider,
   checkAnswer,
@@ -58,7 +59,7 @@ describe('reasons from the status and the certificate', () => {
 });
 
 describe('extension point: new blocking reasons plug in as providers', () => {
-  const absence: ReasonProvider = () => [{ code: 'absence', severity: 'confirm', until: '2026-11-15' }];
+  const absence: ReasonProvider = () => [{ code: 'absence', severity: 'hard', until: '2026-11-15' }];
   const suspension: ReasonProvider = (_c, x) => (x.eventType === EventType.MATCH ? [{ code: 'suspended', severity: 'hard' }] : []);
 
   it('adds the reasons of every provider after the built in ones', () => {
@@ -105,7 +106,7 @@ describe('partition', () => {
       row('b', false),
       row('c', false, [{ code: 'injured', severity: 'hard' }]),
       row('d', false, [{ code: 'certificate_expired', severity: 'warning' }]),
-      row('e', false, [{ code: 'absence', severity: 'confirm' }]),
+      row('e', false, [{ code: 'absence', severity: 'hard' }]),
       row('f', true, [{ code: 'injured', severity: 'hard' }]),
     ];
     const lists = partition(rows);
@@ -223,5 +224,31 @@ describe('no coach available', () => {
     expect(noCoachAvailable(assistantOnly, ['coach', 'assistant_coach'])).toBe(false);
     expect(noCoachAvailable(assistantOnly, ['coach'])).toBe(true);
     expect(noCoachAvailable(staff(['trainer', CallupResponse.CONFIRMED]), ['coach', 'assistant_coach'])).toBe(true);
+  });
+});
+
+describe('declared absence (rule 10)', () => {
+  it('a person in absence gets a hard reason with the end of the block', () => {
+    expect(evaluate({ ...fit, absence: { until: '2026-11-15' } }, ctx)).toEqual([{ code: 'absence', severity: 'hard', until: '2026-11-15' }]);
+  });
+
+  it('an absence until further notice has no end', () => {
+    expect(evaluate({ ...fit, absence: { until: null } }, ctx)).toEqual([{ code: 'absence', severity: 'hard' }]);
+  });
+
+  it('no absence, no reason', () => {
+    expect(absenceProvider(fit, ctx)).toEqual([]);
+    expect(absenceProvider({ ...fit, absence: null }, ctx)).toEqual([]);
+  });
+
+  it('nobody can call up a player in absence, a confirmation does not change it', () => {
+    const reasons = evaluate({ ...fit, absence: { until: '2026-11-15' } }, ctx);
+    expect(canCallUp(reasons, false)).toBe('NOT_CALLABLE');
+    expect(canCallUp(reasons, true)).toBe('NOT_CALLABLE');
+  });
+
+  it('a player in absence goes to the not callable list', () => {
+    const row = { enrollmentId: 'a', calledUp: false, reasons: evaluate({ ...fit, absence: { until: null } }, ctx) };
+    expect(partition([row]).notCallable).toHaveLength(1);
   });
 });

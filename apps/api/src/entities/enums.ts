@@ -149,6 +149,7 @@ export enum NotificationType {
   EVENT_CANCELLED = 'event_cancelled',
   CERTIFICATE_EXPIRING = 'certificate_expiring',
   CERTIFICATE_EXPIRED = 'certificate_expired',
+  ABSENCE_DECLARED = 'absence_declared',
 }
 
 export enum AuditAction {
@@ -175,4 +176,7 @@ export enum AuditAction {
   PERSON_EXPORTED = 'person_exported',
   PERSON_DELETED = 'person_deleted',
   TERMS_ACCEPTED = 'terms_accepted',
+  ABSENCE_CREATED = 'absence_created',
+  ABSENCE_MODIFIED = 'absence_modified',
+  ABSENCE_CANCELLED = 'absence_cancelled',
 }

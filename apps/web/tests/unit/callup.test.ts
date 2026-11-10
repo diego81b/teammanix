@@ -11,6 +11,8 @@ import {
   needsConfirmation,
   ownStaffRow,
   reasonKey,
+  reasonLabel,
+  absenceNotice,
   rowAction,
   togglePlacement,
   unsentCount,
@@ -44,8 +46,8 @@ describe('rowAction: what a tap does', () => {
   it('not callable for a hard reason: nothing can be done', () => {
     expect(rowAction('notCallable', row({ reasons: [reason('hard', 'injured')] }))).toBe('none')
   })
-  it('not callable for an absence: added after a confirmation', () => {
-    expect(rowAction('notCallable', row({ reasons: [reason('confirm', 'absence')] }))).toBe('add_confirm')
+  it('not callable for an absence: no action, the player removes the absence first', () => {
+    expect(rowAction('notCallable', row({ reasons: [reason('hard', 'absence')] }))).toBe('none')
   })
   it('hard wins over confirm', () => {
     expect(rowAction('notCallable', row({ reasons: [reason('confirm'), reason('hard')] }))).toBe('none')
@@ -130,5 +132,35 @@ describe('the trail of answers', () => {
     const it = formatChangeTime('2026-11-12T18:40:00.000Z', 'it', 'UTC')
     expect(it).toContain('12/11/2026')
     expect(it).toContain('18:40')
+  })
+})
+
+describe('reasonLabel: the text of a reason', () => {
+  const t = (key: string, p?: Record<string, string>) => (p ? `${key}:${JSON.stringify(p)}` : key)
+  const fmt = (d: string) => `<${d}>`
+
+  it('a plain reason is its translation', () => {
+    expect(reasonLabel({ code: 'certificate_expired', severity: 'hard' }, t, fmt)).toBe('callup.reason.certificate_expired')
+  })
+  it('a reason with an end date appends it', () => {
+    expect(reasonLabel({ code: 'injured', severity: 'hard', until: '2026-11-20' }, t, fmt)).toBe('callup.reason.injured · <2026-11-20>')
+  })
+  it('a declared absence with an end says "not available until"', () => {
+    expect(reasonLabel({ code: 'absence', severity: 'hard', until: '2026-11-15' }, t, fmt)).toBe('callup.reason.absenceUntil:{"date":"<2026-11-15>"}')
+  })
+  it('a declared absence with no end has no date', () => {
+    expect(reasonLabel({ code: 'absence', severity: 'hard' }, t, fmt)).toBe('callup.reason.absence')
+    expect(reasonLabel({ code: 'absence', severity: 'hard', until: null }, t, fmt)).toBe('callup.reason.absence')
+  })
+})
+
+describe('absenceNotice: the own staff row during a declared absence', () => {
+  it('is null without an absence', () => {
+    expect(absenceNotice({ absence: null })).toBeNull()
+    expect(absenceNotice({})).toBeNull()
+  })
+  it('names the end, or none for until further notice', () => {
+    expect(absenceNotice({ absence: { until: '2026-11-15' } })).toEqual({ key: 'callup.inAbsenceUntil', until: '2026-11-15' })
+    expect(absenceNotice({ absence: { until: null } })).toEqual({ key: 'callup.inAbsence', until: null })
   })
 })

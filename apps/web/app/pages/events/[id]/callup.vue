@@ -172,6 +172,13 @@
           <h2 class="font-semibold">{{ $t('callup.staffTitle') }}</h2>
           <div v-if="ownStaff" class="space-y-2 rounded-lg border border-default bg-elevated p-3" role="group" :aria-label="$t('callup.myAvailability')">
             <p class="text-sm font-semibold">{{ $t('callup.myAvailability') }}</p>
+            <UAlert
+              v-if="ownAbsence"
+              color="warning"
+              variant="subtle"
+              icon="i-tm-info"
+              :title="ownAbsence.until ? $t(ownAbsence.key, { date: formatDate(ownAbsence.until, locale) }) : $t(ownAbsence.key)"
+            />
             <div class="flex gap-2">
               <UButton
                 class="min-h-11 flex-1 justify-center"
@@ -179,6 +186,7 @@
                 :variant="ownStaff.response === 'confirmed' ? 'solid' : 'outline'"
                 :color="ownStaff.response === 'confirmed' ? 'success' : 'neutral'"
                 :aria-pressed="ownStaff.response === 'confirmed'"
+                :disabled="ownAbsence !== null"
                 :loading="answering === 'staff-confirmed'"
                 :label="$t('callup.setAvailable')"
                 @click="declare('confirmed')"
@@ -284,7 +292,7 @@
 <script setup lang="ts">
 import type { AnswerChange, CallupReason, CallupResponse, CallupRow, Placement, ReasonDecline, StaffAnswerRow, StaffCallups } from '~/types/api'
 import {
-  DECLINE_REASONS, blockers, callupCounts, canSend, formatChangeTime, groupStaff, historyParts, myAnswer, ownStaffRow, reasonKey, rowAction, togglePlacement, unsentCount, warnings,
+  DECLINE_REASONS, blockers, callupCounts, canSend, formatChangeTime, groupStaff, historyParts, myAnswer, ownStaffRow, reasonLabel, absenceNotice, rowAction, togglePlacement, unsentCount, warnings,
   type CallupList,
 } from '~/utils/callup'
 import { eventHeading } from '~/utils/calendar'
@@ -313,7 +321,7 @@ const tabs = computed(() =>
 const unsent = computed(() => (staff.value ? unsentCount(staff.value.calledUp) : 0))
 const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 const personName = (p: { name: string, surname: string | null }) => [p.name, p.surname].filter(Boolean).join(' ')
-const reasonText = (r: CallupReason) => (r.until ? `${t(reasonKey(r.code))} · ${formatDate(r.until, locale.value)}` : t(reasonKey(r.code)))
+const reasonText = (r: CallupReason) => reasonLabel(r, t, day => formatDate(day, locale.value))
 
 const errorAction = ref('')
 const busy = ref('')
@@ -372,6 +380,7 @@ const staffRows = computed<StaffAnswerRow[]>(() => {
   return [...g.available, ...g.notAvailable, ...g.noAnswer]
 })
 const ownStaff = computed(() => (staff.value ? ownStaffRow(staff.value.staff) : null))
+const ownAbsence = computed(() => (ownStaff.value ? absenceNotice(ownStaff.value) : null))
 const STAFF_COLOR = { available: 'success', notAvailable: 'error', noAnswer: 'neutral' } as const
 const STAFF_LABEL = { available: 'staffAvailable', notAvailable: 'staffNotAvailable', noAnswer: 'staffNoAnswer' } as const
 const staffState = (s: Pick<StaffAnswerRow, 'response'>) => (s.response === 'confirmed' ? 'available' : s.response === 'declined' ? 'notAvailable' : 'noAnswer')

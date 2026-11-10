@@ -107,7 +107,10 @@ const themes = computed(() => [
 
 const menu = computed<DropdownMenuItem[][]>(() => [
   [{ label: session.user?.email ?? '', type: 'label' }],
-  [{ label: t('common.changeClub'), icon: 'i-tm-building', to: '/select-club' }],
+  [
+    { label: t('shell.absences'), icon: 'i-tm-calendar', to: '/absences' },
+    { label: t('common.changeClub'), icon: 'i-tm-building', to: '/select-club' },
+  ],
   [
     { label: t('shell.theme'), type: 'label' },
     ...themes.value.map(x => ({

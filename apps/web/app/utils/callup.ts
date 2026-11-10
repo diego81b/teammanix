@@ -10,6 +10,21 @@ export const warnings = (r: Pick<CallupRow, 'reasons'>): CallupReason[] => r.rea
 
 export const reasonKey = (code: string): string => `callup.reason.${code}`
 
+/**
+ * The text of a reason. A declared absence reads "not available until [date]" and, with no end, just "not available"; any
+ * other reason with an end date appends it. `t` and `fmt` are the translation and the date format of the caller.
+ */
+export function reasonLabel(r: CallupReason, t: (key: string, params?: Record<string, string>) => string, fmt: (day: string) => string): string {
+  if (r.code === 'absence') return r.until ? t(`${reasonKey('absence')}Until`, { date: fmt(r.until) }) : t(reasonKey('absence'))
+  return r.until ? `${t(reasonKey(r.code))} · ${fmt(r.until)}` : t(reasonKey(r.code))
+}
+
+/** The own staff row during a declared absence: the message key and the end (null: no end), or null outside any absence. */
+export function absenceNotice(row: Pick<StaffAnswerRow, 'absence'>): { key: string, until: string | null } | null {
+  if (!row.absence) return null
+  return row.absence.until ? { key: 'callup.inAbsenceUntil', until: row.absence.until } : { key: 'callup.inAbsence', until: null }
+}
+
 export type RowAction = 'add' | 'add_confirm' | 'remove' | 'none'
 
 /**

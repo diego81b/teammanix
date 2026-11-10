@@ -1,6 +1,8 @@
 import { UniqueConstraintViolationException } from '@mikro-orm/core';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Absence } from '../entities/absence.entity';
+import { blockOn } from '../absences/absence.rules';
 import type { AuthContext } from '../common/auth-context';
 import { Callup } from '../entities/callup.entity';
 import { CallupResponseChange } from '../entities/callup-response-change.entity';
@@ -9,6 +11,7 @@ import { Enrollment } from '../entities/enrollment.entity';
 import { CallupResponse, EnrollmentType, ReasonDecline, type StaffRole } from '../entities/enums';
 import { Event } from '../entities/event.entity';
 import { User } from '../entities/user.entity';
+import { localDate } from '../events/event.rules';
 import { AuthorizationsService } from '../permissions/authorizations.service';
 import { checkAnswer, isChange, noCoachAvailable } from './callup.rules';
 import type { AnswerDto } from './dto';
@@ -30,6 +33,8 @@ export interface StaffRow {
   response: CallupResponse | null;
   /** The row is the viewer's own. */
   mine: boolean;
+  /** Only on the viewer's own row: the declared absence that covers the event, with its end (null: no end). */
+  absence?: { until: string | null } | null;
 }
 
 export interface StaffBlock {
@@ -94,13 +99,17 @@ export class ResponsesService {
     const answers = new Map(
       (await this.em.find(Callup, { event: event.id, enrollment: { $in: enrollments.map((e) => e.id) } })).map((c) => [c.enrollment.id, c.response]),
     );
-    const rows = enrollments.map((e) => ({
+    // The absence is shown to its owner only, so the button can say why it is disabled. Staff read the dates elsewhere.
+    const absences = await this.em.find(Absence, { enrollment: { $in: viewerEnrollmentIds } });
+    const onDay = localDate(event.start);
+    const rows: StaffRow[] = enrollments.map((e) => ({
       enrollmentId: e.id,
       name: e.person.name,
       surname: e.person.surname,
       staffRole: e.staffRole,
       response: answers.get(e.id) ?? null,
       mine: viewerEnrollmentIds.includes(e.id),
+      ...(viewerEnrollmentIds.includes(e.id) ? { absence: blockOn(absences.filter((x) => x.enrollment.id === e.id), onDay) } : {}),
     }));
     const club = await this.em.findOneOrFail(Club, event.club.id, { fields: ['warnNoCoachAvailable', 'coachRoles'] });
     return { rows, noCoachWarning: club.warnNoCoachAvailable && noCoachAvailable(rows, club.coachRoles) };
@@ -124,6 +133,12 @@ export class ResponsesService {
       throw new BadRequestException({ message: 'A reason is required to decline', code: 'REASON_REQUIRED' });
     }
     if (verdict === 'INVALID_DATA') throw new BadRequestException({ message: 'Invalid data', code: 'INVALID_DATA' });
+
+    // Rule 11: in a declared absence a staff member cannot say "available"; "not available" is always allowed.
+    if (kind === EnrollmentType.STAFF && dto.response === CallupResponse.CONFIRMED) {
+      const mine = await this.em.find(Absence, { enrollment: enrollment.id });
+      if (blockOn(mine, localDate(event.start))) throw new ConflictException({ message: 'You are in a declared absence', code: 'IN_ABSENCE' });
+    }
 
     const was = { response: callup?.response ?? CallupResponse.PENDING, reason: callup?.reason ?? null };
     if (callup && !isChange(was, dto)) return this.result(enrollment.id, callup);

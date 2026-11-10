@@ -1,9 +1,11 @@
 import { UniqueConstraintViolationException } from '@mikro-orm/core';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { blockOn } from '../absences/absence.rules';
 import { certificateStatus } from '../certificates/certificate.rules';
 import { CertificatesService } from '../certificates/certificates.service';
 import type { AuthContext } from '../common/auth-context';
+import { Absence } from '../entities/absence.entity';
 import { Callup } from '../entities/callup.entity';
 import { Club } from '../entities/club.entity';
 import { Enrollment } from '../entities/enrollment.entity';
@@ -199,6 +201,8 @@ export class CallupsService {
     const callups = new Map((await this.em.find(Callup, { event: event.id, enrollment: { $in: enrollments.map((e) => e.id) } })).map((c) => [c.enrollment.id, c]));
     const expiries = await this.certificates.expiries(personIds);
     const busy = await this.busyPeople(event, personIds);
+    // Absences hang on the enrollment, so they reach only the team of that enrollment.
+    const absences = await this.em.find(Absence, { enrollment: { $in: enrollments.map((e) => e.id) } });
     const club = await this.em.findOneOrFail(Club, event.club.id, { fields: ['blockCertificateExpired'] });
     // The certificate counts on the day of the event, not today.
     const onDay = localDate(event.start);
@@ -206,7 +210,8 @@ export class CallupsService {
 
     return enrollments.map((e) => {
       const callup = callups.get(e.id);
-      const reasons = evaluate({ status: e.status, certificate: certificateStatus(expiries.get(e.person.id) ?? null, onDay) }, ctx);
+      const absence = blockOn(absences.filter((x) => x.enrollment.id === e.id), onDay);
+      const reasons = evaluate({ status: e.status, certificate: certificateStatus(expiries.get(e.person.id) ?? null, onDay), absence }, ctx);
       if (busy.has(e.person.id)) reasons.push({ code: 'busy_elsewhere', severity: 'warning' });
       return {
         enrollmentId: e.id,

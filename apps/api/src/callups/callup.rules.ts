@@ -7,8 +7,8 @@ import { canReadSeasonEvents, type SeasonTarget } from '../events/visibility';
  * Pure rules of the call-up (ANALISI rules 2, 3 and 6). No DB, no Nest.
  *
  * Why a person cannot or should not be called up is a list of reasons. Each reason has a severity:
- * - hard: refuses the call-up, nobody can force it (injured, suspended, certificate when the club blocks);
- * - confirm: refuses unless the coach confirms (declared absence);
+ * - hard: refuses the call-up, nobody can force it (injured, suspended, declared absence, certificate when the club blocks);
+ * - confirm: refuses unless the coach confirms (no provider uses it today, it stays for new reasons);
  * - warning: lets it through and shows a notice (certificate expiring, or expired when the club only warns, overlapping event).
  */
 export type Severity = 'hard' | 'confirm' | 'warning';
@@ -25,6 +25,8 @@ export interface Reason {
 export interface Candidate {
   status: EnrollmentStatus;
   certificate: CertificateStatus;
+  /** Declared absence that covers the day of the event: `until` is the end of the continuous block, null when open ended. */
+  absence?: { until: string | null } | null;
 }
 
 export interface EventContext {
@@ -34,8 +36,8 @@ export interface EventContext {
 }
 
 /**
- * A source of reasons. Absences (rule 10) and suspensions (rule 13) arrive in later slices as new providers,
- * without touching `evaluate`, `canCallUp` or `partition`.
+ * A source of reasons. Suspensions (rule 13) arrive in a later slice as a new provider, without touching `evaluate`,
+ * `canCallUp` or `partition`.
  */
 export type ReasonProvider = (candidate: Candidate, ctx: EventContext) => Reason[];
 
@@ -53,7 +55,11 @@ export const certificateProvider: ReasonProvider = (c, ctx) => {
   }
 };
 
-export const DEFAULT_PROVIDERS: readonly ReasonProvider[] = [statusProvider, certificateProvider];
+/** A declared absence (rule 10) refuses the call-up for good: to be callable again the player removes or shortens it. */
+export const absenceProvider: ReasonProvider = (c) =>
+  c.absence ? [{ code: 'absence', severity: 'hard', ...(c.absence.until ? { until: c.absence.until } : {}) }] : [];
+
+export const DEFAULT_PROVIDERS: readonly ReasonProvider[] = [statusProvider, certificateProvider, absenceProvider];
 
 export function evaluate(candidate: Candidate, ctx: EventContext, providers: readonly ReasonProvider[] = DEFAULT_PROVIDERS): Reason[] {
   return providers.flatMap((p) => p(candidate, ctx));

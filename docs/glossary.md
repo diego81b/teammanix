@@ -40,6 +40,7 @@ Code is in English. Italian stays only in user-facing texts (i18n locales, email
 | distacco | detachment | |
 | bozza | draft | |
 | profilo sport | sport profile | seed holds codes only |
+| assenza | absence | declared period, dates only, no reason |
 
 ## Position codes (football)
 

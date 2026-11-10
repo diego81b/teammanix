@@ -338,7 +338,7 @@ export interface CallupReason {
   code: string
   severity: CallupSeverity
   /** ISO day until which the block lasts, when known. */
-  until?: string
+  until?: string | null
 }
 
 export type CallupResponse = 'pending' | 'confirmed' | 'declined'
@@ -385,6 +385,8 @@ export interface StaffAnswerRow {
   staffRole: StaffRole | null
   response: CallupResponse | null
   mine: boolean
+  /** Only on the viewer's own row: the declared absence that covers the event (`until` null: no end). */
+  absence?: { until: string | null } | null
 }
 
 export interface AvailableStaff {
@@ -421,3 +423,35 @@ export interface PlayerCallups {
 }
 
 export type CallupsDto = StaffCallups | PlayerCallups
+
+export interface AbsenceOut {
+  id: string
+  startDate: string
+  endDate: string | null
+}
+
+/** An answer already given to an event that a new absence covers. */
+export interface AffectedEvent {
+  eventId: string
+  type: EventType
+  title: string | null
+  start: string
+  response: CallupResponse
+}
+
+export interface AbsenceResult {
+  absence: AbsenceOut
+  affected: AffectedEvent[]
+}
+
+/** An open enrollment of the logged in person with their absences as entered. */
+export interface MyEnrollmentAbsences {
+  enrollmentId: string
+  type: EnrollmentType
+  teamName: string
+  seasonName: string
+  seasonStatus: SeasonStatus
+  seasonStart: string
+  seasonEnd: string
+  absences: AbsenceOut[]
+}

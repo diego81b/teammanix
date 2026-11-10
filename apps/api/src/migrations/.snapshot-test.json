@@ -70,6 +70,194 @@
           "enumItems": [],
           "mappedType": "uuid"
         },
+        "enrollment_id": {
+          "name": "enrollment_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 0,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "date"
+        },
+        "end_date": {
+          "name": "end_date",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 0,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "date"
+        }
+      },
+      "name": "absences",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "club_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "absences_club_id_index",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "enrollment_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "absences_enrollment_id_index",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "absences_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [
+        {
+          "name": "absences_check",
+          "columnName": "start_date",
+          "definition": "CHECK (((end_date IS NULL) OR (end_date >= start_date)))",
+          "expression": "(end_date IS NULL) OR (end_date >= start_date)"
+        }
+      ],
+      "foreignKeys": {
+        "absences_club_id_foreign": {
+          "columnNames": [
+            "club_id"
+          ],
+          "constraintName": "absences_club_id_foreign",
+          "localTableName": "public.absences",
+          "referencedTableName": "public.clubs",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
+        },
+        "absences_enrollment_id_foreign": {
+          "columnNames": [
+            "enrollment_id"
+          ],
+          "constraintName": "absences_enrollment_id_foreign",
+          "localTableName": "public.absences",
+          "referencedTableName": "public.enrollments",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
+        }
+      },
+      "nativeEnums": {},
+      "comment": null
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "gen_random_uuid()",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
         "user_id": {
           "name": "user_id",
           "type": "uuid",
@@ -195,13 +383,13 @@
       "checks": [
         {
           "name": "access_admin_roles_only_club",
-          "columnName": "scope",
+          "columnName": "role",
           "definition": "CHECK (((role <> 'admin'::text) OR (scope = 'club'::text)))",
           "expression": "(role <> 'admin'::text) OR (scope = 'club'::text)"
         },
         {
           "name": "access_scope_consistent_roles",
-          "columnName": "team_id",
+          "columnName": "scope",
           "definition": "CHECK ((((scope = 'club'::text) AND (activity_id IS NULL) AND (team_id IS NULL)) OR ((scope = 'activity'::text) AND (activity_id IS NOT NULL) AND (team_id IS NULL)) OR ((scope = 'team'::text) AND (team_id IS NOT NULL))))",
           "expression": "((scope = 'club'::text) AND (activity_id IS NULL) AND (team_id IS NULL)) OR ((scope = 'activity'::text) AND (activity_id IS NOT NULL) AND (team_id IS NULL)) OR ((scope = 'team'::text) AND (team_id IS NOT NULL))"
         }
@@ -818,7 +1006,10 @@
             "closed_season",
             "person_exported",
             "person_deleted",
-            "terms_accepted"
+            "terms_accepted",
+            "absence_created",
+            "absence_modified",
+            "absence_cancelled"
           ],
           "mappedType": "enum"
         },
@@ -3219,7 +3410,7 @@
         },
         {
           "name": "events_fields_only_match",
-          "columnName": "own_score",
+          "columnName": "opponent_score",
           "definition": "CHECK (((type = 'match'::text) OR ((opponent_id IS NULL) AND (home_away IS NULL) AND (own_score IS NULL) AND (opponent_score IS NULL))))",
           "expression": "(type = 'match'::text) OR ((opponent_id IS NULL) AND (home_away IS NULL) AND (own_score IS NULL) AND (opponent_score IS NULL))"
         }
@@ -4660,7 +4851,8 @@
             "event_modified",
             "event_cancelled",
             "certificate_expiring",
-            "certificate_expired"
+            "certificate_expired",
+            "absence_declared"
           ],
           "mappedType": "enum"
         },
