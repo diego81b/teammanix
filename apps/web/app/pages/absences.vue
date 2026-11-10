@@ -123,6 +123,7 @@ const absences = useAbsences()
 const toast = useToast()
 
 const { data, loading, error, reload: load } = useLoad(() => absences.mine())
+onMounted(load)
 
 const open = reactive({ form: false, decline: false, remove: false })
 const errorAction = ref('')
