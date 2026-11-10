@@ -25,6 +25,15 @@
         <UIcon name="i-tm-users" class="size-4" aria-hidden="true" />
         {{ $t('callup.open') }}
       </NuxtLink>
+      <NuxtLink
+        v-if="attendanceOpen(event, new Date())"
+        :to="`/events/${event.id}/attendance`"
+        class="inline-flex min-h-11 items-center gap-1 pl-4 text-sm font-medium text-primary hover:underline"
+        :aria-label="$t('attendance.openFor', { name: title })"
+      >
+        <UIcon name="i-tm-check-circle" class="size-4" aria-hidden="true" />
+        {{ $t('attendance.open') }}
+      </NuxtLink>
     </div>
     <slot name="actions" />
   </li>
@@ -32,6 +41,7 @@
 
 <script setup lang="ts">
 import type { CalendarEntryDto, EventDto, EventType } from '~/types/api'
+import { attendanceOpen } from '~/utils/attendance'
 import { eventHeading } from '~/utils/calendar'
 import { splitInstant } from '~/utils/event'
 

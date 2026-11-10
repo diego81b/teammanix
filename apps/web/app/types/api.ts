@@ -514,3 +514,40 @@ export interface SuspensionContext {
   canManage: boolean
   people: { enrollmentId: string, name: string, surname: string | null, type: EnrollmentType }[]
 }
+
+export type AttendanceOutcome = 'present' | 'late' | 'absent_excused' | 'absent' | 'injured'
+
+/** Counts of an event. `rate` is attended (present or late) over the people recorded and available (not injured), null when nobody was. */
+export interface AttendanceSummary {
+  present: number
+  late: number
+  absentExcused: number
+  absent: number
+  injured: number
+  notRecorded: number
+  total: number
+  attended: number
+  rate: number | null
+}
+
+/** A disabled person keeps the row for the totals; the name is hidden from everybody but the admin. */
+export interface AttendanceRow {
+  enrollmentId: string
+  type: EnrollmentType
+  staffRole: StaffRole | null
+  jerseyNumber: number | null
+  name: string | null
+  surname: string | null
+  disabled: boolean
+  outcome: AttendanceOutcome | null
+}
+
+export type AttendanceDto =
+  | { view: 'manage' | 'read', event: EventDto, canRecord: boolean, summary: AttendanceSummary, rows: AttendanceRow[] }
+  | { view: 'stats', event: EventDto, summary: AttendanceSummary }
+  | {
+    view: 'player'
+    event: EventDto
+    mine: { enrollmentId: string, outcome: AttendanceOutcome | null } | null
+    staffPresent: { enrollmentId: string, name: string | null, surname: string | null, staffRole: StaffRole | null }[]
+  }
