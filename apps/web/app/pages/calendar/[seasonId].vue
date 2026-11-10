@@ -16,6 +16,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3">
           <h1 class="text-2xl font-bold">{{ $t('events.title') }}</h1>
           <div class="flex flex-wrap gap-2">
+            <UButton v-if="data.access.canSeeAbsences" color="neutral" variant="outline" size="lg" class="min-h-11" icon="i-tm-calendar-x" :label="$t('teamAbsences.title')" :to="`/team-absences/${seasonId}`" />
             <UButton v-if="data.access.canSuspend" color="neutral" variant="outline" size="lg" class="min-h-11" icon="i-tm-ban" :label="$t('suspensions.title')" :to="`/suspensions/${seasonId}`" />
             <UButton v-if="data.access.canManage" size="lg" class="min-h-11" icon="i-tm-plus" :label="$t('events.newEvent')" @click="openNew" />
           </div>

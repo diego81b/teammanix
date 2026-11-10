@@ -858,6 +858,14 @@ const fr: typeof it = {
       done: 'Événements déclinés',
     },
   },
+  teamAbsences: {
+    title: 'Absences de l\'équipe',
+    intro: 'Qui sera absent et quand. Vous ne voyez que les dates, jamais un motif. Le staff, les dirigeants et l\'administrateur les voient.',
+    toCalendar: 'Calendrier',
+    none: 'Aucune absence déclarée.',
+    noneCurrent: 'Aucune absence en cours ou à venir.',
+    past: 'Absences terminées ({count})',
+  },
   suspensions: {
     title: 'Suspensions',
     mineTitle: 'Mes suspensions',

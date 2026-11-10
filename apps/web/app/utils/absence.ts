@@ -1,4 +1,4 @@
-import type { AbsenceOut } from '../types/api'
+import type { AbsenceOut, SeasonAbsences } from '../types/api'
 
 export interface AbsenceForm {
   startDate: string
@@ -44,3 +44,23 @@ export const pickAll = (events: readonly { eventId: string }[]): string[] => eve
 
 export const toggleEvent = (chosen: readonly string[], id: string): string[] =>
   chosen.includes(id) ? chosen.filter(x => x !== id) : [...chosen, id]
+
+/**
+ * The team screen: people with a current or future absence first (only those periods), soonest start first; people with
+ * only past ones go to a folded list, the most recent end first. A person with both is listed once, among the current.
+ */
+export function splitTeamAbsences(rows: readonly SeasonAbsences[], today: string): { current: SeasonAbsences[], past: SeasonAbsences[] } {
+  const current: SeasonAbsences[] = []
+  const past: SeasonAbsences[] = []
+  for (const r of rows) {
+    const split = splitAbsences(r.absences, today)
+    if (split.current.length) current.push({ ...r, absences: split.current })
+    else if (split.past.length) past.push({ ...r, absences: split.past })
+  }
+  const first = (r: SeasonAbsences) => r.absences[0]?.startDate ?? ''
+  const lastEnd = (r: SeasonAbsences) => r.absences[0]?.endDate ?? ''
+  return {
+    current: current.sort((a, b) => first(a).localeCompare(first(b))),
+    past: past.sort((a, b) => lastEnd(b).localeCompare(lastEnd(a))),
+  }
+}

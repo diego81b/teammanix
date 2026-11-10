@@ -461,6 +461,17 @@ export interface MyEnrollmentAbsences {
   absences: AbsenceOut[]
 }
 
+/** A person of the season with declared absences, dates only and merged, for staff, managers and the admin. */
+export interface SeasonAbsences {
+  enrollmentId: string
+  personId: string
+  name: string
+  surname: string | null
+  type: EnrollmentType
+  staffRole: StaffRole | null
+  absences: { startDate: string, endDate: string | null }[]
+}
+
 export type SuspensionFormKind = 'period' | 'matches'
 
 /** A match a suspension covers now, in calendar order: match `number` of `of`, `served` once it is played. */

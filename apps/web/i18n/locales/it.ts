@@ -862,6 +862,14 @@ const it = {
       done: 'Eventi declinati',
     },
   },
+  teamAbsences: {
+    title: 'Assenze della squadra',
+    intro: 'Chi non ci sarà e quando. Vedi solo le date, mai un motivo. Le vedono lo staff, i dirigenti e l\'amministratore.',
+    toCalendar: 'Calendario',
+    none: 'Nessuna assenza dichiarata.',
+    noneCurrent: 'Nessuna assenza in corso o in arrivo.',
+    past: 'Assenze concluse ({count})',
+  },
   suspensions: {
     title: 'Squalifiche',
     mineTitle: 'Le mie squalifiche',

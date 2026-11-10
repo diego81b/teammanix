@@ -858,6 +858,14 @@ const en: typeof it = {
       done: 'Events declined',
     },
   },
+  teamAbsences: {
+    title: 'Team absences',
+    intro: 'Who will be away and when. You only see dates, never a reason. Staff, managers and the admin can see them.',
+    toCalendar: 'Calendar',
+    none: 'No absences declared.',
+    noneCurrent: 'No current or upcoming absences.',
+    past: 'Past absences ({count})',
+  },
   suspensions: {
     title: 'Suspensions',
     mineTitle: 'My suspensions',

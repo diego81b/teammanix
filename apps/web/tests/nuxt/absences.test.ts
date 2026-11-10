@@ -53,3 +53,10 @@ describe('useAbsences', () => {
     expect(last['POST /absences/a1/decline']?.body).toEqual({ eventIds: ['e1'] })
   })
 })
+
+describe('useAbsences, team view', () => {
+  it('reads who is away in the season', async () => {
+    endpoint('/seasons/s1/absences', [{ enrollmentId: 'i1', absences: [{ startDate: '2026-11-10', endDate: null }] }])
+    expect(await useAbsences().ofSeason('s1')).toEqual([{ enrollmentId: 'i1', absences: [{ startDate: '2026-11-10', endDate: null }] }])
+  })
+})

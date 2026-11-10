@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formPayload, isPast, periodError, pickAll, splitAbsences, toggleEvent } from '../../app/utils/absence'
+import { formPayload, isPast, periodError, pickAll, splitAbsences, splitTeamAbsences, toggleEvent } from '../../app/utils/absence'
 
 const season = { seasonStart: '2026-09-01', seasonEnd: '2027-06-30' }
 const form = (over: Partial<{ startDate: string, endDate: string, untilFurtherNotice: boolean }> = {}) => ({ startDate: '2026-11-10', endDate: '2026-11-15', untilFurtherNotice: false, ...over })
@@ -66,5 +66,57 @@ describe('events to decline', () => {
   it('a tap adds or removes one event', () => {
     expect(toggleEvent(['e1', 'e2'], 'e1')).toEqual(['e2'])
     expect(toggleEvent(['e2'], 'e1')).toEqual(['e2', 'e1'])
+  })
+})
+
+describe('splitTeamAbsences', () => {
+  const today = '2026-11-12'
+  const row = (id: string, absences: { startDate: string, endDate: string | null }[]) => ({ enrollmentId: id, personId: `p-${id}`, name: id, surname: 'Rossi', type: 'player' as const, staffRole: null, absences })
+
+  it('lists people with a current or future absence first, soonest start first', () => {
+    const { current } = splitTeamAbsences([
+      row('b', [{ startDate: '2026-12-01', endDate: '2026-12-05' }]),
+      row('a', [{ startDate: '2026-11-10', endDate: '2026-11-15' }]),
+    ], today)
+    expect(current.map(r => r.enrollmentId)).toEqual(['a', 'b'])
+  })
+
+  it('an absence without an end is current and keeps its null end', () => {
+    const { current, past } = splitTeamAbsences([row('a', [{ startDate: '2026-10-01', endDate: null }])], today)
+    expect(current[0]?.absences).toEqual([{ startDate: '2026-10-01', endDate: null }])
+    expect(past).toEqual([])
+  })
+
+  it('an absence that ends today is still current, one that ended yesterday is past', () => {
+    expect(splitTeamAbsences([row('a', [{ startDate: '2026-11-01', endDate: '2026-11-12' }])], today).current).toHaveLength(1)
+    expect(splitTeamAbsences([row('a', [{ startDate: '2026-11-01', endDate: '2026-11-11' }])], today).past).toHaveLength(1)
+  })
+
+  it('a person with a past and a current period shows only the current one among the current, and is not listed as past', () => {
+    const { current, past } = splitTeamAbsences([
+      row('a', [{ startDate: '2026-10-01', endDate: '2026-10-05' }, { startDate: '2026-11-20', endDate: '2026-11-25' }]),
+    ], today)
+    expect(current[0]?.absences).toEqual([{ startDate: '2026-11-20', endDate: '2026-11-25' }])
+    expect(past).toEqual([])
+  })
+
+  it('people with only past absences go to the folded list, most recent end first', () => {
+    const { current, past } = splitTeamAbsences([
+      row('old', [{ startDate: '2026-09-01', endDate: '2026-09-05' }]),
+      row('recent', [{ startDate: '2026-11-01', endDate: '2026-11-05' }]),
+    ], today)
+    expect(current).toEqual([])
+    expect(past.map(r => r.enrollmentId)).toEqual(['recent', 'old'])
+  })
+
+  it('nothing declared gives two empty lists', () => {
+    expect(splitTeamAbsences([], today)).toEqual({ current: [], past: [] })
+  })
+
+  it('does not change the input', () => {
+    const input = [row('a', [{ startDate: '2026-10-01', endDate: '2026-10-05' }, { startDate: '2026-11-20', endDate: null }])]
+    const copy = JSON.parse(JSON.stringify(input))
+    splitTeamAbsences(input, today)
+    expect(input).toEqual(copy)
   })
 })

@@ -1,4 +1,4 @@
-import type { AbsenceResult, MyEnrollmentAbsences } from '../types/api'
+import type { AbsenceResult, MyEnrollmentAbsences, SeasonAbsences } from '../types/api'
 
 /**
  * Declared absences (rule 10). The person concerned is the only one who writes; the API decides and checks again.
@@ -9,6 +9,8 @@ export function useAbsences() {
   return {
     /** The logged in person's open enrollments with their absences. */
     mine: () => api<MyEnrollmentAbsences[]>('/absences/me'),
+    /** Who is away in the team, dates only. Staff of the season, managers in scope and the admin; never a player. */
+    ofSeason: (seasonId: string) => api<SeasonAbsences[]>(`/seasons/${seasonId}/absences`),
     create: (enrollmentId: string, period: { startDate: string, endDate: string | null }) =>
       api<AbsenceResult>(`/enrollments/${enrollmentId}/absences`, { method: 'POST', body: period }),
     update: (id: string, period: { startDate: string, endDate: string | null }) =>

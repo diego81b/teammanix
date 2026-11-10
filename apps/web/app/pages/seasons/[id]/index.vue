@@ -34,6 +34,15 @@
               :label="$t('events.calendar')"
             />
             <UButton
+              color="neutral"
+              variant="outline"
+              size="lg"
+              class="min-h-11"
+              icon="i-tm-calendar-x"
+              :to="`/team-absences/${context.season.id}`"
+              :label="$t('teamAbsences.title')"
+            />
+            <UButton
               v-if="context.season.status === 'draft'"
               size="lg"
               class="min-h-11"
