@@ -136,11 +136,13 @@ export enum Placement {
   BENCH = 'bench',
 }
 
+/** `injured` also covers a sudden illness: the staff marks it on the event without opening an injury. */
 export enum AttendanceOutcome {
   PRESENT = 'present',
   ABSENT_EXCUSED = 'absent_excused',
   ABSENT = 'absent',
   LATE = 'late',
+  INJURED = 'injured',
 }
 
 /** Two forms of suspension (rule 13): a period covering every match, or a number of matches from a start. */
@@ -190,4 +192,7 @@ export enum AuditAction {
   SUSPENSION_CREATED = 'suspension_created',
   SUSPENSION_MODIFIED = 'suspension_modified',
   SUSPENSION_CANCELLED = 'suspension_cancelled',
+  ATTENDANCE_RECORDED = 'attendance_recorded',
+  ATTENDANCE_MODIFIED = 'attendance_modified',
+  ATTENDANCE_CLEARED = 'attendance_cleared',
 }

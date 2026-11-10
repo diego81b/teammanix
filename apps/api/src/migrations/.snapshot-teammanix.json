@@ -4744,7 +4744,10 @@
             "absence_cancelled",
             "suspension_created",
             "suspension_modified",
-            "suspension_cancelled"
+            "suspension_cancelled",
+            "attendance_recorded",
+            "attendance_modified",
+            "attendance_cleared"
           ],
           "mappedType": "enum"
         },
@@ -7033,7 +7036,8 @@
             "present",
             "absent_excused",
             "absent",
-            "late"
+            "late",
+            "injured"
           ],
           "mappedType": "enum"
         },

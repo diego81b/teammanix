@@ -6,6 +6,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuditModule } from './audit/audit.service';
 import { AuthModule } from './auth/auth.module';
 import { AbsencesModule } from './absences/absences.module';
+import { AttendanceModule } from './attendance/attendance.module';
 import { CallupsModule } from './callups/callups.module';
 import { CertificatesModule } from './certificates/certificates.module';
 import { EventsModule } from './events/events.module';
@@ -46,6 +47,7 @@ import { SuspensionsModule } from './suspensions/suspensions.module';
     EventsModule,
     CallupsModule,
     AbsencesModule,
+    AttendanceModule,
     SuspensionsModule,
   ],
   controllers: [HealthController],
