@@ -372,6 +372,62 @@ const row = (rows: any[], id: string) => rows.find((r) => r.enrollmentId === id)
       expect((await send(other.player.token, 'POST', `/absences/${r.body.absence.id}/decline`, { eventIds: [r.body.absence.id] })).body.code).toBe('ABSENCE_NOT_FOUND');
     });
 
+    it('the season view lists who is away, dates only and merged, for staff, managers in scope and the admin', async () => {
+      const s = await club('ab-60@test.it');
+      await declare(s.player.token, s.player.enrollmentId, day(10), day(15));
+      await declare(s.player.token, s.player.enrollmentId, day(16), day(20));
+      await declare(s.coach1.token, s.coach1.enrollmentId, day(30));
+      await declare(s.coach2.token, s.coach2.enrollmentId, day(5), day(6));
+      await post(s.admin, '/invitations', { email: 'ab-60m@test.it', role: 'manager', scope: 'team', teamId: s.t1.teamId });
+      const m = await accept('ab-60m@test.it');
+      for (const who of [s.coach1.token, s.assistant.token, m.token, s.admin]) {
+        const g = await send(who, 'GET', `/seasons/${s.t1.seasonId}/absences`);
+        expect(g.status).toBe(200);
+        expect(g.body).toEqual([
+          { enrollmentId: s.player.enrollmentId, personId: s.player.personId, name: 'p1', surname: 'Rossi', type: 'player', staffRole: null, absences: [{ startDate: day(10), endDate: day(20) }] },
+          { enrollmentId: s.coach1.enrollmentId, personId: s.coach1.personId, name: 'c1', surname: 'Rossi', type: 'staff', staffRole: 'coach', absences: [{ startDate: day(30), endDate: null }] },
+        ]);
+      }
+    });
+
+    it('nobody without absences is listed, and an empty season gives an empty list', async () => {
+      const s = await club('ab-61@test.it');
+      const g = await send(s.coach1.token, 'GET', `/seasons/${s.t1.seasonId}/absences`);
+      expect([g.status, g.body]).toEqual([200, []]);
+    });
+
+    it('a player of the team, the staff and the manager of another team cannot read the season view', async () => {
+      const s = await club('ab-62@test.it');
+      await declare(s.mate.token, s.mate.enrollmentId, day(10), day(15));
+      await post(s.admin, '/invitations', { email: 'ab-62m@test.it', role: 'manager', scope: 'team', teamId: s.t2.teamId });
+      const m = await accept('ab-62m@test.it');
+      for (const who of [s.player.token, s.mate.token, s.coach2.token, m.token]) {
+        const g = await send(who, 'GET', `/seasons/${s.t1.seasonId}/absences`);
+        expect([g.status, g.body.code]).toEqual([403, 'PERMISSION_DENIED']);
+      }
+    });
+
+    it('the season view leaves out people who left the team or are disabled, and is a 404 across clubs', async () => {
+      const s = await club('ab-63@test.it');
+      const other = await club('ab-63b@test.it');
+      await declare(s.player.token, s.player.enrollmentId, day(10), day(15));
+      await declare(s.mate.token, s.mate.enrollmentId, day(10), day(15));
+      expect((await t.req('POST', `/enrollments/${s.mate.enrollmentId}/close`, { token: s.admin })).status).toBe(200);
+      const g = await send(s.admin, 'GET', `/seasons/${s.t1.seasonId}/absences`);
+      expect(g.body.map((r: { enrollmentId: string }) => r.enrollmentId)).toEqual([s.player.enrollmentId]);
+      const r = await send(other.admin, 'GET', `/seasons/${s.t1.seasonId}/absences`);
+      expect([r.status, r.body.code]).toEqual([404, 'SEASON_NOT_FOUND']);
+    });
+
+    it('the calendar access tells who may open the season view: staff, managers in scope and the admin, never a player', async () => {
+      const s = await club('ab-64@test.it');
+      await post(s.admin, '/invitations', { email: 'ab-64m@test.it', role: 'manager', scope: 'team', teamId: s.t1.teamId });
+      const m = await accept('ab-64m@test.it');
+      const flag = async (token: string) => (await send(token, 'GET', `/seasons/${s.t1.seasonId}/events-access`)).body.canSeeAbsences;
+      expect(await Promise.all([s.admin, s.coach1.token, s.assistant.token, m.token].map(flag))).toEqual([true, true, true, true]);
+      expect(await Promise.all([s.player.token, s.mate.token].map(flag))).toEqual([false, false]);
+    });
+
     it('/absences/me lists the person\'s own open enrollments with their absences', async () => {
       const s = await club('ab-35@test.it');
       const other = await s.enroll(s.t2.seasonId, s.player.personId, 'player');

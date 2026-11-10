@@ -22,7 +22,7 @@ import {
   type EventFields,
   type EventIssue,
 } from './event.rules';
-import { canReadSeasonEvents } from './visibility';
+import { canReadRoster, canReadSeasonEvents } from './visibility';
 
 export interface EventDto {
   id: string;
@@ -213,13 +213,15 @@ export class EventsService {
     return rows.map((e) => toEventDto(e, season.teamId));
   }
 
-  /** The team of the season and whether the person can plan events (policy in scope and active season) and record suspensions (policy in scope, season not closed) now. For the UI only, the writes check again. */
-  async access(a: AuthContext, seasonId: string): Promise<{ teamId: string; canManage: boolean; canSuspend: boolean }> {
+  /** The team of the season and whether the person can plan events (policy in scope and active season) and record suspensions (policy in scope, season not closed) now, and whether they read the declared absences of the team (staff of the season, managers in scope, admin). For the UI only, the writes check again. */
+  async access(a: AuthContext, seasonId: string): Promise<{ teamId: string; canManage: boolean; canSuspend: boolean; canSeeAbsences: boolean }> {
     const target = await this.authz.target(a.clubId as string, { seasonId }); // 404 SEASON_NOT_FOUND
     const season = await this.em.findOneOrFail(Season, { id: seasonId, club: a.clubId as string }, { filters: false, fields: ['status'] });
     const canManage = canPlanEvents(season.status) && (await this.authz.can(a, 'events.manage', { seasonId }));
     const canSuspend = season.status !== SeasonStatus.CLOSED && (await this.authz.can(a, 'suspensions.manage', { seasonId }));
-    return { teamId: target.teamId as string, canManage, canSuspend };
+    const own = a.personId ? await this.em.find(Enrollment, { person: a.personId, season: seasonId }, { filters: false, fields: ['type'] }) : [];
+    const canSeeAbsences = canReadRoster(a.roles, own.map((e) => e.type), { id: seasonId, activityId: target.activityId as string, teamId: target.teamId as string });
+    return { teamId: target.teamId as string, canManage, canSuspend, canSeeAbsences };
   }
 
   /** Competition names already used in the season, to suggest them in the form. */

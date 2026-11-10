@@ -1,5 +1,5 @@
 import type { CtxRole } from '../common/auth-context';
-import { ScopeType } from '../entities/enums';
+import { EnrollmentType, ScopeType } from '../entities/enums';
 
 export interface SeasonTarget {
   id: string;
@@ -24,4 +24,13 @@ export function canReadSeasonEvents(roles: readonly CtxRole[], enrolledSeasonIds
         return r.teamId === season.teamId;
     }
   });
+}
+
+/**
+ * Who reads what concerns the whole roster of a season, such as declared absences: the staff of that season, managers
+ * within their scope and the admin. A player of the team, alone, does not. `ownTypes` are the types of the enrollments
+ * the person holds in the season.
+ */
+export function canReadRoster(roles: readonly CtxRole[], ownTypes: readonly EnrollmentType[], season: SeasonTarget): boolean {
+  return ownTypes.includes(EnrollmentType.STAFF) || canReadSeasonEvents(roles, [], season);
 }

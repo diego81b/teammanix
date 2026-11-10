@@ -6,10 +6,11 @@ import { Absence } from '../entities/absence.entity';
 import type { AuthContext } from '../common/auth-context';
 import { Club } from '../entities/club.entity';
 import { Enrollment } from '../entities/enrollment.entity';
-import { AuditAction, CallupResponse, EnrollmentType, NotificationType, ReasonDecline, SeasonStatus } from '../entities/enums';
+import { Season } from '../entities/season.entity';
+import { AuditAction, CallupResponse, EnrollmentType, NotificationType, ReasonDecline, SeasonStatus, StaffRole } from '../entities/enums';
 import { canPlanEvents, editableEvent, localDate } from '../events/event.rules';
 import { NotificationsService } from '../notifications/notifications.service';
-import { canReadSeasonEvents } from '../events/visibility';
+import { canReadRoster } from '../events/visibility';
 import { ResponsesService } from '../callups/responses.service';
 import type { AbsenceDto, DeclineDto } from './dto';
 import { covers, declinable, mergePeriods, validatePeriod, type Period } from './absence.rules';
@@ -32,6 +33,17 @@ export interface AffectedEvent {
 export interface AbsenceResult {
   absence: AbsenceOut;
   affected: AffectedEvent[];
+}
+
+/** A person of the season who declared absences, dates only and merged, for the staff screen. */
+export interface SeasonAbsences {
+  enrollmentId: string;
+  personId: string;
+  name: string;
+  surname: string | null;
+  type: EnrollmentType;
+  staffRole: StaffRole | null;
+  absences: Period[];
 }
 
 export interface MyEnrollmentAbsences {
@@ -96,11 +108,33 @@ export class AbsencesService {
     const rows = await this.em.find(Absence, { enrollment: enrollment.id });
     if (a.personId === enrollment.person.id) return { editable: true, absences: rows.map(out).sort(byStart) };
 
-    const own = a.personId ? await this.em.find(Enrollment, { person: a.personId, season: enrollment.season.id }, { fields: ['type'] }) : [];
-    const season = { id: enrollment.season.id, activityId: enrollment.season.team.activity.id, teamId: enrollment.season.team.id };
-    const reads = own.some((e) => e.type === EnrollmentType.STAFF) || canReadSeasonEvents(a.roles, [], season);
-    if (!reads) throw permissionDenied();
+    await this.assertReadsRoster(a, enrollment.season);
     return { editable: false, absences: mergePeriods(rows.map(period)) };
+  }
+
+  /**
+   * Who is away in the team, for the staff of the season, managers in scope and the admin; players of the team are refused.
+   * Dates only, merged where they touch. People who left the team or are disabled are left out, as are those with nothing
+   * declared. Soonest start first. Past absences are the screen's to fold away.
+   */
+  async ofSeason(a: AuthContext, seasonId: string): Promise<SeasonAbsences[]> {
+    const season = await this.em.findOne(Season, { id: seasonId }, { populate: ['team'] });
+    if (!season) throw new NotFoundException({ message: 'Season not found', code: 'SEASON_NOT_FOUND' });
+    await this.assertReadsRoster(a, season);
+    const enrollments = await this.em.find(Enrollment, { season: seasonId, endedAt: null, person: { disabledAt: null } }, { populate: ['person'] });
+    const rows = await this.em.find(Absence, { enrollment: { $in: enrollments.map((e) => e.id) } });
+    return enrollments
+      .map((e) => ({
+        enrollmentId: e.id,
+        personId: e.person.id,
+        name: e.person.name,
+        surname: e.person.surname,
+        type: e.type,
+        staffRole: e.staffRole,
+        absences: mergePeriods(rows.filter((r) => r.enrollment.id === e.id).map(period)),
+      }))
+      .filter((r) => r.absences.length > 0)
+      .sort((x, y) => (x.absences[0] as Period).startDate.localeCompare((y.absences[0] as Period).startDate) || x.enrollmentId.localeCompare(y.enrollmentId));
   }
 
   async create(a: AuthContext, enrollmentId: string, dto: AbsenceDto): Promise<AbsenceResult> {
@@ -152,6 +186,12 @@ export class AbsencesService {
       await (player ? this.responses.answerAsPlayer(a, r.eventId, answer) : this.responses.answerAsStaff(a, r.eventId, answer));
     }
     return { declined: asked };
+  }
+
+  private async assertReadsRoster(a: AuthContext, season: Season): Promise<void> {
+    const own = a.personId ? await this.em.find(Enrollment, { person: a.personId, season: season.id }, { fields: ['type'] }) : [];
+    const target = { id: season.id, activityId: season.team.activity.id, teamId: season.team.id };
+    if (!canReadRoster(a.roles, own.map((e) => e.type), target)) throw permissionDenied();
   }
 
   /** Dates in range for the season of the enrollment, or the matching 400. */

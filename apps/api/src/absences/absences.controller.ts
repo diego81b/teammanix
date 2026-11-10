@@ -18,6 +18,12 @@ export class AbsencesController {
     return this.absences.mine(a);
   }
 
+  /** Who is away in the team: the staff of the season, managers in scope and the admin. */
+  @Get('seasons/:id/absences')
+  ofSeason(@CurrentAuth() a: AuthContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.absences.ofSeason(a, id);
+  }
+
   @Get('enrollments/:id/absences')
   list(@CurrentAuth() a: AuthContext, @Param('id', ParseUUIDPipe) id: string) {
     return this.absences.list(a, id);
