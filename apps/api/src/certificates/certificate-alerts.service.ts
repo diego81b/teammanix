@@ -8,9 +8,8 @@ import { Enrollment } from '../entities/enrollment.entity';
 import { MedicalCertificate } from '../entities/medical-certificate.entity';
 import { Membership } from '../entities/membership.entity';
 import { NotificationsService } from '../notifications/notifications.service';
-import type { Target } from '../permissions/policy';
 import { sourcesFrom, type EnrollmentStaffCtx } from '../permissions/sources';
-import { alertBucket, alertKey, digestKey, staffDigests, type AlertedPerson, type StaffCandidate } from './certificate-alerts.rules';
+import { alertBucket, alertKey, digestKey, staffDigests, type AlertedPerson, type AlertTarget, type StaffCandidate } from './certificate-alerts.rules';
 import { currentCertificate, daysUntil } from './certificate.rules';
 
 /**
@@ -62,10 +61,10 @@ export class CertificateAlertsService {
       { club: clubId, type: EnrollmentType.PLAYER, endedAt: null, season: { status: { $ne: SeasonStatus.CLOSED } }, person: { disabledAt: null } },
       { filters: false, populate: ['person.user', 'season.team.activity'] },
     );
-    const targetsOf = new Map<string, Target[]>();
+    const targetsOf = new Map<string, AlertTarget[]>();
     const userOf = new Map<string, string | null>();
     for (const e of enrollments) {
-      const target = { activityId: e.season.team.activity.id, teamId: e.season.team.id };
+      const target: AlertTarget = { activityId: e.season.team.activity.id, teamId: e.season.team.id, seasonId: e.season.id };
       const known = targetsOf.get(e.person.id) ?? [];
       if (!known.some((t) => t.teamId === target.teamId)) known.push(target);
       targetsOf.set(e.person.id, known);
@@ -106,7 +105,7 @@ export class CertificateAlertsService {
         userIds: [userId],
         type: NotificationType.CERTIFICATES_DUE,
         params: { club: clubName, expiring: d.expiring, expired: d.expired },
-        link: '/people',
+        link: d.link,
         dedupKey: digestKey(clubId, today),
       });
     }

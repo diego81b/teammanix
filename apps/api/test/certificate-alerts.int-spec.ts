@@ -153,7 +153,8 @@ describe('certificate alerts job', () => {
         const [d, ...rest] = await digest(s, userId);
         expect(rest).toEqual([]);
         expect(d?.params).toEqual({ club: 'Club d1', expiring: 2, expired: 1 });
-        expect(d?.link).toBe('/people');
+        // The admin keeps the people list, staff open the page of their team.
+        expect(d?.link).toBe(userId === s.adminUserId ? '/people' : `/team-certificates/${s.seasonId}`);
       }
       expect(await digest(s, s.trainer.userId)).toEqual([]);
     });
