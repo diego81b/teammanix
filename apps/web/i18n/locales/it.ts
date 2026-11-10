@@ -46,6 +46,7 @@ const it = {
     structure: 'Struttura',
     people: 'Persone',
     access: 'Accessi',
+    settings: 'Impostazioni',
     calendar: 'Calendario',
     absences: 'Le mie assenze',
     suspensions: 'Le mie squalifiche',
@@ -869,6 +870,28 @@ const it = {
     none: 'Nessuna assenza dichiarata.',
     noneCurrent: 'Nessuna assenza in corso o in arrivo.',
     past: 'Assenze concluse ({count})',
+  },
+  settings: {
+    title: 'Impostazioni della società',
+    text: 'Regole che valgono per tutta la società. Ogni modifica viene salvata subito.',
+    saved: 'Impostazione salvata.',
+    certificatesWithFile: {
+      label: 'Conserva il file del certificato medico',
+      text: 'Se attivo, si può caricare il PDF o la foto del certificato. Il file è un dato sanitario (GDPR, art. 9): viene cifrato e ogni lettura è registrata. Se lo disattivi, i file già caricati restano conservati ma non sono più visibili; riattivando l\'opzione tornano disponibili.',
+    },
+    blockCertificateExpired: {
+      label: 'Blocca la convocazione con certificato scaduto',
+      text: 'Se attivo, un giocatore con certificato scaduto o mancante non può essere convocato.',
+    },
+    warnNoCoachAvailable: {
+      label: 'Avvisa se nessun allenatore è disponibile',
+      text: 'Se attivo, lo staff vede un avviso quando nessun allenatore ha dichiarato la disponibilità per un evento.',
+    },
+    coachRoles: {
+      label: 'Ruoli che contano come allenatore',
+      text: 'Servono per l\'avviso sulla disponibilità. Ne serve almeno uno.',
+      atLeastOne: 'Deve restare almeno un ruolo selezionato.',
+    },
   },
   certificatesDue: {
     title: 'Certificati da controllare',

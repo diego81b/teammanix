@@ -43,6 +43,7 @@ const fr: typeof it = {
     structure: 'Structure',
     people: 'Personnes',
     access: 'Accès',
+    settings: 'Paramètres',
     calendar: 'Calendrier',
     absences: 'Mes absences',
     suspensions: 'Mes suspensions',
@@ -865,6 +866,28 @@ const fr: typeof it = {
     none: 'Aucune absence déclarée.',
     noneCurrent: 'Aucune absence en cours ou à venir.',
     past: 'Absences terminées ({count})',
+  },
+  settings: {
+    title: 'Paramètres du club',
+    text: 'Règles valables pour tout le club. Chaque modification est enregistrée tout de suite.',
+    saved: 'Paramètre enregistré.',
+    certificatesWithFile: {
+      label: 'Conserver le fichier du certificat médical',
+      text: 'Si activé, le PDF ou la photo du certificat peut être téléversé. Le fichier est une donnée de santé (RGPD, art. 9) : il est chiffré et chaque lecture est journalisée. Si vous le désactivez, les fichiers déjà téléversés restent conservés mais ne sont plus visibles ; en réactivant l\'option, ils redeviennent disponibles.',
+    },
+    blockCertificateExpired: {
+      label: 'Bloquer la convocation avec un certificat expiré',
+      text: 'Si activé, un joueur dont le certificat est expiré ou manquant ne peut pas être convoqué.',
+    },
+    warnNoCoachAvailable: {
+      label: 'Avertir si aucun entraîneur n\'est disponible',
+      text: 'Si activé, le staff voit un avertissement quand aucun entraîneur n\'a déclaré sa disponibilité pour un événement.',
+    },
+    coachRoles: {
+      label: 'Rôles comptant comme entraîneur',
+      text: 'Utilisés pour l\'avertissement de disponibilité. Il en faut au moins un.',
+      atLeastOne: 'Au moins un rôle doit rester sélectionné.',
+    },
   },
   certificatesDue: {
     title: 'Certificats à vérifier',

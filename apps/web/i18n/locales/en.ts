@@ -43,6 +43,7 @@ const en: typeof it = {
     structure: 'Structure',
     people: 'People',
     access: 'Access',
+    settings: 'Settings',
     calendar: 'Calendar',
     absences: 'My absences',
     suspensions: 'My suspensions',
@@ -865,6 +866,28 @@ const en: typeof it = {
     none: 'No absences declared.',
     noneCurrent: 'No current or upcoming absences.',
     past: 'Past absences ({count})',
+  },
+  settings: {
+    title: 'Club settings',
+    text: 'Rules that apply to the whole club. Every change is saved right away.',
+    saved: 'Setting saved.',
+    certificatesWithFile: {
+      label: 'Keep the medical certificate file',
+      text: 'When on, the PDF or photo of the certificate can be uploaded. The file is health data (GDPR, art. 9): it is encrypted and every read is logged. When you turn it off, files already uploaded stay stored but are no longer visible; turning the option on again makes them available.',
+    },
+    blockCertificateExpired: {
+      label: 'Block the call-up on an expired certificate',
+      text: 'When on, a player with an expired or missing certificate cannot be called up.',
+    },
+    warnNoCoachAvailable: {
+      label: 'Warn when no coach is available',
+      text: 'When on, staff see a warning when no coach has declared available for an event.',
+    },
+    coachRoles: {
+      label: 'Roles that count as coach',
+      text: 'Used for the availability warning. At least one is required.',
+      atLeastOne: 'At least one role must stay selected.',
+    },
   },
   certificatesDue: {
     title: 'Certificates to check',

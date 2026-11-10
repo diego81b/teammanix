@@ -16,7 +16,7 @@ export const PUBLIC = [
 ]
 const ONLY_GUESTS = ['/login', '/registration', '/password-forgotten']
 /** Administration pages: admin only for now (the API enforces it anyway; here we avoid a page that would only give errors). */
-const ADMIN_ONLY = ['/structure', '/people', '/seasons', '/invitations', '/archive']
+const ADMIN_ONLY = ['/structure', '/people', '/seasons', '/invitations', '/archive', '/settings']
 const eAdminOnly = (path: string) => ADMIN_ONLY.some((p) => path === p || path.startsWith(`${p}/`))
 
 /** Pages reachable by an authenticated account that has no active club (yet). */

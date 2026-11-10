@@ -6,6 +6,7 @@ import { useStructure } from '../../app/composables/useStructure'
 import { usePeople } from '../../app/composables/usePeople'
 import { useCertificates } from '../../app/composables/useCertificates'
 import { useAccess } from '../../app/composables/useAccess'
+import { useClubSettings } from '../../app/composables/useClubSettings'
 
 beforeEach(() => {
   baseApiRelative()
@@ -230,5 +231,16 @@ describe('useAccess', () => {
     await a.setPermissions('u1', { 'events.manage': true })
     expect(last['DELETE /roles/r1']?.method).toBe('DELETE')
     expect(last['PUT /permissions/u1']?.body).toEqual({ diff: { 'events.manage': true } })
+  })
+})
+
+describe('useClubSettings', () => {
+  it('reads every setting and saves one change at a time', async () => {
+    const all = { certificatesWithFile: false, blockCertificateExpired: true, warnNoCoachAvailable: true, coachRoles: ['coach'] }
+    endpoint('/club/current/settings', all)
+    const c = useClubSettings()
+    expect(await c.read()).toEqual(all)
+    await c.edit({ coachRoles: ['coach', 'assistant_coach'] })
+    expect(last['PATCH /club/current/settings']?.body).toEqual({ coachRoles: ['coach', 'assistant_coach'] })
   })
 })

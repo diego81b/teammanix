@@ -198,6 +198,9 @@ export interface PersonCertificates extends SummaryCertificate {
 
 export interface ClubSettings {
   certificatesWithFile: boolean
+  blockCertificateExpired: boolean
+  warnNoCoachAvailable: boolean
+  coachRoles: StaffRole[]
 }
 
 export interface InvitationDto {

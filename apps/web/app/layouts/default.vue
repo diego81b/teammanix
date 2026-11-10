@@ -119,6 +119,7 @@ const items = computed(() => [
   ...(session.isAdmin
     ? [
         { label: t('shell.structure'), icon: 'i-tm-building', to: '/structure' },
+        { label: t('shell.settings'), icon: 'i-tm-sliders', to: '/settings' },
         { label: t('shell.people'), icon: 'i-tm-users', to: '/people' },
         { label: t('shell.access'), icon: 'i-tm-user-plus', to: '/invitations' },
       ]

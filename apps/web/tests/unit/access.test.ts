@@ -69,7 +69,7 @@ describe('decideAccess', () => {
   })
 
   describe('administration pages', () => {
-    it.each(['/structure', '/people', '/people/abc', '/seasons/abc', '/seasons/abc/new', '/invitations', '/archive'])('%s is admin only', (p) => {
+    it.each(['/structure', '/people', '/people/abc', '/seasons/abc', '/seasons/abc/new', '/invitations', '/archive', '/settings'])('%s is admin only', (p) => {
       expect(decide(p, admin)).toEqual(ok)
       expect(decide(p, active)).toEqual(go('/'))
     })
