@@ -3,7 +3,7 @@ import { BadRequestException, ConflictException, Injectable } from '@nestjs/comm
 import type { AuthContext } from '../common/auth-context';
 import { Attendance } from '../entities/attendance.entity';
 import { Callup } from '../entities/callup.entity';
-import { EventStatus, EventType, SeasonStatus } from '../entities/enums';
+import { EnrollmentType, EventStatus, EventType, SeasonStatus } from '../entities/enums';
 import { EventSeries } from '../entities/event-series.entity';
 import { Event } from '../entities/event.entity';
 import { Season } from '../entities/season.entity';
@@ -263,7 +263,10 @@ export class SeriesService {
       series.startDate,
       new Date(),
     );
-    const callups = plan.remove.length ? await this.em.find(Callup, { event: { $in: plan.remove } }, { fields: ['enrollment'] }) : [];
+    // Players only: a staff member's answer is a call-up row too, but it is not a player of the confirmation.
+    const callups = plan.remove.length
+      ? await this.em.find(Callup, { event: { $in: plan.remove }, enrollment: { type: EnrollmentType.PLAYER } }, { fields: ['enrollment'] })
+      : [];
     const players = new Set(callups.map((c) => c.enrollment.id)).size;
     return { rows, plan, dto: { sessions: plan.remove.length, players, kept: plan.keep.length } };
   }

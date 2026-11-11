@@ -650,6 +650,24 @@ describe('event series: recurring trainings that create real events', () => {
       expect(await events(s)).toEqual(list);
     });
 
+    it('a staff member who answered is not a player: the confirmation does not count it, the removal still deletes its answer', async () => {
+      const s = await club('rm-11@test.it', aroundSeason);
+      const created = await createSeries(s, aroundToday());
+      const target = (await events(s)).find((e) => localDay(e.start) === day(8)) as Ev;
+      await callupOn(s, target.id);
+      const staff = await t.orm.em.fork().findOneOrFail(Enrollment, { season: s.t1.seasonId, type: EnrollmentType.STAFF }, { filters: false });
+      const em = t.orm.em.fork();
+      em.create(Callup, { club: s.clubId, event: target.id, enrollment: staff, response: CallupResponse.CONFIRMED } as never);
+      await em.flush();
+      expect(await countCallups([target.id])).toBe(2);
+
+      const preview = await send(s.coach1.token, 'GET', url(created.id));
+      expect(preview.body.players).toBe(1);
+      const r = await send(s.coach1.token, 'DELETE', url(created.id));
+      expect([r.status, r.body.players]).toEqual([200, 1]);
+      expect(await countCallups([target.id])).toBe(0);
+    });
+
     it('a player and the coach of another team are refused, another club does not see it, the admin can', async () => {
       const s = await club('rm-9@test.it', aroundSeason);
       const created = await createSeries(s, aroundToday());
