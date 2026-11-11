@@ -83,6 +83,17 @@ describe('notificationText', () => {
     expect(open.body).not.toContain('until')
   })
 
+  it('freed days of an absence pick the text for a range, a single day or from a day onward', () => {
+    const body = (params: Record<string, string>) => notificationText({ ...base, type: 'absence_freed', params: { club: 'C', person: 'Awa', from: '2026-12-10', ...params } }, 'it', t).body
+    const range = body({ until: '2026-12-12' })
+    const single = body({ until: '2026-12-10' })
+    const onward = body({})
+    expect(new Set([range, single, onward]).size).toBe(3)
+    expect(range).toContain('absence_freed.body')
+    expect(single).toContain('absence_freed_day.body')
+    expect(onward).toContain('absence_freed_open.body')
+  })
+
   it('the staff digest picks the text for what is due, and never names anyone', () => {
     const only = (expiring: number, expired: number) => notificationText({ ...base, type: 'certificates_due', params: { club: 'C', expiring, expired } }, 'it', t).body
     expect(only(2, 0)).not.toBe(only(0, 2))

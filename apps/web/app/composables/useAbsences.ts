@@ -1,4 +1,4 @@
-import type { AbsenceResult, MyEnrollmentAbsences, SeasonAbsences } from '../types/api'
+import type { AbsenceOut, AbsenceResult, MyEnrollmentAbsences, SeasonAbsences } from '../types/api'
 
 /**
  * Declared absences (rule 10). The person concerned is the only one who writes; the API decides and checks again.
@@ -16,6 +16,12 @@ export function useAbsences() {
     update: (id: string, period: { startDate: string, endDate: string | null }) =>
       api<AbsenceResult>(`/absences/${id}`, { method: 'PATCH', body: period }),
     remove: (id: string) => api<void>(`/absences/${id}`, { method: 'DELETE' }),
+    /**
+     * Frees days from today onward in the person's own absences: the API shortens, splits or removes every period the range
+     * touches and answers with the new list. `endDate: null` frees from `startDate` onward.
+     */
+    free: (enrollmentId: string, range: { startDate: string, endDate: string | null }) =>
+      api<{ absences: AbsenceOut[] }>(`/enrollments/${enrollmentId}/absences/free`, { method: 'POST', body: range }),
     /** Declines exactly the events listed, which must fall in the absence. Nothing else is touched. */
     decline: (id: string, eventIds: string[]) =>
       api<{ declined: string[] }>(`/absences/${id}/decline`, { method: 'POST', body: { eventIds } }),

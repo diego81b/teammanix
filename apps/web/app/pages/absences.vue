@@ -17,12 +17,24 @@
       <p v-if="data.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">{{ $t('absences.noEnrollment') }}</p>
 
       <section v-for="e in data" :key="e.enrollmentId" class="space-y-3" :aria-label="`${e.teamName} · ${e.seasonName}`">
-        <div class="flex items-center gap-3">
-          <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="min-w-40 flex-1">
             <h2 class="truncate font-semibold">{{ e.teamName }}</h2>
             <p class="text-sm text-muted">{{ e.seasonName }}</p>
           </div>
-          <UButton size="lg" class="min-h-11" icon="i-tm-plus" :label="$t('absences.add')" @click="openForm(e)" />
+          <div class="flex flex-wrap gap-2">
+            <UButton
+              v-if="canFree(e.absences, todayDay())"
+              color="neutral"
+              variant="outline"
+              size="lg"
+              class="min-h-11"
+              icon="i-tm-calendar"
+              :label="$t('absences.free.action')"
+              @click="openFree(e)"
+            />
+            <UButton size="lg" class="min-h-11" icon="i-tm-plus" :label="$t('absences.add')" @click="openForm(e)" />
+          </div>
         </div>
 
         <p v-if="e.absences.length === 0" class="rounded-lg border border-dashed border-default p-4 text-center text-sm text-muted">{{ $t('absences.none') }}</p>
@@ -78,6 +90,38 @@
       </template>
     </UModal>
 
+    <!-- Free days from today onward inside the declared absences: the person sees the result before confirming. -->
+    <UModal v-model:open="open.free" :title="$t('absences.free.title')" :description="freeTarget ? `${freeTarget.teamName} · ${freeTarget.seasonName}` : ''">
+      <template #body>
+        <p class="mb-4 text-sm text-muted">{{ $t('absences.free.text') }}</p>
+        <UAlert v-if="errorFree" color="error" variant="subtle" icon="i-tm-error" :title="errorFree" class="mb-4" />
+        <UForm id="form-free" :state="freeForm" :validate="validateFree" :validate-on="['change']" class="space-y-4" @submit="saveFree">
+          <UFormField name="startDate" :label="$t('absences.from')" required>
+            <UInput v-model="freeForm.startDate" type="date" size="xl" class="w-full" :min="todayDay()" :max="freeTarget?.seasonEnd" />
+          </UFormField>
+          <UFormField v-if="!freeForm.onward" name="endDate" :label="$t('absences.to')" required>
+            <UInput v-model="freeForm.endDate" type="date" size="xl" class="w-full" :min="freeForm.startDate || todayDay()" :max="freeTarget?.seasonEnd" />
+          </UFormField>
+          <USwitch v-model="freeForm.onward" :label="$t('absences.free.onward')" />
+        </UForm>
+        <section v-if="preview" class="mt-4 space-y-2" aria-live="polite">
+          <h3 class="text-sm font-semibold text-muted">{{ $t('absences.free.resultTitle') }}</h3>
+          <p v-if="!preview.changed" class="rounded-lg border border-dashed border-default p-3 text-sm text-muted">{{ $t('absences.free.nothing') }}</p>
+          <p v-else-if="preview.after.length === 0" class="rounded-lg border border-dashed border-default p-3 text-sm text-muted">{{ $t('absences.free.resultNone') }}</p>
+          <ul v-else class="space-y-2">
+            <li v-for="a in preview.after" :key="`${a.startDate}|${a.endDate}`" class="flex items-center gap-3 rounded-lg border border-default bg-elevated p-3 text-sm font-medium">
+              <UIcon name="i-tm-calendar" class="size-5 shrink-0 text-muted" aria-hidden="true" />
+              {{ periodText(a) }}
+            </li>
+          </ul>
+        </section>
+      </template>
+      <template #footer>
+        <UButton color="neutral" variant="outline" size="lg" :label="$t('common.cancel')" @click="open.free = false" />
+        <UButton type="submit" form="form-free" size="lg" :disabled="!preview?.changed" :loading="freeing" :label="$t('absences.free.confirm')" />
+      </template>
+    </UModal>
+
     <!-- Events already answered inside the period: untick the ones you will attend, decline the rest in one tap. -->
     <UModal v-model:open="open.decline" :title="$t('absences.decline.title')" :description="$t('absences.decline.text')">
       <template #body>
@@ -112,7 +156,7 @@
 <script setup lang="ts">
 import type { FormError } from '@nuxt/ui'
 import type { AbsenceOut, AffectedEvent, MyEnrollmentAbsences } from '~/types/api'
-import { formPayload, periodError, splitAbsences, toggleEvent, pickAll, type AbsenceForm } from '~/utils/absence'
+import { canFree, formPayload, freedPeriods, freeError, freePayload, periodError, splitAbsences, toggleEvent, pickAll, type AbsenceForm, type FreeForm } from '~/utils/absence'
 import { eventHeading, todayDay } from '~/utils/calendar'
 import { formatDate } from '~/utils/date'
 import { splitInstant } from '~/utils/event'
@@ -125,10 +169,10 @@ const toast = useToast()
 const { data, loading, error, reload: load } = useLoad(() => absences.mine())
 onMounted(load)
 
-const open = reactive({ form: false, decline: false, remove: false })
+const open = reactive({ form: false, free: false, decline: false, remove: false })
 const errorAction = ref('')
 
-const periodText = (a: AbsenceOut) =>
+const periodText = (a: Pick<AbsenceOut, 'startDate' | 'endDate'>) =>
   a.endDate
     ? t('absences.period', { from: formatDate(a.startDate, locale.value), to: formatDate(a.endDate, locale.value) })
     : t('absences.periodOpen', { from: formatDate(a.startDate, locale.value) })
@@ -164,6 +208,48 @@ function validate(): FormError[] {
   if (!code) return []
   const message = t(`absences.error.${code}`, { from: formatDate(target.value.seasonStart, locale.value), to: formatDate(target.value.seasonEnd, locale.value) })
   return [{ name: code === 'startRequired' || (code === 'outsideSeason' && form.startDate < target.value.seasonStart) ? 'startDate' : 'endDate', message }]
+}
+
+// Free days: from today onward, with the result shown before the person confirms.
+const freeId = ref('')
+const freeTarget = computed(() => data.value?.find(x => x.enrollmentId === freeId.value) ?? null)
+const freeForm = reactive<FreeForm>({ startDate: '', endDate: '', onward: false })
+const errorFree = ref('')
+const freeing = ref(false)
+const preview = computed(() => (freeTarget.value && freeError(freeForm, todayDay()) === null ? freedPeriods(freeTarget.value.absences, freeForm) : null))
+
+function openFree(e: MyEnrollmentAbsences) {
+  freeId.value = e.enrollmentId
+  freeForm.startDate = todayDay()
+  freeForm.endDate = ''
+  freeForm.onward = false
+  errorFree.value = ''
+  open.free = true
+}
+
+function validateFree(): FormError[] {
+  const code = freeError(freeForm, todayDay())
+  if (!code) return []
+  const message = code === 'inPast' || code === 'endRequired' ? t(`absences.free.${code}`) : t(`absences.error.${code}`)
+  return [{ name: code === 'startRequired' || code === 'inPast' ? 'startDate' : 'endDate', message }]
+}
+
+async function saveFree() {
+  if (!freeTarget.value) return
+  freeing.value = true
+  errorFree.value = ''
+  try {
+    await absences.free(freeTarget.value.enrollmentId, freePayload(freeForm))
+    open.free = false
+    toast.add({ title: t('absences.free.done'), color: 'success' })
+    await load()
+  }
+  catch (e) {
+    errorFree.value = errorText(e)
+  }
+  finally {
+    freeing.value = false
+  }
 }
 
 // Events the saved period covers, already answered by the person.

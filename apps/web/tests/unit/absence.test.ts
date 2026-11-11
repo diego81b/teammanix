@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formPayload, isPast, periodError, pickAll, splitAbsences, splitTeamAbsences, toggleEvent } from '../../app/utils/absence'
+import { canFree, formPayload, freedPeriods, freeError, freePayload, isPast, periodError, pickAll, splitAbsences, splitTeamAbsences, toggleEvent } from '../../app/utils/absence'
 
 const season = { seasonStart: '2026-09-01', seasonEnd: '2027-06-30' }
 const form = (over: Partial<{ startDate: string, endDate: string, untilFurtherNotice: boolean }> = {}) => ({ startDate: '2026-11-10', endDate: '2026-11-15', untilFurtherNotice: false, ...over })
@@ -118,5 +118,90 @@ describe('splitTeamAbsences', () => {
     const copy = JSON.parse(JSON.stringify(input))
     splitTeamAbsences(input, today)
     expect(input).toEqual(copy)
+  })
+})
+
+describe('freeError', () => {
+  const today = '2026-12-01'
+  const free = (over: Partial<{ startDate: string, endDate: string, onward: boolean }> = {}) => ({ startDate: '2026-12-10', endDate: '2026-12-12', onward: false, ...over })
+
+  it('accepts a range from today on, with an end or onward', () => {
+    expect(freeError(free(), today)).toBeNull()
+    expect(freeError(free({ endDate: '', onward: true }), today)).toBeNull()
+    expect(freeError(free({ startDate: today, endDate: today }), today)).toBeNull()
+  })
+
+  it('asks for the first day, and for the last unless it is onward', () => {
+    expect(freeError(free({ startDate: '' }), today)).toBe('startRequired')
+    expect(freeError(free({ endDate: '' }), today)).toBe('endRequired')
+  })
+
+  it('an end before the start is refused, an end typed before switching to onward is ignored', () => {
+    expect(freeError(free({ endDate: '2026-12-09' }), today)).toBe('endBeforeStart')
+    expect(freeError(free({ endDate: '2020-01-01', onward: true }), today)).toBeNull()
+  })
+
+  it('a day before today is refused: the past never changes', () => {
+    expect(freeError(free({ startDate: '2026-11-30' }), today)).toBe('inPast')
+    expect(freeError(free({ startDate: '2026-11-30', onward: true }), today)).toBe('inPast')
+  })
+})
+
+describe('freePayload', () => {
+  it('sends null as the end when freeing from a day onward', () => {
+    expect(freePayload({ startDate: '2026-12-10', endDate: '2026-12-12', onward: false })).toEqual({ startDate: '2026-12-10', endDate: '2026-12-12' })
+    expect(freePayload({ startDate: '2026-12-10', endDate: '2026-12-12', onward: true })).toEqual({ startDate: '2026-12-10', endDate: null })
+  })
+})
+
+describe('freedPeriods', () => {
+  const p = (startDate: string, endDate: string | null) => ({ startDate, endDate })
+  const range = (startDate: string, endDate: string, onward = false) => ({ startDate, endDate, onward })
+
+  it('splits a period when the freed days are in the middle', () => {
+    expect(freedPeriods([p('2026-12-01', '2026-12-20')], range('2026-12-10', '2026-12-12'))).toEqual({
+      after: [p('2026-12-01', '2026-12-09'), p('2026-12-13', '2026-12-20')],
+      changed: true,
+    })
+  })
+
+  it('shortens a period at either end and removes one that is fully inside', () => {
+    expect(freedPeriods([p('2026-12-01', '2026-12-20')], range('2026-12-18', '2026-12-20')).after).toEqual([p('2026-12-01', '2026-12-17')])
+    expect(freedPeriods([p('2026-12-05', '2026-12-20')], range('2026-12-03', '2026-12-08')).after).toEqual([p('2026-12-09', '2026-12-20')])
+    expect(freedPeriods([p('2026-12-01', '2026-12-20'), p('2026-12-05', '2026-12-05')], range('2026-12-01', '2026-12-20')).after).toEqual([])
+  })
+
+  it('keeps an absence until further notice open ended on the second part, and ends it the day before when freed onward', () => {
+    expect(freedPeriods([p('2026-12-01', null)], range('2026-12-10', '2026-12-12')).after).toEqual([p('2026-12-01', '2026-12-09'), p('2026-12-13', null)])
+    expect(freedPeriods([p('2026-12-01', null)], range('2026-12-10', '', true)).after).toEqual([p('2026-12-01', '2026-12-09')])
+  })
+
+  it('frees a day covered by two overlapping periods from both', () => {
+    const { after } = freedPeriods([p('2026-12-01', '2026-12-10'), p('2026-12-08', '2026-12-20')], range('2026-12-09', '2026-12-09'))
+    expect(after.some(a => a.startDate <= '2026-12-09' && (a.endDate === null || a.endDate >= '2026-12-09'))).toBe(false)
+    expect(after.some(a => a.startDate <= '2026-12-10' && (a.endDate === null || a.endDate >= '2026-12-10'))).toBe(true)
+  })
+
+  it('says nothing changes when no declared day is in the range, and keeps the list sorted', () => {
+    const r = freedPeriods([p('2026-12-20', '2026-12-25'), p('2026-12-01', '2026-12-05')], range('2026-12-10', '2026-12-12'))
+    expect(r.changed).toBe(false)
+    expect(r.after).toEqual([p('2026-12-01', '2026-12-05'), p('2026-12-20', '2026-12-25')])
+  })
+
+  it('does not touch the list it is given', () => {
+    const input = [p('2026-12-01', '2026-12-20')]
+    const copy = JSON.parse(JSON.stringify(input))
+    freedPeriods(input, range('2026-12-10', '2026-12-12'))
+    expect(input).toEqual(copy)
+  })
+})
+
+describe('canFree', () => {
+  it('is offered only when some absence still has days from today on', () => {
+    const today = '2026-12-01'
+    expect(canFree([{ id: 'a', startDate: '2026-11-01', endDate: '2026-11-30' }], today)).toBe(false)
+    expect(canFree([{ id: 'a', startDate: '2026-11-01', endDate: '2026-12-01' }], today)).toBe(true)
+    expect(canFree([{ id: 'a', startDate: '2026-11-01', endDate: null }], today)).toBe(true)
+    expect(canFree([], today)).toBe(false)
   })
 })

@@ -54,6 +54,18 @@ describe('useAbsences', () => {
   })
 })
 
+describe('useAbsences, free days', () => {
+  it('posts the range on the enrollment, with null as the end for from a day onward, and returns the new list', async () => {
+    endpoint('/enrollments/i1/absences/free', { absences: [{ id: 'a1', startDate: '2026-12-01', endDate: '2026-12-09' }] })
+    const a = useAbsences()
+    const r = await a.free('i1', { startDate: '2026-12-10', endDate: '2026-12-12' })
+    expect(last['POST /enrollments/i1/absences/free']?.body).toEqual({ startDate: '2026-12-10', endDate: '2026-12-12' })
+    expect(r.absences).toHaveLength(1)
+    await a.free('i1', { startDate: '2026-12-10', endDate: null })
+    expect(last['POST /enrollments/i1/absences/free']?.body).toEqual({ startDate: '2026-12-10', endDate: null })
+  })
+})
+
 describe('useAbsences, team view', () => {
   it('reads who is away in the season', async () => {
     endpoint('/seasons/s1/absences', [{ enrollmentId: 'i1', absences: [{ startDate: '2026-11-10', endDate: null }] }])

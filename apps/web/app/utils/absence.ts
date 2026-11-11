@@ -39,6 +39,67 @@ export function splitAbsences<T extends Pick<AbsenceOut, 'startDate' | 'endDate'
   }
 }
 
+export interface FreeForm {
+  startDate: string
+  endDate: string
+  /** Free from the first day onward: there is no last day. */
+  onward: boolean
+}
+
+export type FreeError = 'startRequired' | 'endRequired' | 'endBeforeStart' | 'inPast'
+
+/**
+ * What stops the "free days" form before it is sent. Only days from today included can be freed: the past never changes.
+ * The API checks again and stays the authority. An end typed before switching to "onward" is ignored.
+ */
+export function freeError(f: FreeForm, today: string): FreeError | null {
+  if (!f.startDate) return 'startRequired'
+  if (!f.onward && !f.endDate) return 'endRequired'
+  if (!f.onward && f.endDate < f.startDate) return 'endBeforeStart'
+  if (f.startDate < today) return 'inPast'
+  return null
+}
+
+/** The body for the API: no end means "from the first day onward". */
+export const freePayload = (f: FreeForm): { startDate: string, endDate: string | null } => ({
+  startDate: f.startDate,
+  endDate: f.onward ? null : f.endDate,
+})
+
+type DayPeriod = Pick<AbsenceOut, 'startDate' | 'endDate'>
+
+function shiftDay(day: string, by: number): string {
+  const d = new Date(`${day}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + by)
+  return d.toISOString().slice(0, 10)
+}
+
+/**
+ * The absences as they will read once the days are freed, to show the result before the person confirms. It follows the
+ * rule the API applies (and the API decides): every period the range touches is shortened, split in two (the second part
+ * keeps the end, open ended stays open ended) or removed. `changed` is false when no declared day is in the range.
+ */
+export function freedPeriods(periods: readonly DayPeriod[], f: FreeForm): { after: DayPeriod[], changed: boolean } {
+  const from = f.startDate
+  const to = f.onward ? null : f.endDate
+  const after: DayPeriod[] = []
+  let changed = false
+  for (const p of periods) {
+    const touches = (to === null || p.startDate <= to) && (p.endDate === null || p.endDate >= from)
+    if (!touches) {
+      after.push({ startDate: p.startDate, endDate: p.endDate })
+      continue
+    }
+    changed = true
+    if (p.startDate < from) after.push({ startDate: p.startDate, endDate: shiftDay(from, -1) })
+    if (to !== null && (p.endDate === null || p.endDate > to)) after.push({ startDate: shiftDay(to, 1), endDate: p.endDate })
+  }
+  return { after: after.sort((a, b) => a.startDate.localeCompare(b.startDate)), changed }
+}
+
+/** Freeing days makes sense only while some absence still has days from today on. */
+export const canFree = (list: readonly Pick<AbsenceOut, 'endDate'>[], today: string): boolean => list.some(a => !isPast(a, today))
+
 /** Every event starts chosen: the person leaves for the whole period, and can untick the ones they will attend. */
 export const pickAll = (events: readonly { eventId: string }[]): string[] => events.map(e => e.eventId)
 

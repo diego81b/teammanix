@@ -13,6 +13,7 @@ export const NOTIFICATION_TYPES = [
   'certificate_expired',
   'certificates_due',
   'absence_declared',
+  'absence_freed',
 ] as const
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]
 
@@ -90,6 +91,9 @@ function variant(n: Pick<NotificationItem, 'type' | 'params'>): string {
       return p.kind === 'series' ? 'event_cancelled_many' : 'event_cancelled'
     case 'absence_declared':
       return p.until ? 'absence_declared' : 'absence_declared_open'
+    case 'absence_freed':
+      if (!p.until) return 'absence_freed_open'
+      return p.until === p.from ? 'absence_freed_day' : 'absence_freed'
     case 'certificates_due':
       if (Number(p.expiring) > 0 && Number(p.expired) > 0) return 'certificates_due_both'
       return Number(p.expired) > 0 ? 'certificates_due_expired' : 'certificates_due_expiring'
