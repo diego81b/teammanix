@@ -14,7 +14,7 @@ import { currentCertificate, daysUntil } from './certificate.rules';
 
 /**
  * Daily check of medical certificates (ANALISI): each player is told at 30 days, at 15 days and when the certificate
- * expires, and staff with the certificates permission get a weekly digest of how many are due in their scope.
+ * expires, and staff with the certificates permission get a weekly digest, per team of their scope, of how many are due.
  *
  * Safe to run again at any time: every notification carries a dedup key, so a second run the same day, a restart, or a
  * second instance sends nothing twice. The certificate that counts is the one with the furthest expiry (rule 11 leaves
@@ -64,7 +64,7 @@ export class CertificateAlertsService {
     const targetsOf = new Map<string, AlertTarget[]>();
     const userOf = new Map<string, string | null>();
     for (const e of enrollments) {
-      const target: AlertTarget = { activityId: e.season.team.activity.id, teamId: e.season.team.id, seasonId: e.season.id };
+      const target: AlertTarget = { activityId: e.season.team.activity.id, teamId: e.season.team.id, seasonId: e.season.id, teamName: e.season.team.name };
       const known = targetsOf.get(e.person.id) ?? [];
       if (!known.some((t) => t.teamId === target.teamId)) known.push(target);
       targetsOf.set(e.person.id, known);
@@ -96,17 +96,19 @@ export class CertificateAlertsService {
     return alerted;
   }
 
-  /** Counts, not names: the notification shows on a lock screen and the certificate is health data. */
+  /**
+   * Counts and the name of the team, never a person: the notification shows on a lock screen and the certificate is
+   * health data. The admin gets one digest for the club, the others one for each team of their scope.
+   */
   private async digest(em: EntityManager, clubId: string, clubName: string, today: string, alerted: AlertedPerson[]): Promise<void> {
-    const digests = staffDigests(await this.candidates(em, clubId), alerted);
-    for (const [userId, d] of digests) {
+    for (const d of staffDigests(await this.candidates(em, clubId), alerted)) {
       await this.notifications.notify({
         clubId,
-        userIds: [userId],
+        userIds: [d.userId],
         type: NotificationType.CERTIFICATES_DUE,
-        params: { club: clubName, expiring: d.expiring, expired: d.expired },
+        params: { club: clubName, ...(d.team ? { team: d.team } : {}), expiring: d.expiring, expired: d.expired },
         link: d.link,
-        dedupKey: digestKey(clubId, today),
+        dedupKey: digestKey(clubId, today, d.seasonId ?? undefined),
       });
     }
   }

@@ -42,12 +42,12 @@ describe('certificate alerts job', () => {
       const email = `${name}-${tag}@test.it`;
       const p = await post(admin, '/people', { name, surname: 'Rossi', birthDate: '1990-01-01', email });
       await post(admin, `/seasons/${season.id}/enrollments`, { personId: p.id, type, ...(type === 'staff' ? { staffRole: opts.staffRole ?? 'coach' } : {}) });
-      if (opts.account === false) return { personId: p.id as string, userId: '' };
+      if (opts.account === false) return { personId: p.id as string, userId: '', token: '' };
       await post(admin, '/invitations', { email, role: type, personId: p.id });
       const u = await t.newUser(email);
       const acc = await t.req('POST', '/invitations/accept', { token: u.accessToken, body: { token: t.tokenInvitation(email) } });
       expect(acc.status).toBe(200);
-      return { personId: p.id as string, userId: u.user.id as string };
+      return { personId: p.id as string, userId: u.user.id as string, token: acc.body.accessToken as string };
     };
     const coach = await member('coach', 'staff');
     const trainer = await member('trainer', 'staff', { staffRole: 'trainer' });
@@ -57,9 +57,19 @@ describe('certificate alerts job', () => {
     expect((await t.req('POST', `/seasons/${season.id}/active`, { token: admin })).status).toBe(200);
     /** Adds a certificate that expires `expiry` days from now. */
     const certificate = (personId: string, expiry: number) => post(admin, `/people/${personId}/certificates`, { type: 'competitive', issueDate: day(Math.min(expiry, 0) - 300), expiryDate: day(expiry) });
-    return { admin, adminUserId, seasonId: season.id as string, clubId: c.body.activeClub.id as string, coach, trainer, anna, bea, carl, certificate };
+    return { admin, adminUserId, activityId: act.id as string, seasonId: season.id as string, clubId: c.body.activeClub.id as string, coach, trainer, anna, bea, carl, certificate };
   }
   type Scenario = Awaited<ReturnType<typeof club>>;
+
+  /** A second team in the same activity, with a season not yet active. */
+  async function secondTeam(s: Scenario, name: string) {
+    const team = await post(s.admin, `/activities/${s.activityId}/teams`, { name });
+    const season = await post(s.admin, `/teams/${team.id}/seasons`, { name: 'Now', startDate: day(-60), endDate: day(400) });
+    const enroll = (personId: string, type: 'player' | 'staff') =>
+      post(s.admin, `/seasons/${season.id}/enrollments`, { personId, type, ...(type === 'staff' ? { staffRole: 'coach' } : {}) });
+    const activate = async () => expect((await t.req('POST', `/seasons/${season.id}/active`, { token: s.admin })).status).toBe(200);
+    return { seasonId: season.id as string, enroll, activate };
+  }
 
   const of = (userId: string, type?: NotificationType) =>
     t.orm.em.fork().find(Notification, { user: userId, ...(type ? { type } : {}) }, { filters: false, orderBy: { createdAt: 'asc' } });
@@ -152,7 +162,7 @@ describe('certificate alerts job', () => {
       for (const userId of [s.adminUserId, s.coach.userId]) {
         const [d, ...rest] = await digest(s, userId);
         expect(rest).toEqual([]);
-        expect(d?.params).toEqual({ club: 'Club d1', expiring: 2, expired: 1 });
+        expect(d?.params).toEqual(userId === s.adminUserId ? { club: 'Club d1', expiring: 2, expired: 1 } : { club: 'Club d1', team: 'T1', expiring: 2, expired: 1 });
         // The admin keeps the people list, staff open the page of their team.
         expect(d?.link).toBe(userId === s.adminUserId ? '/people' : `/team-certificates/${s.seasonId}`);
       }
@@ -179,6 +189,93 @@ describe('certificate alerts job', () => {
       expect(rows.length).toBeLessThanOrEqual(4);
       const keys = rows.map((n) => n.dedupKey);
       expect(new Set(keys).size).toBe(keys.length);
+    });
+
+    describe('per team', () => {
+      /** Two teams, the coach coaches both. Anna plays in both, Bea only in T1, Dora only in T2. */
+      async function twoTeams(tag: string) {
+        const s = await club(tag);
+        const t2 = await secondTeam(s, 'T2');
+        const dora = await post(s.admin, '/people', { name: 'dora', surname: 'Rossi', birthDate: '1990-01-01', email: `dora-${tag}@test.it` });
+        await t2.enroll(s.coach.personId, 'staff');
+        await t2.enroll(s.anna.personId, 'player');
+        await t2.enroll(dora.id, 'player');
+        await t2.activate();
+        return { s, t2, dora: dora.id as string };
+      }
+
+      it('a coach of two teams gets one digest for each, with the count and the link of its own team', async () => {
+        const { s, t2, dora } = await twoTeams('p1');
+        await s.certificate(s.anna.personId, 20); // plays in both teams
+        await s.certificate(s.bea.personId, -3); // T1 only
+        await s.certificate(dora, 10); // T2 only
+        await job.run(at(0));
+        const rows = await digest(s, s.coach.userId);
+        expect(rows).toHaveLength(2);
+        const byLink = new Map(rows.map((n) => [n.link, n.params]));
+        expect(byLink.get(`/team-certificates/${s.seasonId}`)).toEqual({ club: 'Club p1', team: 'T1', expiring: 1, expired: 1 });
+        expect(byLink.get(`/team-certificates/${t2.seasonId}`)).toEqual({ club: 'Club p1', team: 'T2', expiring: 2, expired: 0 });
+      });
+
+      it('the admin keeps a single digest for the club, counting each person once', async () => {
+        const { s, dora } = await twoTeams('p2');
+        await s.certificate(s.anna.personId, 20);
+        await s.certificate(s.bea.personId, -3);
+        await s.certificate(dora, 10);
+        await job.run(at(0));
+        const rows = await digest(s, s.adminUserId);
+        expect(rows).toHaveLength(1);
+        expect(rows[0]).toMatchObject({ link: '/people', params: { club: 'Club p2', expiring: 2, expired: 1 } });
+        expect(rows[0]?.params).not.toHaveProperty('team');
+      });
+
+      it('a team with nobody due sends nothing: the coach hears only about the team that has someone', async () => {
+        const { s, t2, dora } = await twoTeams('p3');
+        await s.certificate(dora, 10);
+        await job.run(at(0));
+        const rows = await digest(s, s.coach.userId);
+        expect(rows).toHaveLength(1);
+        expect(rows[0]).toMatchObject({ link: `/team-certificates/${t2.seasonId}`, params: { team: 'T2', expiring: 1, expired: 0 } });
+      });
+
+      it('a second run in the same week sends nothing twice, team by team', async () => {
+        const { s } = await twoTeams('p4');
+        await s.certificate(s.anna.personId, 20);
+        await job.run(at(0));
+        await job.run(at(0));
+        await job.run(at(1));
+        expect(await digest(s, s.coach.userId)).toHaveLength(2);
+        expect(await digest(s, s.adminUserId)).toHaveLength(1);
+      });
+
+      it('the count in each notification is the number of rows of the page it opens', async () => {
+        const { s, dora } = await twoTeams('p5');
+        await s.certificate(s.anna.personId, 20);
+        await s.certificate(s.bea.personId, -3);
+        await s.certificate(dora, 10);
+        await job.run(at(0));
+        const rows = await digest(s, s.coach.userId);
+        expect(rows).toHaveLength(2);
+        for (const n of rows) {
+          const page = await t.req('GET', `/seasons/${(n.link as string).split('/').pop()}/certificates-due`, { token: s.coach.token });
+          expect(page.status).toBe(200);
+          expect(page.body).toHaveLength(Number(n.params.expiring) + Number(n.params.expired));
+        }
+      });
+
+      it('a manager granted the permission over the activity gets a digest for each team with people due', async () => {
+        const { s, t2, dora } = await twoTeams('p6');
+        const email = 'manager-p6@test.it';
+        await post(s.admin, '/invitations', { email, role: 'manager', scope: 'activity', activityId: s.activityId });
+        const u = await t.newUser(email);
+        expect((await t.req('POST', '/invitations/accept', { token: u.accessToken, body: { token: t.tokenInvitation(email) } })).status).toBe(200);
+        expect((await t.req('PUT', `/permissions/${u.user.id}`, { token: s.admin, body: { diff: { 'certificates.status': true } } })).status).toBe(200);
+        await s.certificate(s.bea.personId, 10);
+        await s.certificate(dora, 10);
+        await job.run(at(0));
+        const rows = await of(u.user.id as string, NotificationType.CERTIFICATES_DUE);
+        expect(rows.map((n) => n.link).sort()).toEqual([`/team-certificates/${s.seasonId}`, `/team-certificates/${t2.seasonId}`].sort());
+      });
     });
 
     it('does not count a disabled person', async () => {

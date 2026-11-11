@@ -67,6 +67,26 @@ describe('notificationText', () => {
     expect(notificationText(NotificationType.CERTIFICATES_DUE, Language.IT, { club: 'C', expiring: 1, expired: 0 }).body).toMatch(/1 certificato medico in scadenza/);
   });
 
+  it('the digest of a team names the team in the body, and the digest of the club does not', () => {
+    for (const language of Object.values(Language)) {
+      const team = notificationText(NotificationType.CERTIFICATES_DUE, language, { club: 'ASD Dakar', team: 'Under 15', expiring: 2, expired: 1 });
+      expect(team.title).toContain('ASD Dakar');
+      expect(team.body.startsWith('Under 15')).toBe(true);
+      expect(team.body).toMatch(/2/);
+      expect(team.body).toMatch(/1/);
+      expect(team.title + team.body).not.toMatch(/undefined|NaN|\[object|\$\{|\{\w+\}/);
+      const club = notificationText(NotificationType.CERTIFICATES_DUE, language, { club: 'ASD Dakar', expiring: 2, expired: 1 });
+      expect(club.body).not.toContain('Under 15');
+      expect(club.body).not.toMatch(/^[:\s]/);
+    }
+  });
+
+  it('the digest of a team keeps the number agreement of the club digest', () => {
+    expect(notificationText(NotificationType.CERTIFICATES_DUE, Language.EN, { club: 'C', team: 'U15', expiring: 1, expired: 0 }).body).toBe('U15: 1 medical certificate expiring. Open the app to check.');
+    expect(notificationText(NotificationType.CERTIFICATES_DUE, Language.IT, { club: 'C', team: 'U15', expiring: 0, expired: 2 }).body).toBe('U15: 2 certificati medici scaduti. Apri l\'app per controllare.');
+    expect(notificationText(NotificationType.CERTIFICATES_DUE, Language.FR, { club: 'C', team: 'U15', expiring: 0, expired: 2 }).body).toBe('U15 : 2 certificats médicaux expirés. Ouvrez l\'application pour vérifier.');
+  });
+
   it('an absence until further notice has no end date', () => {
     const { body } = notificationText(NotificationType.ABSENCE_DECLARED, Language.EN, { club: 'C', person: 'Awa Diop', from: '2026-12-01' });
     expect(body).toContain('Awa Diop');

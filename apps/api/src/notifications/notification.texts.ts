@@ -47,7 +47,7 @@ interface Dictionary {
   expiring: (club: string, expiry: string, days: number) => NotificationText;
   inDays: (days: number) => string;
   expired: (club: string, expiry: string) => NotificationText;
-  due: (club: string, expiring: number, expired: number) => NotificationText;
+  due: (club: string, team: string, expiring: number, expired: number) => NotificationText;
   absence: (club: string, person: string, from: string, until: string | null) => NotificationText;
 }
 
@@ -62,7 +62,7 @@ const IT: Dictionary = {
   inDays: (n) => (n === 0 ? 'oggi' : n === 1 ? 'domani' : `tra ${n} giorni`),
   expiring: (club, expiry, days) => ({ title: `${club}: certificato in scadenza`, body: `Il tuo certificato medico scade il ${expiry} (${IT.inDays(days)}). Carica quello nuovo appena ce l'hai.` }),
   expired: (club, expiry) => ({ title: `${club}: certificato scaduto`, body: `Il tuo certificato medico è scaduto il ${expiry}.` }),
-  due: (club, expiring, expired) => {
+  due: (club, team, expiring, expired) => {
     const cert = (n: number) => (n === 1 ? 'certificato medico' : 'certificati medici');
     const gone = (n: number) => (n === 1 ? 'scaduto' : 'scaduti');
     const what =
@@ -71,7 +71,7 @@ const IT: Dictionary = {
         : expiring > 0
           ? `${expiring} ${cert(expiring)} in scadenza`
           : `${expired} ${cert(expired)} ${gone(expired)}`;
-    return { title: `${club}: certificati da controllare`, body: `${what}. Apri l'app per controllare.` };
+    return { title: `${club}: certificati da controllare`, body: `${team ? `${team}: ` : ''}${what}. Apri l'app per controllare.` };
   },
   absence: (club, person, from, until) => ({
     title: `${club}: assenza dichiarata`,
@@ -90,7 +90,7 @@ const EN: Dictionary = {
   inDays: (n) => (n === 0 ? 'today' : n === 1 ? 'tomorrow' : `in ${n} days`),
   expiring: (club, expiry, days) => ({ title: `${club}: certificate expiring`, body: `Your medical certificate expires on ${expiry} (${EN.inDays(days)}). Upload the new one as soon as you have it.` }),
   expired: (club, expiry) => ({ title: `${club}: certificate expired`, body: `Your medical certificate expired on ${expiry}.` }),
-  due: (club, expiring, expired) => {
+  due: (club, team, expiring, expired) => {
     const cert = (n: number) => (n === 1 ? 'medical certificate' : 'medical certificates');
     const what =
       expiring > 0 && expired > 0
@@ -98,7 +98,7 @@ const EN: Dictionary = {
         : expiring > 0
           ? `${expiring} ${cert(expiring)} expiring`
           : `${expired} ${cert(expired)} expired`;
-    return { title: `${club}: certificates to check`, body: `${what}. Open the app to check.` };
+    return { title: `${club}: certificates to check`, body: `${team ? `${team}: ` : ''}${what}. Open the app to check.` };
   },
   absence: (club, person, from, until) => ({
     title: `${club}: absence declared`,
@@ -117,7 +117,7 @@ const FR: Dictionary = {
   inDays: (n) => (n === 0 ? "aujourd'hui" : n === 1 ? 'demain' : `dans ${n} jours`),
   expiring: (club, expiry, days) => ({ title: `${club} : certificat bientôt expiré`, body: `Votre certificat médical expire le ${expiry} (${FR.inDays(days)}). Téléversez le nouveau dès que vous l'avez.` }),
   expired: (club, expiry) => ({ title: `${club} : certificat expiré`, body: `Votre certificat médical a expiré le ${expiry}.` }),
-  due: (club, expiring, expired) => {
+  due: (club, team, expiring, expired) => {
     const cert = (n: number) => (n > 1 ? 'certificats médicaux' : 'certificat médical');
     const gone = (n: number) => (n > 1 ? 'expirés' : 'expiré');
     const soon = (n: number) => (n > 1 ? 'arrivent à expiration' : 'arrive à expiration');
@@ -127,7 +127,7 @@ const FR: Dictionary = {
         : expiring > 0
           ? `${expiring} ${cert(expiring)} ${soon(expiring)}`
           : `${expired} ${cert(expired)} ${gone(expired)}`;
-    return { title: `${club} : certificats à vérifier`, body: `${what}. Ouvrez l'application pour vérifier.` };
+    return { title: `${club} : certificats à vérifier`, body: `${team ? `${team} : ` : ''}${what}. Ouvrez l'application pour vérifier.` };
   },
   absence: (club, person, from, until) => ({
     title: `${club} : absence déclarée`,
@@ -173,7 +173,7 @@ export function notificationText(type: NotificationType, language: Language, p: 
     case NotificationType.CERTIFICATE_EXPIRED:
       return d.expired(club, day(str(p, 'expiry'), language));
     case NotificationType.CERTIFICATES_DUE:
-      return d.due(club, Number(p.expiring ?? 0), Number(p.expired ?? 0));
+      return d.due(club, str(p, 'team'), Number(p.expiring ?? 0), Number(p.expired ?? 0));
     case NotificationType.ABSENCE_DECLARED:
       return d.absence(club, str(p, 'person'), day(str(p, 'from'), language), p.until ? day(str(p, 'until'), language) : null);
   }

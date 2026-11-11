@@ -56,33 +56,48 @@ describe('digestKey', () => {
     expect(digestKey('c1', '2026-12-28')).toBe(digestKey('c1', '2027-01-03'));
     expect(digestKey('c1', '2027-01-03')).not.toBe(digestKey('c1', '2027-01-04'));
   });
+
+  it('a team digest is one per club, week and season, apart from the club digest', () => {
+    expect(digestKey('c1', '2026-11-09', 's1')).toBe(digestKey('c1', '2026-11-15', 's1'));
+    expect(digestKey('c1', '2026-11-15', 's1')).not.toBe(digestKey('c1', '2026-11-16', 's1'));
+    expect(digestKey('c1', '2026-11-09', 's1')).not.toBe(digestKey('c1', '2026-11-09', 's2'));
+    expect(digestKey('c1', '2026-11-09', 's1')).not.toBe(digestKey('c2', '2026-11-09', 's1'));
+    expect(digestKey('c1', '2026-11-09', 's1')).not.toBe(digestKey('c1', '2026-11-09'));
+  });
+
+  it('the club digest keeps the key it had before the digest went per team, so the week of the release does not repeat it', () => {
+    expect(digestKey('c1', '2026-11-10')).toBe('cert-due:c1:2026-11-09');
+  });
 });
 
 describe('staffDigests', () => {
-  const team = (teamId: string, activityId = 'a1') => ({ activityId, teamId, seasonId: `s-${teamId}` });
+  const team = (teamId: string, activityId = 'a1') => ({ activityId, teamId, seasonId: `s-${teamId}`, teamName: `Team ${teamId}` });
   const admin: Source = { role: 'admin', scope: { type: 'club' } };
-  const coachOf = (teamId: string): Source => ({ role: 'coach', scope: { type: 'team', activityId: 'a1', teamId } });
+  const coachOf = (teamId: string, activityId = 'a1'): Source => ({ role: 'coach', scope: { type: 'team', activityId, teamId } });
   const assistantOf = (teamId: string): Source => ({ role: 'assistant_coach', scope: { type: 'team', activityId: 'a1', teamId } });
   const trainerOf = (teamId: string): Source => ({ role: 'trainer', scope: { type: 'team', activityId: 'a1', teamId } });
+  const managerOfActivity = (activityId: string): Source => ({ role: 'manager', scope: { type: 'activity', activityId } });
   const person = (personId: string, bucket: AlertedPerson['bucket'], ...teams: string[]): AlertedPerson => ({
     personId,
     bucket,
     targets: teams.map((t) => team(t)),
   });
   const candidate = (userId: string, sources: Source[], diff: StaffCandidate['diff'] = {}): StaffCandidate => ({ userId, sources, diff });
+  const usersOf = (digests: ReturnType<typeof staffDigests>) => [...new Set(digests.map((d) => d.userId))].sort();
+  const of = (digests: ReturnType<typeof staffDigests>, userId: string) => digests.filter((d) => d.userId === userId);
 
-  it('the admin hears about everyone, the coach only about their team', () => {
+  it('the admin hears about everyone in one digest for the club, the coach only about their team', () => {
     const digests = staffDigests(
       [candidate('admin', [admin]), candidate('coach', [coachOf('t1')])],
       [person('p1', '30d', 't1'), person('p2', '15d', 't2')],
     );
-    expect(digests.get('admin')).toEqual({ expiring: 2, expired: 0, link: '/people' });
-    expect(digests.get('coach')).toEqual({ expiring: 1, expired: 0, link: '/team-certificates/s-t1' });
+    expect(of(digests, 'admin')).toEqual([{ userId: 'admin', seasonId: null, team: null, expiring: 2, expired: 0, link: '/people' }]);
+    expect(of(digests, 'coach')).toEqual([{ userId: 'coach', seasonId: 's-t1', team: 'Team t1', expiring: 1, expired: 0, link: '/team-certificates/s-t1' }]);
   });
 
   it('counts expired apart from expiring', () => {
     const digests = staffDigests([candidate('admin', [admin])], [person('p1', '30d', 't1'), person('p2', 'expired', 't1'), person('p3', 'expired', 't1')]);
-    expect(digests.get('admin')).toEqual({ expiring: 1, expired: 2, link: '/people' });
+    expect(of(digests, 'admin')).toMatchObject([{ expiring: 1, expired: 2 }]);
   });
 
   it('whoever lacks the certificates permission gets nothing, and the diff can grant or revoke it', () => {
@@ -95,33 +110,72 @@ describe('staffDigests', () => {
       ],
       [person('p1', '15d', 't1')],
     );
-    expect([...digests.keys()].sort()).toEqual(['assistant', 'trainerGranted']);
+    expect(usersOf(digests)).toEqual(['assistant', 'trainerGranted']);
   });
 
-  it('a person in two teams is counted once, even when the staff member covers both', () => {
+  it('the admin counts a person in two teams once', () => {
     const digests = staffDigests([candidate('admin', [admin])], [person('p1', '30d', 't1', 't2')]);
-    expect(digests.get('admin')).toEqual({ expiring: 1, expired: 0, link: '/people' });
+    expect(of(digests, 'admin')).toMatchObject([{ expiring: 1, expired: 0, link: '/people' }]);
   });
 
   it('a person in two teams reaches the coaches of either', () => {
     const digests = staffDigests([candidate('c1', [coachOf('t1')]), candidate('c2', [coachOf('t2')]), candidate('c3', [coachOf('t3')])], [person('p1', '30d', 't1', 't2')]);
-    expect([...digests.keys()].sort()).toEqual(['c1', 'c2']);
+    expect(usersOf(digests)).toEqual(['c1', 'c2']);
   });
 
-  it('staff are sent to the page of their team, the admin to the people list even when they also coach', () => {
-    const digests = staffDigests([candidate('coach', [coachOf('t1')]), candidate('both', [admin, coachOf('t1')])], [person('p1', '30d', 't1')]);
-    expect(digests.get('coach')?.link).toBe('/team-certificates/s-t1');
-    expect(digests.get('both')?.link).toBe('/people');
+  it('a person who plays in two teams of one coach counts in the digest of each, never in a total', () => {
+    const digests = staffDigests([candidate('c', [coachOf('t1'), coachOf('t2')])], [person('p1', '30d', 't1', 't2')]);
+    expect(of(digests, 'c')).toMatchObject([
+      { seasonId: 's-t1', expiring: 1 },
+      { seasonId: 's-t2', expiring: 1 },
+    ]);
   });
 
-  it('staff of several teams are sent to the team with the most people due, the lowest season id on a tie', () => {
-    const both = candidate('c', [coachOf('t1'), coachOf('t2')]);
-    expect(staffDigests([both], [person('p1', '30d', 't1'), person('p2', '30d', 't2'), person('p3', 'expired', 't2')]).get('c')?.link).toBe('/team-certificates/s-t2');
-    expect(staffDigests([both], [person('p1', '30d', 't2'), person('p2', '30d', 't1')]).get('c')?.link).toBe('/team-certificates/s-t1');
+  it('staff get one digest per team of their scope that has someone due, each counting its own people and opening its own page', () => {
+    const digests = staffDigests(
+      [candidate('c', [coachOf('t1'), coachOf('t2'), coachOf('t3')])],
+      [person('p1', '30d', 't1'), person('p2', 'expired', 't1'), person('p3', '15d', 't2')],
+    );
+    expect(of(digests, 'c')).toEqual([
+      { userId: 'c', seasonId: 's-t1', team: 'Team t1', expiring: 1, expired: 1, link: '/team-certificates/s-t1' },
+      { userId: 'c', seasonId: 's-t2', team: 'Team t2', expiring: 1, expired: 0, link: '/team-certificates/s-t2' },
+    ]);
+  });
+
+  it('staff with people due in one team only get one digest, for that team', () => {
+    const digests = staffDigests([candidate('c', [coachOf('t1'), coachOf('t2')])], [person('p1', '30d', 't2')]);
+    expect(of(digests, 'c')).toMatchObject([{ seasonId: 's-t2' }]);
+  });
+
+  it('a manager granted the permission over an activity gets one digest for each of its teams with people due', () => {
+    const digests = staffDigests(
+      [candidate('m', [managerOfActivity('a1')], { 'certificates.status': true })],
+      [person('p1', '30d', 't1'), person('p2', '30d', 't2'), person('p3', '30d', 't3'), person('p4', '30d', 't4')],
+    );
+    expect(of(digests, 'm').map((d) => d.seasonId)).toEqual(['s-t1', 's-t2', 's-t3', 's-t4']);
+    expect(of(digests, 'm').every((d) => d.expiring === 1)).toBe(true);
+  });
+
+  it('two sources of the permission over the same team give one digest for that team', () => {
+    const digests = staffDigests([candidate('c', [coachOf('t1'), managerOfActivity('a1'), coachOf('t1')], { 'certificates.status': true })], [person('p1', '30d', 't1')]);
+    expect(of(digests, 'c')).toHaveLength(1);
+  });
+
+  it('the admin who also coaches keeps the single digest for the club, not one per team', () => {
+    const digests = staffDigests([candidate('both', [admin, coachOf('t1'), coachOf('t2')])], [person('p1', '30d', 't1'), person('p2', '30d', 't2')]);
+    expect(of(digests, 'both')).toEqual([{ userId: 'both', seasonId: null, team: null, expiring: 2, expired: 0, link: '/people' }]);
+  });
+
+  it('the digests come in a stable order: by user, then by season id', () => {
+    const digests = staffDigests(
+      [candidate('b', [coachOf('t2'), coachOf('t1')]), candidate('a', [coachOf('t1')])],
+      [person('p1', '30d', 't2'), person('p2', '30d', 't1')],
+    );
+    expect(digests.map((d) => `${d.userId}:${d.seasonId}`)).toEqual(['a:s-t1', 'b:s-t1', 'b:s-t2']);
   });
 
   it('nobody to tell, nothing to tell', () => {
-    expect(staffDigests([], [person('p1', '30d', 't1')]).size).toBe(0);
-    expect(staffDigests([candidate('admin', [admin])], []).size).toBe(0);
+    expect(staffDigests([], [person('p1', '30d', 't1')])).toEqual([]);
+    expect(staffDigests([candidate('admin', [admin])], [])).toEqual([]);
   });
 });
