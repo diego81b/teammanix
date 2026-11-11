@@ -1,6 +1,7 @@
 import { EntityManager } from '@mikro-orm/postgresql';
 import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import * as argon2 from 'argon2';
+import { hashOptions } from './password-hash';
 import { AuditService } from '../audit/audit.service';
 import { appConfig, DOCUMENTS_VERSION } from '../config/app.config';
 import { TermsAcceptance } from '../entities/terms-acceptance.entity';
@@ -25,7 +26,7 @@ const MESSAGE_NEUTRAL = 'If the data is correct you will receive an email shortl
 @Injectable()
 export class AuthService {
   /** Comparison hash to equalize timing when the email does not exist. */
-  private readonly hashFake = argon2.hash('fake-password-for-uniform-timing');
+  private readonly hashFake = argon2.hash('fake-password-for-uniform-timing', hashOptions(process.env.NODE_ENV));
 
   constructor(
     private readonly em: EntityManager,
@@ -43,7 +44,7 @@ export class AuthService {
    * because the verification token is bound to the password hash.
    */
   async register(dto: RegistrationDto): Promise<{ message: string }> {
-    const hash = await argon2.hash(dto.password);
+    const hash = await argon2.hash(dto.password, hashOptions(process.env.NODE_ENV));
     const existing = await this.em.findOne(User, { email: dto.email });
     if (existing && (existing.emailVerifiedAt || existing.deactivatedAt)) {
       // The language is the one of the request, not the stored one: whoever writes now reads it.
@@ -174,7 +175,7 @@ export class AuthService {
   }
 
   private async setPassword(user: User, password: string): Promise<void> {
-    user.passwordHash = await argon2.hash(password);
+    user.passwordHash = await argon2.hash(password, hashOptions(process.env.NODE_ENV));
     user.tokenValidFrom = new Date();
     await this.em.flush();
   }
