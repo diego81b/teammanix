@@ -6,3 +6,6 @@ dist
 test-results
 playwright-report
 coverage
+
+# Impeccable design hook cache
+.impeccable/
