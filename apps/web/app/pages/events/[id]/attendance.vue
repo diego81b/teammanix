@@ -60,6 +60,7 @@
 
         <template v-else>
           <UAlert v-if="!data.canRecord" color="neutral" variant="subtle" icon="i-tm-lock" :title="$t('attendance.readOnly')" />
+          <UAlert v-else-if="notice" color="neutral" variant="subtle" icon="i-tm-info" :title="$t('attendance.opensAt', { time: splitInstant(notice.opensAt.toISOString()).time })" />
           <p v-if="data.rows.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">{{ $t('attendance.empty') }}</p>
 
           <section v-for="g in groups" :key="g.key" class="space-y-2" :aria-label="$t(`attendance.${g.key}`)">
@@ -76,7 +77,7 @@
                   <UBadge v-if="!data.canRecord && r.outcome" :color="OUTCOME_COLOR[r.outcome]" variant="subtle" :label="$t(`attendance.outcome.${r.outcome}`)" />
                 </div>
                 <!-- Five buttons from a closed list, one tap each. Tapping the one already set clears it. -->
-                <div v-if="data.canRecord && !r.disabled" class="grid grid-cols-2 gap-2 sm:grid-cols-5" role="group" :aria-label="$t('attendance.markAria', { name: rowName(r, key => t(key)) })">
+                <div v-if="canMark && !r.disabled" class="grid grid-cols-2 gap-2 sm:grid-cols-5" role="group" :aria-label="$t('attendance.markAria', { name: rowName(r, key => t(key)) })">
                   <UButton
                     v-for="o in OUTCOMES"
                     :key="o"
@@ -102,7 +103,7 @@
 
 <script setup lang="ts">
 import type { AttendanceOutcome, AttendanceRow } from '~/types/api'
-import { OUTCOMES, groupRows, percent, rowName, toggleOutcome } from '~/utils/attendance'
+import { OUTCOMES, attendanceNotice, attendanceOpen, groupRows, percent, rowName, toggleOutcome } from '~/utils/attendance'
 import { eventHeading } from '~/utils/calendar'
 import { formatDate } from '~/utils/date'
 import { splitInstant } from '~/utils/event'
@@ -123,6 +124,12 @@ const groups = computed(() => {
   return [{ key: 'staff', rows: g.staff }, { key: 'players', rows: g.players }].filter(x => x.rows.length > 0)
 })
 const rate = computed(() => (data.value && data.value.view !== 'player' ? percent(data.value.summary.rate) : null))
+
+/** Read again with every load: the page does not tick, a reload after the opening time shows the buttons. */
+const now = ref(new Date())
+watch(data, () => { now.value = new Date() })
+const notice = computed(() => (data.value && data.value.view !== 'player' ? attendanceNotice(data.value.event, now.value) : null))
+const canMark = computed(() => !!data.value && 'canRecord' in data.value && data.value.canRecord && attendanceOpen(data.value.event, now.value))
 
 const busy = ref('')
 const errorAction = ref('')

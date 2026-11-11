@@ -7,10 +7,27 @@ export const OUTCOMES: AttendanceOutcome[] = ['present', 'late', 'absent_excused
 export const toggleOutcome = (current: AttendanceOutcome | null, picked: AttendanceOutcome): AttendanceOutcome | null =>
   current === picked ? null : picked
 
-/** Attendance is recorded for an event that took place: it started and was neither cancelled nor postponed. The API decides again. */
+/**
+ * How long before the start the attendance check opens (a training at 20:00 opens at 19:30), for every event type.
+ * The API keeps the same number in `src/attendance/attendance.rules.ts`: change both together.
+ */
+export const ATTENDANCE_OPENS_MINUTES_BEFORE = 30
+
+/** Exact minutes on the instant, so a daylight saving change inside the window does not move it. */
+export const attendanceOpensAt = (start: string): Date => new Date(Date.parse(start) - ATTENDANCE_OPENS_MINUTES_BEFORE * 60_000)
+
+const neverOpens = (status: EventStatus): boolean => status === 'cancelled' || status === 'postponed'
+
+/** The check is open from its opening time, with no upper limit, unless the event was cancelled or postponed. The API decides again. */
 export function attendanceOpen(event: { start: string, status: EventStatus }, now: Date): boolean {
-  if (event.status === 'cancelled' || event.status === 'postponed') return false
-  return Date.parse(event.start) <= now.getTime()
+  if (neverOpens(event.status)) return false
+  return attendanceOpensAt(event.start).getTime() <= now.getTime()
+}
+
+/** What the page says to staff before the check opens, or null when it is open or will never open. */
+export function attendanceNotice(event: { start: string, status: EventStatus }, now: Date): { opensAt: Date } | null {
+  if (neverOpens(event.status) || attendanceOpen(event, now)) return null
+  return { opensAt: attendanceOpensAt(event.start) }
 }
 
 /** The attendance rate as a whole percentage, or null when nobody available was recorded (the injured are left out). */

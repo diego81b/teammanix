@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { OUTCOMES, attendanceOpen, groupRows, percent, rowName, toggleOutcome } from '../../app/utils/attendance'
+import { ATTENDANCE_OPENS_MINUTES_BEFORE, OUTCOMES, attendanceNotice, attendanceOpen, attendanceOpensAt, groupRows, percent, rowName, toggleOutcome } from '../../app/utils/attendance'
 
 const now = new Date('2026-11-10T20:00:00Z')
 
@@ -20,19 +20,51 @@ describe('toggleOutcome', () => {
   })
 })
 
+describe('attendanceOpensAt', () => {
+  it('is 30 minutes before the start, the same number the API uses', () => {
+    expect(ATTENDANCE_OPENS_MINUTES_BEFORE).toBe(30)
+    expect(attendanceOpensAt('2026-11-11T19:00:00Z').toISOString()).toBe('2026-11-11T18:30:00.000Z')
+  })
+
+  it('counts exact minutes on the instant, across a daylight saving change', () => {
+    expect(attendanceOpensAt('2026-10-25T02:15:00Z').toISOString()).toBe('2026-10-25T01:45:00.000Z')
+  })
+})
+
 describe('attendanceOpen', () => {
   it('opens once the event started, scheduled or concluded', () => {
     expect(attendanceOpen({ start: '2026-11-10T17:00:00Z', status: 'scheduled' }, now)).toBe(true)
     expect(attendanceOpen({ start: '2026-11-10T17:00:00Z', status: 'concluded' }, now)).toBe(true)
   })
 
-  it('stays closed before the start', () => {
+  it('opens 30 minutes before the start, to the minute', () => {
+    const event = { start: '2026-11-10T20:30:00Z', status: 'scheduled' as const }
+    expect(attendanceOpen(event, new Date('2026-11-10T19:59:59Z'))).toBe(false)
+    expect(attendanceOpen(event, new Date('2026-11-10T20:00:00Z'))).toBe(true)
+  })
+
+  it('stays closed before the window', () => {
     expect(attendanceOpen({ start: '2026-11-10T21:00:00Z', status: 'scheduled' }, now)).toBe(false)
   })
 
-  it('stays closed for a cancelled or postponed event', () => {
+  it('stays closed for a cancelled or postponed event, also inside the window', () => {
     expect(attendanceOpen({ start: '2026-11-01T17:00:00Z', status: 'cancelled' }, now)).toBe(false)
     expect(attendanceOpen({ start: '2026-11-01T17:00:00Z', status: 'postponed' }, now)).toBe(false)
+    expect(attendanceOpen({ start: '2026-11-10T20:20:00Z', status: 'cancelled' }, now)).toBe(false)
+  })
+})
+
+describe('attendanceNotice', () => {
+  it('says when the check opens for a scheduled event that is not open yet', () => {
+    expect(attendanceNotice({ start: '2026-11-10T21:00:00Z', status: 'scheduled' }, now)).toEqual({ opensAt: new Date('2026-11-10T20:30:00Z') })
+  })
+
+  it('has nothing to say once the check is open', () => {
+    expect(attendanceNotice({ start: '2026-11-10T20:20:00Z', status: 'scheduled' }, now)).toBeNull()
+  })
+
+  it('has nothing to say for a cancelled or postponed event: it never opens', () => {
+    expect(attendanceNotice({ start: '2026-11-10T21:00:00Z', status: 'cancelled' }, now)).toBeNull()
   })
 })
 
