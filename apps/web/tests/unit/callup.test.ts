@@ -4,6 +4,7 @@ import {
   blockers,
   callupCounts,
   canSend,
+  confirmMessage,
   formatChangeTime,
   groupStaff,
   historyParts,
@@ -47,8 +48,12 @@ describe('rowAction: what a tap does', () => {
   it('not callable for a hard reason: nothing can be done', () => {
     expect(rowAction('notCallable', row({ reasons: [reason('hard', 'injured')] }))).toBe('none')
   })
-  it('not callable for an absence: no action, the player removes the absence first', () => {
-    expect(rowAction('notCallable', row({ reasons: [reason('hard', 'absence')] }))).toBe('none')
+  it('not callable for an absence: the staff adds after a confirmation', () => {
+    expect(rowAction('notCallable', row({ reasons: [reason('confirm', 'absence')] }))).toBe('add_confirm')
+  })
+  it('an absence next to a hard reason (injury, suspension): still nothing to do', () => {
+    expect(rowAction('notCallable', row({ reasons: [reason('confirm', 'absence'), reason('hard', 'injured')] }))).toBe('none')
+    expect(rowAction('notCallable', row({ reasons: [reason('hard', 'suspended'), reason('confirm', 'absence')] }))).toBe('none')
   })
   it('hard wins over confirm', () => {
     expect(rowAction('notCallable', row({ reasons: [reason('confirm'), reason('hard')] }))).toBe('none')
@@ -147,7 +152,7 @@ describe('reasonLabel: the text of a reason', () => {
     expect(reasonLabel({ code: 'injured', severity: 'hard', until: '2026-11-20' }, t, fmt)).toBe('callup.reason.injured · <2026-11-20>')
   })
   it('a declared absence with an end says "not available until"', () => {
-    expect(reasonLabel({ code: 'absence', severity: 'hard', until: '2026-11-15' }, t, fmt)).toBe('callup.reason.absenceUntil:{"date":"<2026-11-15>"}')
+    expect(reasonLabel({ code: 'absence', severity: 'confirm', until: '2026-11-15' }, t, fmt)).toBe('callup.reason.absenceUntil:{"date":"<2026-11-15>"}')
   })
   it('a suspension says which match of how many', () => {
     expect(reasonLabel({ code: 'suspended', severity: 'hard', match: 2, total: 3 }, t, fmt)).toBe('callup.reason.suspendedMatch:{"match":"2","total":"3"}')
@@ -159,8 +164,8 @@ describe('reasonLabel: the text of a reason', () => {
     expect(reasonLabel({ code: 'suspended', severity: 'hard' }, t, fmt)).toBe('callup.reason.suspended')
   })
   it('a declared absence with no end has no date', () => {
-    expect(reasonLabel({ code: 'absence', severity: 'hard' }, t, fmt)).toBe('callup.reason.absence')
-    expect(reasonLabel({ code: 'absence', severity: 'hard', until: null }, t, fmt)).toBe('callup.reason.absence')
+    expect(reasonLabel({ code: 'absence', severity: 'confirm' }, t, fmt)).toBe('callup.reason.absence')
+    expect(reasonLabel({ code: 'absence', severity: 'confirm', until: null }, t, fmt)).toBe('callup.reason.absence')
   })
 })
 
@@ -183,5 +188,27 @@ describe('suspensionNotice: the own staff row on a covered match', () => {
   it('carries the match number, the count and the last day of a period', () => {
     expect(suspensionNotice({ suspension: { match: 1, total: 2, until: null } })).toEqual({ match: 1, total: 2, until: null })
     expect(suspensionNotice({ suspension: { match: 2, total: 2, until: '2026-11-30' } })).toEqual({ match: 2, total: 2, until: '2026-11-30' })
+  })
+})
+
+describe('confirmMessage: what the confirmation says', () => {
+  const t = (key: string, p?: Record<string, string>) => (p ? `${key}:${JSON.stringify(p)}` : key)
+  const fmt = (d: string) => `<${d}>`
+
+  it('an absence with an end names the date', () => {
+    const r = row({ reasons: [{ code: 'absence', severity: 'confirm', until: '2026-11-15' }] })
+    expect(confirmMessage('Anna Rossi', r, t, fmt)).toBe('callup.confirmAbsenceUntil:{"name":"Anna Rossi","date":"<2026-11-15>"}')
+  })
+  it('an absence with no end says there is none', () => {
+    expect(confirmMessage('Anna Rossi', row({ reasons: [reason('confirm', 'absence')] }), t, fmt)).toBe('callup.confirmAbsence:{"name":"Anna Rossi"}')
+    const open = row({ reasons: [{ code: 'absence', severity: 'confirm', until: null }] })
+    expect(confirmMessage('Anna Rossi', open, t, fmt)).toBe('callup.confirmAbsence:{"name":"Anna Rossi"}')
+  })
+  it('any other confirm reason keeps the generic text', () => {
+    expect(confirmMessage('Anna Rossi', row({ reasons: [reason('confirm', 'other')] }), t, fmt)).toBe('callup.confirmText:{"name":"Anna Rossi"}')
+  })
+  it('a warning next to the absence does not change its text', () => {
+    const r = row({ reasons: [reason('warning', 'certificate_expiring'), { code: 'absence', severity: 'confirm', until: '2026-11-15' }] })
+    expect(confirmMessage('Anna Rossi', r, t, fmt)).toBe('callup.confirmAbsenceUntil:{"name":"Anna Rossi","date":"<2026-11-15>"}')
   })
 })

@@ -733,6 +733,8 @@ const it = {
     removeAria: 'Rimuovi {name} dai convocati',
     confirmTitle: 'Convocare comunque?',
     confirmText: '{name} risulta non disponibile per questo evento. Puoi convocare comunque.',
+    confirmAbsence: '{name} ha dichiarato un\'assenza senza data di fine. Puoi convocare comunque.',
+    confirmAbsenceUntil: '{name} ha dichiarato un\'assenza fino al {date}. Puoi convocare comunque.',
     send: 'Invia convocazione',
     sendNew: 'Invia ai nuovi ({count})',
     nothingToSend: 'Nessun nuovo convocato da avvisare.',

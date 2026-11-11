@@ -729,6 +729,8 @@ const fr: typeof it = {
     removeAria: 'Retirer {name} des convoqués',
     confirmTitle: 'Convoquer quand même ?',
     confirmText: '{name} est indisponible pour cet événement. Vous pouvez convoquer quand même.',
+    confirmAbsence: '{name} a déclaré une absence sans date de fin. Vous pouvez convoquer quand même.',
+    confirmAbsenceUntil: '{name} a déclaré une absence jusqu\'au {date}. Vous pouvez convoquer quand même.',
     send: 'Envoyer la convocation',
     sendNew: 'Envoyer aux nouveaux ({count})',
     nothingToSend: 'Aucun nouveau convoqué à prévenir.',

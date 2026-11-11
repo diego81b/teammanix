@@ -268,7 +268,7 @@
         @saved="load"
       />
 
-      <UModal v-model:open="open.confirm" :title="$t('callup.confirmTitle')" :description="pending ? $t('callup.confirmText', { name: personName(pending) }) : ''">
+      <UModal v-model:open="open.confirm" :title="$t('callup.confirmTitle')" :description="pending ? confirmMessage(personName(pending), pending, t, day => formatDate(day, locale)) : ''">
         <template #footer>
           <UButton color="neutral" variant="outline" size="lg" :label="$t('common.back')" @click="open.confirm = false" />
           <UButton size="lg" :loading="busy !== ''" :label="$t('callup.addAnyway')" @click="pending && add(pending, true)" />
@@ -319,7 +319,7 @@
 <script setup lang="ts">
 import type { AnswerChange, CallupReason, CallupResponse, CallupRow, Placement, ReasonDecline, StaffAnswerRow, StaffCallups } from '~/types/api'
 import {
-  DECLINE_REASONS, blockers, callupCounts, canSend, formatChangeTime, groupStaff, historyParts, myAnswer, ownStaffRow, reasonLabel, absenceNotice, suspensionNotice, rowAction, togglePlacement, unsentCount, warnings,
+  DECLINE_REASONS, blockers, callupCounts, canSend, confirmMessage, formatChangeTime, groupStaff, historyParts, myAnswer, ownStaffRow, reasonLabel, absenceNotice, suspensionNotice, rowAction, togglePlacement, unsentCount, warnings,
   type CallupList,
 } from '~/utils/callup'
 import { eventHeading } from '~/utils/calendar'

@@ -729,6 +729,8 @@ const en: typeof it = {
     removeAria: 'Remove {name} from the call-up',
     confirmTitle: 'Call up anyway?',
     confirmText: '{name} is unavailable. You can still call them up.',
+    confirmAbsence: '{name} declared an absence with no end date. You can still call them up.',
+    confirmAbsenceUntil: '{name} declared an absence until {date}. You can still call them up.',
     send: 'Send call-up',
     sendNew: 'Send to the new ones ({count})',
     nothingToSend: 'No new call-up to send.',

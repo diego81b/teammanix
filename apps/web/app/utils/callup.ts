@@ -23,6 +23,16 @@ export function reasonLabel(r: CallupReason, t: (key: string, params?: Record<st
   return r.until ? `${t(reasonKey(r.code))} · ${fmt(r.until)}` : t(reasonKey(r.code))
 }
 
+/**
+ * The text of the confirmation to call up a player the API asks to confirm. A declared absence names its end ("until [date]")
+ * or says it has none; any other confirm reason keeps the generic text.
+ */
+export function confirmMessage(name: string, row: Pick<CallupRow, 'reasons'>, t: (key: string, params?: Record<string, string>) => string, fmt: (day: string) => string): string {
+  const absence = row.reasons.find(r => r.severity === 'confirm' && r.code === 'absence')
+  if (!absence) return t('callup.confirmText', { name })
+  return absence.until ? t('callup.confirmAbsenceUntil', { name, date: fmt(absence.until) }) : t('callup.confirmAbsence', { name })
+}
+
 /** The own staff row during a declared absence: the message key and the end (null: no end), or null outside any absence. */
 export function absenceNotice(row: Pick<StaffAnswerRow, 'absence'>): { key: string, until: string | null } | null {
   if (!row.absence) return null
