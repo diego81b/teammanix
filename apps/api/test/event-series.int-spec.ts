@@ -500,6 +500,187 @@ describe('event series: recurring trainings that create real events', () => {
     });
   });
 
+  describe('remove all future sessions', () => {
+    const url = (id: string) => `/series/${id}/future-sessions`;
+    const dayBefore = (d: string) => new Date(Date.parse(`${d}T00:00:00Z`) - DAY_MS).toISOString().slice(0, 10);
+    /** A session goes while its attendance check (30 minutes before the start) has not opened. */
+    const goes = (e: Ev, cutoff: number) => Date.parse(e.start) > cutoff;
+    const checkOpensIn = () => Date.now() + 30 * 60_000;
+    const move = async (s: Setup, id: string, start: Date, minutes = 90) => {
+      const r = await send(s.coach1.token, 'PATCH', `/events/${id}`, {
+        start: start.toISOString(),
+        end: new Date(start.getTime() + minutes * 60_000).toISOString(),
+      });
+      expect(r.status).toBe(200);
+    };
+    const playerOf = (s: Setup) =>
+      t.orm.em.fork().findOneOrFail(Enrollment, { season: s.t1.seasonId, type: EnrollmentType.PLAYER }, { filters: false });
+    const callupOn = async (s: Setup, eventId: string, over: object = {}) => {
+      const em = t.orm.em.fork();
+      const c = em.create(Callup, { club: s.clubId, event: eventId, enrollment: await playerOf(s), ...over } as never);
+      await em.flush();
+      return c;
+    };
+    const countCallups = (eventIds: string[]) => t.orm.em.fork().count(Callup, { event: { $in: eventIds } }, { filters: false });
+    const countAttendances = (eventIds: string[]) => t.orm.em.fork().count(Attendance, { event: { $in: eventIds } }, { filters: false });
+
+    it('removes every session whose check has not opened, ends the series the day before the first one and keeps the past', async () => {
+      const s = await club('rm-1@test.it', aroundSeason);
+      const created = await createSeries(s, aroundToday());
+      const before = await events(s);
+      const cutoff = checkOpensIn();
+      const gone = before.filter((e) => goes(e, cutoff));
+      const stays = before.filter((e) => !goes(e, cutoff));
+      expect(gone.length).toBeGreaterThan(10);
+      expect(stays.length).toBeGreaterThan(10);
+
+      const r = await send(s.coach1.token, 'DELETE', url(created.id));
+      expect([r.status, r.body]).toEqual([200, { sessions: gone.length, players: 0, kept: stays.length }]);
+      expect((await events(s)).map((e) => e.id)).toEqual(stays.map((e) => e.id));
+      const after = await send(s.coach1.token, 'GET', `/series/${created.id}`);
+      expect(after.body).toMatchObject({ endDate: dayBefore(localDay((gone[0] as Ev).start)), eventCount: stays.length });
+    });
+
+    it('a series ended this way is not filled again by a later change of the series', async () => {
+      const s = await club('rm-2@test.it', aroundSeason);
+      const created = await createSeries(s, aroundToday());
+      expect((await send(s.coach1.token, 'DELETE', url(created.id))).status).toBe(200);
+      const left = await events(s);
+      expect((await send(s.coach1.token, 'PATCH', `/series/${created.id}`, { timeStart: '19:00' })).status).toBe(200);
+      expect((await events(s)).map((e) => e.id)).toEqual(left.map((e) => e.id));
+    });
+
+    it('removes the sessions edited by hand and the cancelled ones too, with their call-ups and responses, and leaves plain events alone', async () => {
+      const s = await club('rm-3@test.it', aroundSeason);
+      const created = await createSeries(s, aroundToday());
+      const list = await events(s);
+      const on = (offset: number) => list.find((e) => localDay(e.start) === day(offset)) as Ev;
+      const [edited, cancelled, answered] = [on(3), on(4), on(5)];
+      await move(s, edited.id, new Date(Date.parse(edited.start) + 3_600_000));
+      expect((await send(s.coach1.token, 'POST', `/events/${(cancelled as Ev).id}/cancel`)).status).toBe(200);
+      await callupOn(s, (answered as Ev).id, { response: CallupResponse.CONFIRMED, notifiedAt: new Date() });
+      await callupOn(s, (cancelled as Ev).id);
+      const plain = await send(s.coach1.token, 'POST', `/teams/${s.t1.teamId}/events`, {
+        type: 'training',
+        start: `${day(6)}T15:00:00Z`,
+        end: `${day(6)}T16:00:00Z`,
+      });
+      expect(await countCallups([(answered as Ev).id, (cancelled as Ev).id])).toBe(2);
+
+      expect((await send(s.coach1.token, 'DELETE', url(created.id))).status).toBe(200);
+      const after = (await events(s)).map((e) => e.id);
+      for (const e of [edited, cancelled, answered]) expect(after).not.toContain((e as Ev).id);
+      expect(after).toContain(plain.body.id);
+      expect(await countCallups([(answered as Ev).id, (cancelled as Ev).id])).toBe(0);
+    });
+
+    it('keeps a session in progress and one whose check is open, with their call-ups and attendance, and the held ones', async () => {
+      const s = await club('rm-4@test.it', aroundSeason);
+      const created = await createSeries(s, aroundToday());
+      const list = await events(s);
+      const [running, open] = [list.find((e) => localDay(e.start) === day(2)) as Ev, list.find((e) => localDay(e.start) === day(3)) as Ev];
+      await move(s, running.id, new Date(Date.now() - 30 * 60_000), 90); // started half an hour ago
+      await move(s, open.id, new Date(Date.now() + 10 * 60_000)); // the check opened 20 minutes ago
+      const enrollment = await playerOf(s);
+      const em = t.orm.em.fork();
+      for (const e of [running, open]) {
+        em.create(Callup, { club: s.clubId, event: e.id, enrollment, response: CallupResponse.CONFIRMED } as never);
+        em.create(Attendance, { club: s.clubId, event: e.id, enrollment, outcome: AttendanceOutcome.PRESENT } as never);
+      }
+      await em.flush();
+
+      const cutoff = checkOpensIn();
+      const held = list.filter((e) => !goes(e, cutoff)).map((e) => e.id);
+      expect((await send(s.coach1.token, 'DELETE', url(created.id))).status).toBe(200);
+      expect((await events(s)).map((e) => e.id).sort()).toEqual([...new Set([...held, running.id, open.id])].sort());
+      expect(await countCallups([running.id, open.id])).toBe(2);
+      expect(await countAttendances([running.id, open.id])).toBe(2);
+    });
+
+    it('a future session that already has attendance stays, because attendance is never lost', async () => {
+      const s = await club('rm-5@test.it', aroundSeason);
+      const created = await createSeries(s, aroundToday());
+      const target = (await events(s)).find((e) => localDay(e.start) === day(8)) as Ev;
+      const em = t.orm.em.fork();
+      em.create(Attendance, { club: s.clubId, event: target.id, enrollment: await playerOf(s), outcome: AttendanceOutcome.PRESENT } as never);
+      await em.flush();
+      const r = await send(s.coach1.token, 'DELETE', url(created.id));
+      expect(r.status).toBe(200);
+      expect((await events(s)).filter((e) => localDay(e.start) >= day(2)).map((e) => e.id)).toEqual([target.id]);
+      expect(await countAttendances([target.id])).toBe(1);
+    });
+
+    it('a series with no past session disappears with all its sessions', async () => {
+      const s = await club('rm-6@test.it', aroundSeason);
+      const created = await createSeries(s, aroundToday({ startDate: day(3), endDate: day(10) }));
+      const total = (await events(s)).length;
+      const r = await send(s.coach1.token, 'DELETE', url(created.id));
+      expect([r.status, r.body]).toEqual([200, { sessions: total, players: 0, kept: 0 }]);
+      expect(await events(s)).toEqual([]);
+      const gone = await send(s.coach1.token, 'GET', `/series/${created.id}`);
+      expect([gone.status, gone.body.code]).toEqual([404, 'SERIES_NOT_FOUND']);
+    });
+
+    it('with nothing to remove it changes nothing', async () => {
+      const s = await club('rm-7@test.it', aroundSeason);
+      const created = await createSeries(s, aroundToday({ startDate: day(-14), endDate: day(-3) }));
+      const before = await events(s);
+      const r = await send(s.coach1.token, 'DELETE', url(created.id));
+      expect([r.status, r.body]).toEqual([200, { sessions: 0, players: 0, kept: before.length }]);
+      expect(await events(s)).toEqual(before);
+      expect((await send(s.coach1.token, 'GET', `/series/${created.id}`)).body.endDate).toBe(day(-3));
+    });
+
+    it('the confirmation counts sessions, players with a call-up or a response (sent or not, each once) and the sessions that stay, and changes nothing', async () => {
+      const s = await club('rm-8@test.it', aroundSeason);
+      const created = await createSeries(s, aroundToday());
+      const list = await events(s);
+      const cutoff = checkOpensIn();
+      const [a, b] = list.filter((e) => goes(e, cutoff)) as [Ev, Ev];
+      await callupOn(s, a.id);
+      await callupOn(s, b.id, { response: CallupResponse.DECLINED, notifiedAt: new Date() });
+      const past = list.find((e) => !goes(e, cutoff)) as Ev;
+      await callupOn(s, past.id); // on a session that stays: not counted
+
+      const r = await send(s.coach1.token, 'GET', url(created.id));
+      expect([r.status, r.body]).toEqual([
+        200,
+        { sessions: list.filter((e) => goes(e, cutoff)).length, players: 1, kept: list.filter((e) => !goes(e, cutoff)).length },
+      ]);
+      expect(await events(s)).toEqual(list);
+    });
+
+    it('a player and the coach of another team are refused, another club does not see it, the admin can', async () => {
+      const s = await club('rm-9@test.it', aroundSeason);
+      const created = await createSeries(s, aroundToday());
+      const before = await events(s);
+      for (const who of [s.player, s.coach2]) {
+        for (const method of ['GET', 'DELETE']) {
+          expect((await send(who.token, method, url(created.id))).body.code).toBe('PERMISSION_DENIED');
+        }
+      }
+      const other = await club('rm-9b@test.it');
+      for (const method of ['GET', 'DELETE']) {
+        const x = await send(other.admin, method, url(created.id));
+        expect([x.status, x.body.code]).toEqual([404, 'SERIES_NOT_FOUND']);
+      }
+      expect(await events(s)).toEqual(before);
+      expect((await send(s.admin, 'DELETE', url(created.id))).status).toBe(200);
+    });
+
+    it('a closed season refuses it and nothing is removed', async () => {
+      const s = await club('rm-10@test.it', aroundSeason);
+      const created = await createSeries(s, aroundToday());
+      const before = await events(s);
+      expect((await t.req('POST', `/seasons/${s.t1.seasonId}/close`, { token: s.admin })).status).toBe(200);
+      for (const method of ['GET', 'DELETE']) {
+        const r = await send(s.admin, method, url(created.id));
+        expect([r.status, r.body.code]).toEqual([409, 'SEASON_CLOSED']);
+      }
+      expect(await events(s, s.admin)).toEqual(before);
+    });
+  });
+
   it('keeps events apart: a plain event has no series and is never regenerated', async () => {
     const s = await club('se-19@test.it', aroundSeason);
     const created = await createSeries(s, aroundToday());

@@ -1,4 +1,5 @@
 import { DateTime } from 'luxon';
+import { attendanceOpensAt } from '../attendance/attendance.rules';
 import { EventStatus } from '../entities/enums';
 import { validIsoDate } from '../structure/season.rules';
 
@@ -142,4 +143,42 @@ export function planRegeneration(existing: ExistingEvent[], wanted: Occurrence[]
   const slots = new Set(wanted.map((o) => o.date));
   for (const e of existing) if (!slots.has(e.occurrenceDate) && follows(e, now)) plan.orphans.push(e.id);
   return plan;
+}
+
+export interface RemovableEvent {
+  id: string;
+  /** Slot the event fills in the series. */
+  occurrenceDate: string;
+  start: Date;
+  /** Attendance is recorded on it. */
+  hasAttendance: boolean;
+}
+
+export interface RemovalPlan {
+  remove: string[];
+  keep: string[];
+  /** The series is left as it is, deleted (no session stays), or ends on that day (local `YYYY-MM-DD`). */
+  series: 'untouched' | 'removed' | { endsOn: string };
+}
+
+/**
+ * What "remove the future sessions" does. A session goes while its attendance check has not opened (see
+ * `attendanceOpensAt`), whatever its status and even if edited by hand. The rest stays with its call-ups and attendance.
+ * A session with attendance recorded stays too: it can only happen if it was moved later after the check opened, and
+ * attendance is never lost. The series then ends the day before the first slot removed, so the next edit does not make
+ * the sessions again; it counts from the slot, as `planRegeneration` does, and never before the first day of the series.
+ */
+export function planRemoval(existing: RemovableEvent[], startDate: string, now: Date): RemovalPlan {
+  const remove: RemovableEvent[] = [];
+  const keep: string[] = [];
+  for (const e of existing) {
+    if (!e.hasAttendance && attendanceOpensAt(e.start).getTime() > now.getTime()) remove.push(e);
+    else keep.push(e.id);
+  }
+  if (remove.length === 0) return { remove: [], keep, series: 'untouched' };
+  const ids = remove.map((e) => e.id);
+  if (keep.length === 0) return { remove: ids, keep, series: 'removed' };
+  const first = remove.map((e) => e.occurrenceDate).reduce((a, b) => (a < b ? a : b));
+  const before = new Date(utcDay(first) - DAY_MS).toISOString().slice(0, 10);
+  return { remove: ids, keep, series: { endsOn: before < startDate ? startDate : before } };
 }

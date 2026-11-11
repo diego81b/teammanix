@@ -78,4 +78,46 @@ describe('notificationText', () => {
     expect(body).toMatch(/3/);
     expect(body).toContain('Weekly');
   });
+
+  describe('a removed series', () => {
+    const removed = { club: 'ASD Dakar', kind: 'series', title: 'Speed', start: '', count: 3, days: '2026-12-03,2026-12-05,2026-12-10' };
+    const body = (language: Language, over: Record<string, string | number> = {}) =>
+      notificationText(NotificationType.EVENT_CANCELLED, language, { ...removed, ...over }).body;
+
+    it('says how many sessions are gone and lists their days, in the language of the recipient', () => {
+      expect(body(Language.IT)).toMatch(/Eventi.*Speed.*annullati.*\(3\).*3 dic.*5 dic.*10 dic/);
+      expect(body(Language.EN)).toMatch(/Events.*Speed.*cancelled.*\(3\).*3 Dec.*5 Dec.*10 Dec/);
+      expect(body(Language.FR)).toMatch(/Événements.*Speed.*annulés.*\(3\).*3 déc.*5 déc.*10 déc/);
+    });
+
+    it('reads right for one session, the usual case: the count is not a plural noun', () => {
+      const one = { count: 1, days: '2026-12-03' };
+      expect(body(Language.IT, one)).not.toMatch(/1 eventi/);
+      expect(body(Language.EN, one)).not.toMatch(/1 events/);
+      expect(body(Language.FR, one)).not.toMatch(/1 événements/);
+      expect(body(Language.EN, one)).toMatch(/\(1\).*3 Dec/);
+    });
+
+    it('is not the text of a single cancelled event', () => {
+      const single = notificationText(NotificationType.EVENT_CANCELLED, Language.EN, { club: 'ASD Dakar', kind: 'training', title: 'Speed', start: '2026-12-03T17:00:00.000Z', count: 1 });
+      expect(body(Language.EN)).not.toBe(single.body);
+      expect(notificationText(NotificationType.EVENT_CANCELLED, Language.EN, removed).title).toContain('ASD Dakar');
+    });
+
+    it('lists the first days and counts the rest, so a long series does not fill a lock screen', () => {
+      const many = Array.from({ length: 8 }, (_, i) => `2026-12-${String(i + 1).padStart(2, '0')}`).join(',');
+      const text = body(Language.EN, { count: 8, days: many });
+      expect(text).toMatch(/1 Dec/);
+      expect(text).toMatch(/5 Dec/);
+      expect(text).not.toMatch(/6 Dec/);
+      expect(text).toMatch(/and 3 more/);
+      expect(body(Language.IT, { count: 8, days: many })).toMatch(/e altri 3/);
+      expect(body(Language.FR, { count: 8, days: many })).toMatch(/et 3 autres/);
+    });
+
+    it('lists every day of a short series without a "more" part, and copes with no title', () => {
+      expect(body(Language.EN)).not.toMatch(/more/);
+      expect(body(Language.EN, { title: '' })).not.toMatch(/""|\(\)/);
+    });
+  });
 });

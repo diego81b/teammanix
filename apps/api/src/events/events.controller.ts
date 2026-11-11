@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
 import type { AuthContext } from '../common/auth-context';
 import { CurrentAuth } from '../common/decorators';
 import { EventStatus } from '../entities/enums';
@@ -55,6 +55,18 @@ export class EventsController {
   @Patch('series/:id')
   editSeries(@CurrentAuth() a: AuthContext, @Param('id', ParseUUIDPipe) id: string, @Body() dto: EditSeriesDto) {
     return this.series.edit(a, id, dto);
+  }
+
+  /** What "remove the future sessions" would do: the confirmation shows it before anything changes. */
+  @Get('series/:id/future-sessions')
+  futureSessions(@CurrentAuth() a: AuthContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.series.removalPreview(a, id);
+  }
+
+  /** Removes the sessions of the series whose attendance check has not opened, and ends the series before them. */
+  @Delete('series/:id/future-sessions')
+  removeFutureSessions(@CurrentAuth() a: AuthContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.series.removeFuture(a, id);
   }
 
   @Get('seasons/:id/events')

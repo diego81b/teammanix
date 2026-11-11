@@ -203,4 +203,71 @@ describe('who gets notified by call-ups and event changes', () => {
       expect(await ofUser(s.anna.userId, NotificationType.EVENT_MODIFIED)).toEqual([]);
     });
   });
+
+  describe('removing the future sessions of a series', () => {
+    const localDay = (iso: string) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome' }).format(new Date(iso));
+    type Ev = { id: string; seriesId: string | null; start: string };
+
+    async function weekly(tag: string) {
+      const s = await club(tag);
+      const created = await post(s.coach.token, `/teams/${s.teamId}/series`, {
+        type: 'training',
+        title: 'Weekly',
+        weekdays: ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'],
+        startDate: day(1),
+        endDate: day(10),
+        timeStart: '18:00',
+        durationMinutes: 90,
+      });
+      const all = (await send(s.admin, 'GET', `/seasons/${s.seasonId}/events`)).body as Ev[];
+      const events = all.filter((e) => e.seriesId === created.id).sort((x, y) => x.start.localeCompare(y.start));
+      return { s, created, events };
+    }
+
+    it('a player with a sent call-up on several removed sessions gets one notification that lists the days, with no link to a session that is gone', async () => {
+      const { s, created, events } = await weekly('r1');
+      const [e0, e1, e2, e3, e4] = events as [Ev, Ev, Ev, Ev, Ev];
+      for (const e of [e0, e1, e2]) {
+        await callUp(s, e.id, s.anna);
+        await sendCallUps(s, e.id);
+      }
+      await callUp(s, e3.id, s.bea);
+      await sendCallUps(s, e3.id);
+      await callUp(s, e4.id, s.bea); // never sent: bea does not know about it, so it is not news to her
+
+      const r = await send(s.coach.token, 'DELETE', `/series/${created.id}/future-sessions`);
+      expect([r.status, r.body]).toEqual([200, { sessions: events.length, players: 2, kept: 0 }]);
+
+      const anna = await ofUser(s.anna.userId, NotificationType.EVENT_CANCELLED);
+      expect(anna).toHaveLength(1);
+      expect(anna[0]).toMatchObject({
+        link: '/calendar',
+        params: { club: 'Club r1', kind: 'series', title: 'Weekly', count: 3, days: [e0, e1, e2].map((e) => localDay(e.start)).join(',') },
+      });
+      const bea = await ofUser(s.bea.userId, NotificationType.EVENT_CANCELLED);
+      expect(bea).toHaveLength(1);
+      expect(bea[0]?.params).toMatchObject({ count: 1, days: localDay(e3.start) });
+    });
+
+    it('a player with no call-up, and a player without an account, are not notified', async () => {
+      const { s, created, events } = await weekly('r2');
+      const first = events[0] as Ev;
+      await callUp(s, first.id, s.anna, s.noAccount);
+      await sendCallUps(s, first.id);
+      expect((await send(s.coach.token, 'DELETE', `/series/${created.id}/future-sessions`)).status).toBe(200);
+      expect(await ofUser(s.bea.userId, NotificationType.EVENT_CANCELLED)).toEqual([]);
+      expect(await ofUser(s.anna.userId, NotificationType.EVENT_CANCELLED)).toHaveLength(1);
+    });
+
+    it('a refused removal notifies nobody and removes nothing', async () => {
+      const { s, created, events } = await weekly('r3');
+      const first = events[0] as Ev;
+      await callUp(s, first.id, s.anna);
+      await sendCallUps(s, first.id);
+      expect((await send(s.anna.token, 'DELETE', `/series/${created.id}/future-sessions`)).status).toBe(403);
+      expect(await ofUser(s.anna.userId, NotificationType.EVENT_CANCELLED)).toEqual([]);
+      const after = (await send(s.admin, 'GET', `/seasons/${s.seasonId}/events`)).body as Ev[];
+      expect(after.filter((e) => e.seriesId === created.id)).toHaveLength(events.length);
+    });
+  });
 });

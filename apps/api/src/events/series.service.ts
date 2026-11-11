@@ -12,15 +12,17 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { AuthorizationsService } from '../permissions/authorizations.service';
 import { CatalogService } from './catalog.service';
 import type { CreateSeriesDto, EditSeriesDto } from './dto';
-import { CLUB_TIMEZONE, canPlanEvents, insideSeason } from './event.rules';
+import { CLUB_TIMEZONE, canPlanEvents, insideSeason, localDate } from './event.rules';
 import {
   formatRule,
   occurrences,
   parseRule,
   planRegeneration,
+  planRemoval,
   seriesIssue,
   seriesOutsideSeason,
   type Occurrence,
+  type RemovalPlan,
   type SeriesIssue,
   type SeriesSpec,
   type Weekday,
@@ -41,6 +43,16 @@ export interface SeriesDto {
   timeStart: string;
   durationMinutes: number;
   eventCount: number;
+}
+
+/** What removing the future sessions of a series does, or would do (the confirmation). */
+export interface RemovalDto {
+  /** Sessions removed. */
+  sessions: number;
+  /** Players with a call-up or a response on them, sent or not, each counted once. Not the same as who is notified. */
+  players: number;
+  /** Sessions of the series that stay: already held, in progress, or with the attendance check open. */
+  kept: number;
 }
 
 const ISSUES: Record<SeriesIssue, { message: string; code: string }> = {
@@ -199,6 +211,61 @@ export class SeriesService {
     // One notification per player, not one per regenerated session.
     await this.notifications.notifyCalledUpSeries(a.clubId as string, series.title, moved);
     return this.toDto(series, await this.em.count(Event, { series: id }));
+  }
+
+  /** The confirmation of "remove the future sessions": the numbers the removal would give now, nothing changes. */
+  async removalPreview(a: AuthContext, id: string): Promise<RemovalDto> {
+    const series = await this.loadToRemove(a, id);
+    return (await this.removalOf(series)).dto;
+  }
+
+  /**
+   * "Remove this and all future sessions", all in one flush: the sessions whose attendance check has not opened go, with
+   * their call-ups and responses (they die with the event), and the series ends the day before the first one, or goes
+   * if no session stays (see `planRemoval`). The players with a sent call-up on them get one notification, after the commit.
+   */
+  async removeFuture(a: AuthContext, id: string): Promise<RemovalDto> {
+    const series = await this.loadToRemove(a, id);
+    const { rows, plan, dto } = await this.removalOf(series);
+    if (plan.remove.length === 0) return dto;
+    const clubId = a.clubId as string;
+
+    // Read before the flush: the call-ups are gone with the sessions after it.
+    const calledUp = await this.notifications.calledUpUsers(clubId, plan.remove);
+    const dayOf = new Map(rows.map((e) => [e.id, localDate(e.start, series.timezone)]));
+    const daysByUser = new Map([...calledUp].map(([userId, eventIds]) => [userId, [...eventIds].map((eventId) => dayOf.get(eventId) as string)]));
+
+    const byId = new Map(rows.map((e) => [e.id, e]));
+    for (const eventId of plan.remove) this.em.remove(byId.get(eventId) as Event);
+    if (plan.series === 'removed') this.em.remove(series);
+    else if (plan.series !== 'untouched') series.untilTo = plan.series.endsOn;
+    await this.em.flush();
+    await this.notifications.notifyRemovedSeries(clubId, series.title, daysByUser);
+    return dto;
+  }
+
+  /** The series of a removal or its confirmation: the person may plan events in its team and the season is active. */
+  private async loadToRemove(a: AuthContext, id: string): Promise<EventSeries> {
+    await this.authz.request(a, 'events.manage', { seriesId: id });
+    const series = await this.load(id);
+    if (!canPlanEvents(series.season.status)) throw seasonClosed();
+    return series;
+  }
+
+  /** What goes and what stays, now. The confirmation and the removal both read it here, so they cannot disagree. */
+  private async removalOf(series: EventSeries): Promise<{ rows: Event[]; plan: RemovalPlan; dto: RemovalDto }> {
+    const rows = await this.em.find(Event, { series: series.id });
+    const ids = rows.map((e) => e.id);
+    const recorded = ids.length ? await this.em.find(Attendance, { event: { $in: ids } }, { fields: ['event'] }) : [];
+    const withAttendance = new Set(recorded.map((r) => r.event.id));
+    const plan = planRemoval(
+      rows.map((e) => ({ id: e.id, occurrenceDate: e.occurrenceDate as string, start: e.start, hasAttendance: withAttendance.has(e.id) })),
+      series.startDate,
+      new Date(),
+    );
+    const callups = plan.remove.length ? await this.em.find(Callup, { event: { $in: plan.remove } }, { fields: ['enrollment'] }) : [];
+    const players = new Set(callups.map((c) => c.enrollment.id)).size;
+    return { rows, plan, dto: { sessions: plan.remove.length, players, kept: plan.keep.length } };
   }
 
   /** `timezone` of the stored series on an edit; a new series takes the club's. Throws the error of the first rule broken. */

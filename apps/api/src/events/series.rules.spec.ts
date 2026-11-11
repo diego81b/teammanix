@@ -5,9 +5,11 @@ import {
   occurrences,
   parseRule,
   planRegeneration,
+  planRemoval,
   seriesIssue,
   seriesOutsideSeason,
   type ExistingEvent,
+  type RemovableEvent,
   type SeriesSpec,
 } from './series.rules';
 
@@ -231,5 +233,85 @@ describe('planRegeneration', () => {
     });
     const p = planRegeneration([], occurrences(today), new Date('2026-10-10T17:00:00Z')); // Saturday 10th, 19:00 local, after the 18:00 start
     expect(dates(p.create)).toEqual(['2026-10-17']);
+  });
+});
+
+describe('planRemoval', () => {
+  const now = new Date('2026-10-10T12:00:00Z');
+  const at = (date: string, time = '18:00') => localInstant(date, time, 'Europe/Rome');
+  const ex = (date: string, over: Partial<RemovableEvent> = {}): RemovableEvent => ({
+    id: `e-${date}`,
+    occurrenceDate: date,
+    start: at(date),
+    hasAttendance: false,
+    ...over,
+  });
+
+  it('removes the sessions whose attendance check has not opened and keeps the ones already held', () => {
+    const p = planRemoval([ex('2026-10-06'), ex('2026-10-08'), ex('2026-10-13'), ex('2026-10-15')], '2026-10-05', now);
+    expect(p.remove).toEqual(['e-2026-10-13', 'e-2026-10-15']);
+    expect(p.keep).toEqual(['e-2026-10-06', 'e-2026-10-08']);
+  });
+
+  it('a session today that starts later than the check window is removed', () => {
+    expect(planRemoval([ex('2026-10-10')], '2026-10-05', now).remove).toEqual(['e-2026-10-10']);
+  });
+
+  it('keeps a session in progress and one whose check is open, and removes the one whose check opens a second later', () => {
+    const inProgress = ex('2026-10-10', { id: 'running', start: new Date('2026-10-10T11:30:00Z') });
+    const open = ex('2026-10-10', { id: 'open', start: new Date('2026-10-10T12:20:00Z') });
+    const exactly = ex('2026-10-10', { id: 'exactly', start: new Date('2026-10-10T12:30:00Z') }); // the check opens at this very instant
+    const later = ex('2026-10-10', { id: 'later', start: new Date('2026-10-10T12:30:01Z') });
+    const p = planRemoval([inProgress, open, exactly, later], '2026-10-05', now);
+    expect(p.keep).toEqual(['running', 'open', 'exactly']);
+    expect(p.remove).toEqual(['later']);
+  });
+
+  it('keeps a future session that already has attendance, because attendance is never lost', () => {
+    const moved = ex('2026-10-13', { hasAttendance: true });
+    const p = planRemoval([moved, ex('2026-10-15')], '2026-10-05', now);
+    expect(p.keep).toEqual(['e-2026-10-13']);
+    expect(p.remove).toEqual(['e-2026-10-15']);
+  });
+
+  it('the series ends the day before the first removed session', () => {
+    const p = planRemoval([ex('2026-10-06'), ex('2026-10-13'), ex('2026-10-15')], '2026-10-05', now);
+    expect(p.series).toEqual({ endsOn: '2026-10-12' });
+  });
+
+  it('counts the day from the slot of the session, not from where it was moved', () => {
+    // Slot of the 13th, moved by hand to the 20th: the slot is what the rule would create again.
+    const moved = ex('2026-10-13', { start: at('2026-10-20') });
+    const p = planRemoval([ex('2026-10-06'), moved, ex('2026-10-15')], '2026-10-05', now);
+    expect(p.series).toEqual({ endsOn: '2026-10-12' });
+    // Slot already past, session moved to the future: it is removed, and the slot of the past still ends the series there.
+    const back = ex('2026-10-08', { start: at('2026-10-20') });
+    expect(planRemoval([ex('2026-10-06'), back, ex('2026-10-15')], '2026-10-05', now)).toMatchObject({
+      remove: ['e-2026-10-08', 'e-2026-10-15'],
+      series: { endsOn: '2026-10-07' },
+    });
+  });
+
+  it('counts the month and year boundary correctly', () => {
+    const held = ex('2026-10-06');
+    expect(planRemoval([held, ex('2026-11-01')], '2026-10-05', now).series).toEqual({ endsOn: '2026-10-31' });
+    expect(planRemoval([held, ex('2027-01-01')], '2026-10-05', now).series).toEqual({ endsOn: '2026-12-31' });
+  });
+
+  it('never ends the series before its first day', () => {
+    const first = ex('2026-10-13', { id: 'first' });
+    const held = ex('2026-10-20', { id: 'held', start: at('2026-10-09') }); // a later slot moved to a day already past
+    expect(planRemoval([first, held], '2026-10-13', now)).toMatchObject({ remove: ['first'], keep: ['held'], series: { endsOn: '2026-10-13' } });
+  });
+
+  it('removes the series when no session stays', () => {
+    const p = planRemoval([ex('2026-10-13'), ex('2026-10-15')], '2026-10-13', now);
+    expect(p).toEqual({ remove: ['e-2026-10-13', 'e-2026-10-15'], keep: [], series: 'removed' });
+  });
+
+  it('with nothing to remove it changes nothing, not even the end of the series', () => {
+    const p = planRemoval([ex('2026-10-06'), ex('2026-10-08')], '2026-10-05', now);
+    expect(p).toEqual({ remove: [], keep: ['e-2026-10-06', 'e-2026-10-08'], series: 'untouched' });
+    expect(planRemoval([], '2026-10-05', now)).toEqual({ remove: [], keep: [], series: 'untouched' });
   });
 });

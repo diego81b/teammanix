@@ -128,8 +128,45 @@ export class NotificationsService {
     }
   }
 
-  /** The accounts of the players called up (sent) for the events, with the events each of them is called for. */
-  private async calledUpUsers(clubId: string, eventIds: string[]): Promise<Map<string, Set<string>>> {
+  /**
+   * One notification per player for the sessions of a series that were removed, with the days they were on, not one per
+   * session. `daysByUser`: for each account, the local day of each removed session the player was called up to. The link
+   * opens the calendar, because the sessions are gone. Players with the same days share one call.
+   */
+  async notifyRemovedSeries(clubId: string, title: string | null, daysByUser: Map<string, string[]>): Promise<number> {
+    try {
+      if (daysByUser.size === 0) return 0;
+      const club = await this.em.fork().findOneOrFail(Club, clubId, { fields: ['name'] });
+      const groups = new Map<string, { count: number; days: string; userIds: string[] }>();
+      for (const [userId, all] of daysByUser) {
+        const days = [...new Set(all)].sort().join(',');
+        const key = `${all.length}|${days}`;
+        const group = groups.get(key) ?? { count: all.length, days, userIds: [] };
+        group.userIds.push(userId);
+        groups.set(key, group);
+      }
+      let created = 0;
+      for (const { count, days, userIds } of groups.values()) {
+        created += await this.notify({
+          clubId,
+          userIds,
+          type: NotificationType.EVENT_CANCELLED,
+          params: { club: club.name, kind: 'series', title: title ?? '', start: '', count, days },
+          link: '/calendar',
+        });
+      }
+      return created;
+    } catch (err) {
+      this.logger.error(`notifyRemovedSeries failed: ${(err as Error).message}`);
+      return 0;
+    }
+  }
+
+  /**
+   * The accounts of the players called up (sent) for the events, with the events each of them is called for. A removal reads
+   * it before it deletes, because call-ups go with their events.
+   */
+  async calledUpUsers(clubId: string, eventIds: string[]): Promise<Map<string, Set<string>>> {
     if (eventIds.length === 0) return new Map();
     const rows = await this.em.fork().find(
       Callup,

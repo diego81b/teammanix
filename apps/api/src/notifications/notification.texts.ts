@@ -26,7 +26,15 @@ function day(iso: string, language: Language): string {
   return new Intl.DateTimeFormat(LOCALE[language], { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(`${iso}T00:00:00Z`));
 }
 
+/** A calendar day `YYYY-MM-DD` for a list, as written, with its weekday: "Thu 3 Dec". */
+function shortDay(iso: string, language: Language): string {
+  return new Intl.DateTimeFormat(LOCALE[language], { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${iso}T00:00:00Z`));
+}
+
 const str = (p: Params, key: string): string => String(p[key] ?? '');
+
+/** How many days a text lists before it counts the rest: a long series must not fill a lock screen. */
+const LISTED_DAYS = 5;
 
 interface Dictionary {
   kind: Record<'training' | 'match' | 'other', string>;
@@ -34,6 +42,8 @@ interface Dictionary {
   modified: (club: string, what: string, at: string) => NotificationText;
   modifiedMany: (club: string, count: number, title: string) => NotificationText;
   cancelled: (club: string, what: string, at: string) => NotificationText;
+  cancelledMany: (club: string, count: number, title: string, days: string) => NotificationText;
+  more: (n: number) => string;
   expiring: (club: string, expiry: string, days: number) => NotificationText;
   inDays: (days: number) => string;
   expired: (club: string, expiry: string) => NotificationText;
@@ -47,6 +57,8 @@ const IT: Dictionary = {
   modified: (club, what, at) => ({ title: `${club}: evento modificato`, body: `${what} modificato. Quando: ${at}.` }),
   modifiedMany: (club, count, title) => ({ title: `${club}: eventi modificati`, body: `${count} eventi${title ? ` di "${title}"` : ''} sono cambiati. Controlla il calendario.` }),
   cancelled: (club, what, at) => ({ title: `${club}: evento annullato`, body: `${what} annullato. Era: ${at}.` }),
+  cancelledMany: (club, count, title, days) => ({ title: `${club}: eventi annullati`, body: `Eventi${title ? ` di "${title}"` : ''} annullati (${count}): ${days}` }),
+  more: (n) => `e altri ${n}`,
   inDays: (n) => (n === 0 ? 'oggi' : n === 1 ? 'domani' : `tra ${n} giorni`),
   expiring: (club, expiry, days) => ({ title: `${club}: certificato in scadenza`, body: `Il tuo certificato medico scade il ${expiry} (${IT.inDays(days)}). Carica quello nuovo appena ce l'hai.` }),
   expired: (club, expiry) => ({ title: `${club}: certificato scaduto`, body: `Il tuo certificato medico è scaduto il ${expiry}.` }),
@@ -73,6 +85,8 @@ const EN: Dictionary = {
   modified: (club, what, at) => ({ title: `${club}: event changed`, body: `${what} changed. When: ${at}.` }),
   modifiedMany: (club, count, title) => ({ title: `${club}: events changed`, body: `${count} events${title ? ` of "${title}"` : ''} changed. Check the calendar.` }),
   cancelled: (club, what, at) => ({ title: `${club}: event cancelled`, body: `${what} cancelled. It was: ${at}.` }),
+  cancelledMany: (club, count, title, days) => ({ title: `${club}: events cancelled`, body: `Events${title ? ` of "${title}"` : ''} cancelled (${count}): ${days}` }),
+  more: (n) => `and ${n} more`,
   inDays: (n) => (n === 0 ? 'today' : n === 1 ? 'tomorrow' : `in ${n} days`),
   expiring: (club, expiry, days) => ({ title: `${club}: certificate expiring`, body: `Your medical certificate expires on ${expiry} (${EN.inDays(days)}). Upload the new one as soon as you have it.` }),
   expired: (club, expiry) => ({ title: `${club}: certificate expired`, body: `Your medical certificate expired on ${expiry}.` }),
@@ -98,6 +112,8 @@ const FR: Dictionary = {
   modified: (club, what, at) => ({ title: `${club} : événement modifié`, body: `${what} modifié. Quand : ${at}.` }),
   modifiedMany: (club, count, title) => ({ title: `${club} : événements modifiés`, body: `${count} événements${title ? ` de « ${title} »` : ''} ont changé. Consultez le calendrier.` }),
   cancelled: (club, what, at) => ({ title: `${club} : événement annulé`, body: `${what} annulé. C'était : ${at}.` }),
+  cancelledMany: (club, count, title, days) => ({ title: `${club} : événements annulés`, body: `Événements${title ? ` de « ${title} »` : ''} annulés (${count}) : ${days}` }),
+  more: (n) => `et ${n} autres`,
   inDays: (n) => (n === 0 ? "aujourd'hui" : n === 1 ? 'demain' : `dans ${n} jours`),
   expiring: (club, expiry, days) => ({ title: `${club} : certificat bientôt expiré`, body: `Votre certificat médical expire le ${expiry} (${FR.inDays(days)}). Téléversez le nouveau dès que vous l'avez.` }),
   expired: (club, expiry) => ({ title: `${club} : certificat expiré`, body: `Votre certificat médical a expiré le ${expiry}.` }),
@@ -130,6 +146,14 @@ function what(d: Dictionary, p: Params): string {
   return title ? `${kind} (${title})` : kind;
 }
 
+/** The days of a removed series, from `days` (`YYYY-MM-DD` joined by commas): the first few, then how many more. */
+function removedDays(d: Dictionary, p: Params, language: Language): string {
+  const days = str(p, 'days').split(',').filter(Boolean);
+  const shown = days.slice(0, LISTED_DAYS).map((x) => shortDay(x, language));
+  const rest = days.length - shown.length;
+  return rest > 0 ? `${shown.join(', ')} ${d.more(rest)}` : shown.join(', ');
+}
+
 export function notificationText(type: NotificationType, language: Language, p: Params): NotificationText {
   const d = DICTIONARY[language];
   const club = str(p, 'club');
@@ -141,7 +165,9 @@ export function notificationText(type: NotificationType, language: Language, p: 
         ? d.modifiedMany(club, Number(p.count), str(p, 'title'))
         : d.modified(club, what(d, p), when(str(p, 'start'), language));
     case NotificationType.EVENT_CANCELLED:
-      return d.cancelled(club, what(d, p), when(str(p, 'start'), language));
+      return str(p, 'kind') === 'series'
+        ? d.cancelledMany(club, Number(p.count), str(p, 'title'), removedDays(d, p, language))
+        : d.cancelled(club, what(d, p), when(str(p, 'start'), language));
     case NotificationType.CERTIFICATE_EXPIRING:
       return d.expiring(club, day(str(p, 'expiry'), language), Number(p.days));
     case NotificationType.CERTIFICATE_EXPIRED:
