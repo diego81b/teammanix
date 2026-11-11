@@ -11,7 +11,7 @@ Ogni funzionalità e ogni bug parte da un test che fallisce (rosso, codice minim
 - Regole di business (permessi per ruolo e ambito, isolamento tra società, validazioni, codici errore) come test prima del codice; poi store e composable web; poi UI.
 - Logica in funzioni pure testate per prime; guard, componenti e middleware restano gusci sottili (esempi: `decideAccess` in `apps/web/app/utils/access.ts`, `outboxEnabled`).
 - Un bug si riproduce prima con un test, nel livello più basso che lo cattura. Un e2e solo per un percorso critico nuovo.
-- Chiusura lavoro: `npm test` in entrambe le app, `npm run typecheck` (api) e `npx nuxt typecheck` (web) puliti, `npm run test:e2e` se toccati i percorsi coperti. Riportare i fallimenti con l'output.
+- Chiusura lavoro: lanciare solo i test necessari alla modifica, cioè quelli che la coprono più le suite dove una regressione è plausibile (moduli che usano il codice toccato, stessi tipi, codici errore o chiavi i18n: un codice nuovo o un testo nuovo richiede `tests/unit/i18n.test.ts`). La suite completa (`npm test`) solo su richiesta esplicita. Sempre puliti `npm run typecheck` (api) e `npx nuxt typecheck` (web); `npm run test:e2e` solo se toccati i percorsi coperti. Riportare i fallimenti con l'output.
 
 ## Comandi
 

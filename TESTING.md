@@ -54,4 +54,4 @@ If the API is not ready, `e2e/global-setup.ts` stops immediately and prints the 
 2. Implement the backend until green.
 3. Write the Vitest tests for stores and composables, then the UI. Add the texts in the three languages.
 4. An e2e only if a new critical path appears.
-5. Before closing: `npm test` in both apps and `npm run test:e2e`.
+5. Before closing: run only the tests the change needs (the ones that cover it plus the suites where a regression is plausible), keep both typechecks clean, and run `npm run test:e2e` only if a covered path was touched. The full `npm test` runs on explicit request.
