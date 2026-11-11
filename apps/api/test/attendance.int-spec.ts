@@ -120,11 +120,25 @@ describe('attendance (slice 5, rule 11 and 12)', () => {
       expect([note.status, note.body.code]).toEqual([400, 'INVALID_DATA']);
     });
 
+    it('the check opens 30 minutes before the start: a later event is refused, one inside the window works', async () => {
+      const s = await club('at-04c@test.it');
+      const at = (minutes: number) => {
+        const start = new Date(Date.now() + minutes * 60_000);
+        return { start: start.toISOString(), end: new Date(start.getTime() + 90 * 60_000).toISOString() };
+      };
+      const later = await s.event(s.t1.teamId, 0, at(45));
+      const early = await mark(s.coach1.token, later.id, s.player.enrollmentId, 'present');
+      expect([early.status, early.body.code]).toEqual([409, 'ATTENDANCE_NOT_OPEN']);
+      const soon = await s.event(s.t1.teamId, 0, at(20));
+      expect((await mark(s.coach1.token, soon.id, s.player.enrollmentId, 'present')).status).toBe(200);
+      expect((await send(s.coach1.token, 'DELETE', `/events/${soon.id}/attendance/${s.player.enrollmentId}`)).status).toBe(204);
+    });
+
     it('an event that did not start yet, a cancelled one and a postponed one are refused', async () => {
       const s = await club('at-04@test.it');
       const future = await s.event(s.t1.teamId, 5);
       const r1 = await mark(s.coach1.token, future.id, s.player.enrollmentId, 'present');
-      expect([r1.status, r1.body.code]).toEqual([409, 'EVENT_NOT_STARTED']);
+      expect([r1.status, r1.body.code]).toEqual([409, 'ATTENDANCE_NOT_OPEN']);
       for (const action of ['cancel', 'postpone']) {
         const ev = await s.event(s.t1.teamId, -2);
         const ch = await send(s.admin, 'POST', `/events/${ev.id}/${action}`, action === 'postpone' ? {} : undefined);

@@ -1,8 +1,20 @@
 import { AttendanceOutcome as O, EventStatus, SeasonStatus } from '../entities/enums';
-import { disabledMask, recordable, summarize, viewOf } from './attendance.rules';
+import { ATTENDANCE_OPENS_MINUTES_BEFORE, attendanceOpensAt, disabledMask, recordable, summarize, viewOf } from './attendance.rules';
 
 const now = new Date('2026-11-10T20:00:00Z');
 const started = { start: new Date('2026-11-10T17:00:00Z'), status: EventStatus.SCHEDULED };
+
+describe('attendanceOpensAt', () => {
+  it('is 30 minutes before the start, a fixed value kept in one place', () => {
+    expect(ATTENDANCE_OPENS_MINUTES_BEFORE).toBe(30);
+    expect(attendanceOpensAt(new Date('2026-11-11T19:00:00Z')).toISOString()).toBe('2026-11-11T18:30:00.000Z');
+  });
+
+  it('counts exact minutes on the instant, so a daylight saving change does not move it', () => {
+    // Europe/Rome leaves summer time on 2026-10-25 at 03:00 local. A start at 03:15 local (02:15Z) opens at 01:45Z, not at 01:45 local.
+    expect(attendanceOpensAt(new Date('2026-10-25T02:15:00Z')).toISOString()).toBe('2026-10-25T01:45:00.000Z');
+  });
+});
 
 describe('recordable', () => {
   it('accepts an event that already started, in the active season', () => {
@@ -17,8 +29,29 @@ describe('recordable', () => {
     expect(recordable({ start: new Date('2026-09-05T17:00:00Z'), status: EventStatus.SCHEDULED }, SeasonStatus.ACTIVE, now)).toBe('ok');
   });
 
-  it('refuses an event that did not start yet', () => {
-    expect(recordable({ start: new Date('2026-11-10T21:00:00Z'), status: EventStatus.SCHEDULED }, SeasonStatus.ACTIVE, now)).toBe('EVENT_NOT_STARTED');
+  it('refuses an event whose check did not open yet', () => {
+    expect(recordable({ start: new Date('2026-11-10T21:00:00Z'), status: EventStatus.SCHEDULED }, SeasonStatus.ACTIVE, now)).toBe('ATTENDANCE_NOT_OPEN');
+  });
+
+  it('opens 30 minutes before the start, to the minute', () => {
+    const start = new Date('2026-11-10T20:30:00Z');
+    expect(recordable({ start, status: EventStatus.SCHEDULED }, SeasonStatus.ACTIVE, new Date('2026-11-10T19:59:59Z'))).toBe('ATTENDANCE_NOT_OPEN');
+    expect(recordable({ start, status: EventStatus.SCHEDULED }, SeasonStatus.ACTIVE, new Date('2026-11-10T20:00:00Z'))).toBe('ok');
+  });
+
+  it('the window applies to every event type: it depends on the start only', () => {
+    const start = new Date('2026-11-10T20:20:00Z');
+    expect(recordable({ start, status: EventStatus.SCHEDULED }, SeasonStatus.ACTIVE, now)).toBe('ok');
+  });
+
+  it('a cancelled or postponed event stays not recordable inside the window', () => {
+    const start = new Date('2026-11-10T20:20:00Z');
+    expect(recordable({ start, status: EventStatus.CANCELLED }, SeasonStatus.ACTIVE, now)).toBe('EVENT_NOT_RECORDABLE');
+    expect(recordable({ start, status: EventStatus.POSTPONED }, SeasonStatus.ACTIVE, now)).toBe('EVENT_NOT_RECORDABLE');
+  });
+
+  it('a closed season refuses inside the window too', () => {
+    expect(recordable({ start: new Date('2026-11-10T20:20:00Z'), status: EventStatus.SCHEDULED }, SeasonStatus.CLOSED, now)).toBe('SEASON_CLOSED');
   });
 
   it('refuses a cancelled event even if the time has passed', () => {

@@ -1,15 +1,26 @@
 import { AttendanceOutcome, EventStatus, SeasonStatus } from '../entities/enums';
 
-export type RecordVerdict = 'ok' | 'SEASON_CLOSED' | 'EVENT_NOT_STARTED' | 'EVENT_NOT_RECORDABLE';
+export type RecordVerdict = 'ok' | 'SEASON_CLOSED' | 'ATTENDANCE_NOT_OPEN' | 'EVENT_NOT_RECORDABLE';
 
 /**
- * Attendance is written for an event that took place: it started, and it was neither cancelled nor postponed. There is no
- * deadline for corrections: they stay open until the season closes, which makes it read only (rule 7). Every change is audited.
+ * How long before the start staff can open the attendance check (a training at 20:00 opens at 19:30). One value for every
+ * event type. The web app keeps the same number in `app/utils/attendance.ts`: change both together.
+ */
+export const ATTENDANCE_OPENS_MINUTES_BEFORE = 30;
+
+/** Exact minutes on the instant, so a daylight saving change inside the window does not move it. */
+export function attendanceOpensAt(start: Date): Date {
+  return new Date(start.getTime() - ATTENDANCE_OPENS_MINUTES_BEFORE * 60_000);
+}
+
+/**
+ * Attendance is written from the opening of the check and for an event that was neither cancelled nor postponed. There is
+ * no upper limit: corrections stay open until the season closes, which makes it read only (rule 7). Every change is audited.
  */
 export function recordable(event: { start: Date; status: EventStatus }, season: SeasonStatus, now: Date): RecordVerdict {
   if (season === SeasonStatus.CLOSED) return 'SEASON_CLOSED';
   if (event.status === EventStatus.CANCELLED || event.status === EventStatus.POSTPONED) return 'EVENT_NOT_RECORDABLE';
-  return event.start.getTime() <= now.getTime() ? 'ok' : 'EVENT_NOT_STARTED';
+  return attendanceOpensAt(event.start).getTime() <= now.getTime() ? 'ok' : 'ATTENDANCE_NOT_OPEN';
 }
 
 export type AttendanceView = 'manage' | 'read' | 'stats' | 'player' | 'none';

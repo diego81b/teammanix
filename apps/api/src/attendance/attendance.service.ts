@@ -132,7 +132,7 @@ export class AttendanceService {
     const event = await loadEvent(this.em, eventId);
     const verdict = recordable(event, event.season.status, new Date());
     if (verdict === 'SEASON_CLOSED') throw new ConflictException({ message: 'The season is closed', code: 'SEASON_CLOSED' });
-    if (verdict === 'EVENT_NOT_STARTED') throw new ConflictException({ message: 'The event did not start yet', code: 'EVENT_NOT_STARTED' });
+    if (verdict === 'ATTENDANCE_NOT_OPEN') throw new ConflictException({ message: 'The attendance check is not open yet', code: 'ATTENDANCE_NOT_OPEN' });
     if (verdict === 'EVENT_NOT_RECORDABLE') throw new ConflictException({ message: 'The event was not played', code: 'EVENT_NOT_RECORDABLE' });
     return event;
   }
