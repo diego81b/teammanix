@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
@@ -13,7 +14,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { canReadRoster } from '../events/visibility';
 import { ResponsesService } from '../callups/responses.service';
 import type { AbsenceDto, DeclineDto } from './dto';
-import { covers, declinable, mergePeriods, validatePeriod, type Period } from './absence.rules';
+import { covers, declinable, freeDays, mergePeriods, validatePeriod, type Period } from './absence.rules';
 
 export interface AbsenceOut {
   id: string;
@@ -142,7 +143,7 @@ export class AbsencesService {
     const p = this.checked(enrollment, dto);
     const absence = this.em.create(Absence, { club: a.clubId as string, enrollment, startDate: p.startDate, endDate: p.endDate });
     await this.em.flush();
-    await this.notifyStaff(a, enrollment, absence);
+    await this.notifyStaff(a, enrollment, NotificationType.ABSENCE_DECLARED, p, `absence:${absence.id}`);
     await this.audit.register({ action: AuditAction.ABSENCE_CREATED, ...this.trail(a, absence) });
     return { absence: out(absence), affected: await this.affected(enrollment, p) };
   }
@@ -163,6 +164,46 @@ export class AbsencesService {
     this.em.remove(absence);
     await this.em.flush();
     await this.audit.register({ action: AuditAction.ABSENCE_CANCELLED, ...trail });
+  }
+
+  /**
+   * Frees days from today onward in the declared periods of the enrollment (issue 25): every period the range touches is
+   * shortened, split or removed in one transaction, and the result is the list as the owner now reads it. Injury and
+   * suspension are other blocks and are never touched; answers already declined stay declined. The staff are told once per
+   * operation, with the days asked, and nothing at all when the range touched nothing.
+   */
+  async free(a: AuthContext, enrollmentId: string, dto: AbsenceDto): Promise<{ absences: AbsenceOut[] }> {
+    const enrollment = await this.ownEnrollment(a, enrollmentId);
+    const rows = await this.em.find(Absence, { enrollment: enrollment.id });
+    const range = { from: dto.startDate, to: dto.endDate ?? null };
+    const plan = freeDays(rows.map((r) => ({ id: r.id, ...period(r) })), range, localDate(new Date()));
+    if ('error' in plan) {
+      throw plan.error === 'ABSENCE_DAYS_IN_PAST'
+        ? new BadRequestException({ message: 'Only days from today can be freed', code: 'ABSENCE_DAYS_IN_PAST' })
+        : new BadRequestException({ message: 'Invalid data', code: 'INVALID_DATA' });
+    }
+    if (plan.updates.length + plan.creates.length + plan.removes.length === 0) return { absences: rows.map(out).sort(byStart) };
+
+    const touched: { action: AuditAction; absence: Absence }[] = [];
+    for (const u of plan.updates) {
+      const row = rows.find((r) => r.id === u.id) as Absence;
+      row.startDate = u.startDate;
+      row.endDate = u.endDate;
+      touched.push({ action: AuditAction.ABSENCE_MODIFIED, absence: row });
+    }
+    const removed = plan.removes.map((id) => rows.find((r) => r.id === id) as Absence);
+    const gone = removed.map((row) => ({ action: AuditAction.ABSENCE_CANCELLED, trail: this.trail(a, row) }));
+    for (const row of removed) this.em.remove(row);
+    for (const c of plan.creates) {
+      touched.push({ action: AuditAction.ABSENCE_CREATED, absence: this.em.create(Absence, { club: a.clubId as string, enrollment, startDate: c.startDate, endDate: c.endDate }) });
+    }
+    await this.em.flush();
+
+    for (const t of touched) await this.audit.register({ action: t.action, ...this.trail(a, t.absence) });
+    for (const g of gone) await this.audit.register({ action: g.action, ...g.trail });
+    await this.notifyStaff(a, enrollment, NotificationType.ABSENCE_FREED, { startDate: range.from, endDate: range.to }, `absence-freed:${randomUUID()}`);
+    const left = rows.filter((r) => !plan.removes.includes(r.id)).concat(touched.filter((t) => t.action === AuditAction.ABSENCE_CREATED).map((t) => t.absence));
+    return { absences: left.map(out).sort(byStart) };
   }
 
   /**
@@ -261,7 +302,7 @@ export class AbsencesService {
    * Notifies the staff of the season, the person excluded. Params hold the club, the name and the dates: no reason,
    * nothing a lock screen should not show.
    */
-  private async notifyStaff(a: AuthContext, enrollment: Enrollment, absence: Absence): Promise<void> {
+  private async notifyStaff(a: AuthContext, enrollment: Enrollment, type: NotificationType, days: Period, dedupKey: string): Promise<void> {
     const staff = await this.em.find(
       Enrollment,
       { season: enrollment.season.id, type: EnrollmentType.STAFF, endedAt: null, id: { $ne: enrollment.id }, person: { disabledAt: null, user: { $ne: null } } },
@@ -274,15 +315,15 @@ export class AbsencesService {
     const params: Record<string, string> = {
       club: club.name,
       person: [enrollment.person.name, enrollment.person.surname].filter(Boolean).join(' '),
-      from: absence.startDate,
-      ...(absence.endDate ? { until: absence.endDate } : {}),
+      from: days.startDate,
+      ...(days.endDate ? { until: days.endDate } : {}),
     };
     await this.notifications.notify({
       clubId: a.clubId as string,
       userIds: [...users.keys()],
-      type: NotificationType.ABSENCE_DECLARED,
+      type,
       params,
-      dedupKey: `absence:${absence.id}`,
+      dedupKey,
     });
   }
 }

@@ -24,6 +24,7 @@ export const DEFAULT_CHANNELS: Record<NotificationType, Channels> = {
   [NotificationType.CERTIFICATE_EXPIRED]: ALL,
   [NotificationType.CERTIFICATES_DUE]: ALL,
   [NotificationType.ABSENCE_DECLARED]: QUIET,
+  [NotificationType.ABSENCE_FREED]: QUIET,
 };
 
 /**

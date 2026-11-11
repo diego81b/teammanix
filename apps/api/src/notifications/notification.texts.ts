@@ -49,6 +49,8 @@ interface Dictionary {
   expired: (club: string, expiry: string) => NotificationText;
   due: (club: string, team: string, expiring: number, expired: number) => NotificationText;
   absence: (club: string, person: string, from: string, until: string | null) => NotificationText;
+  /** Days freed inside a declared absence: `until` null means from that day onward; equal to `from` is a single day. */
+  freed: (club: string, person: string, from: string, until: string | null) => NotificationText;
 }
 
 const IT: Dictionary = {
@@ -77,6 +79,10 @@ const IT: Dictionary = {
     title: `${club}: assenza dichiarata`,
     body: `${person} è assente dal ${from} ${until ? `al ${until}` : 'fino a nuovo avviso'}.`,
   }),
+  freed: (club, person, from, until) => ({
+    title: `${club}: assenza modificata`,
+    body: `${person} ha liberato ${until === from ? `il giorno ${from}` : until ? `i giorni dal ${from} al ${until}` : `i giorni dal ${from} in poi`}.`,
+  }),
 };
 
 const EN: Dictionary = {
@@ -103,6 +109,10 @@ const EN: Dictionary = {
   absence: (club, person, from, until) => ({
     title: `${club}: absence declared`,
     body: `${person} is away from ${from} ${until ? `to ${until}` : 'until further notice'}.`,
+  }),
+  freed: (club, person, from, until) => ({
+    title: `${club}: absence changed`,
+    body: `${person} freed ${until === from ? `${from}` : until ? `the days from ${from} to ${until}` : `the days from ${from} onward`}.`,
   }),
 };
 
@@ -132,6 +142,10 @@ const FR: Dictionary = {
   absence: (club, person, from, until) => ({
     title: `${club} : absence déclarée`,
     body: `${person} est absent du ${from} ${until ? `au ${until}` : "jusqu'à nouvel ordre"}.`,
+  }),
+  freed: (club, person, from, until) => ({
+    title: `${club} : absence modifiée`,
+    body: `${person} a libéré ${until === from ? `le ${from}` : until ? `les jours du ${from} au ${until}` : `les jours à partir du ${from}`}.`,
   }),
 };
 
@@ -176,5 +190,7 @@ export function notificationText(type: NotificationType, language: Language, p: 
       return d.due(club, str(p, 'team'), Number(p.expiring ?? 0), Number(p.expired ?? 0));
     case NotificationType.ABSENCE_DECLARED:
       return d.absence(club, str(p, 'person'), day(str(p, 'from'), language), p.until ? day(str(p, 'until'), language) : null);
+    case NotificationType.ABSENCE_FREED:
+      return d.freed(club, str(p, 'person'), day(str(p, 'from'), language), p.until ? day(str(p, 'until'), language) : null);
   }
 }

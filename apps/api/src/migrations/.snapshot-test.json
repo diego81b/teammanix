@@ -4860,7 +4860,8 @@
             "certificate_expiring",
             "certificate_expired",
             "certificates_due",
-            "absence_declared"
+            "absence_declared",
+            "absence_freed"
           ],
           "mappedType": "enum"
         },

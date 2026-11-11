@@ -1,5 +1,5 @@
 import { CallupResponse } from '../entities/enums';
-import { blockOn, declinable, mergePeriods, validatePeriod } from './absence.rules';
+import { blockOn, declinable, freeDays, mergePeriods, validatePeriod } from './absence.rules';
 
 const season = { startDate: '2026-09-01', endDate: '2027-06-30' };
 
@@ -147,5 +147,111 @@ describe('declinable', () => {
 
   it('has no upper bound for an absence until further notice', () => {
     expect(declinable([row('a', '2027-05-01')], { startDate: '2026-11-10', endDate: null })).toHaveLength(1);
+  });
+});
+
+describe('freeDays', () => {
+  const today = '2026-12-01';
+  const p = (id: string, startDate: string, endDate: string | null) => ({ id, startDate, endDate });
+  const plan = (periods: ReturnType<typeof p>[], from: string, to: string | null) => {
+    const r = freeDays(periods, { from, to }, today);
+    if ('error' in r) throw new Error(r.error);
+    return r;
+  };
+
+  it('splits a period when the freed days are in the middle: the first part keeps the start, the second the end', () => {
+    const r = plan([p('a', '2026-12-01', '2026-12-20')], '2026-12-10', '2026-12-12');
+    expect(r.updates).toEqual([{ id: 'a', startDate: '2026-12-01', endDate: '2026-12-09' }]);
+    expect(r.creates).toEqual([{ startDate: '2026-12-13', endDate: '2026-12-20' }]);
+    expect(r.removes).toEqual([]);
+  });
+
+  it('shortens a period when the freed days are at its end', () => {
+    const r = plan([p('a', '2026-12-01', '2026-12-20')], '2026-12-18', '2026-12-20');
+    expect(r).toEqual({ updates: [{ id: 'a', startDate: '2026-12-01', endDate: '2026-12-17' }], creates: [], removes: [] });
+  });
+
+  it('shortens a period when the freed days are at its start', () => {
+    const r = plan([p('a', '2026-12-05', '2026-12-20')], '2026-12-03', '2026-12-08');
+    expect(r).toEqual({ updates: [{ id: 'a', startDate: '2026-12-09', endDate: '2026-12-20' }], creates: [], removes: [] });
+  });
+
+  it('removes a period fully inside the freed days, a single day included', () => {
+    const r = plan([p('a', '2026-12-01', '2026-12-20'), p('b', '2026-12-05', '2026-12-05')], '2026-12-01', '2026-12-20');
+    expect(r).toEqual({ updates: [], creates: [], removes: ['a', 'b'] });
+  });
+
+  it('treats each declared period by the same rules in one operation', () => {
+    const r = plan(
+      [p('a', '2026-12-03', '2026-12-03'), p('b', '2026-12-05', '2026-12-05'), p('c', '2026-12-08', '2026-12-09'), p('d', '2026-12-04', '2026-12-30')],
+      '2026-12-04',
+      '2026-12-08',
+    );
+    expect(r.removes.sort()).toEqual(['b']);
+    expect(r.updates).toEqual(
+      expect.arrayContaining([
+        { id: 'c', startDate: '2026-12-09', endDate: '2026-12-09' },
+        { id: 'd', startDate: '2026-12-09', endDate: '2026-12-30' },
+      ]),
+    );
+    expect(r.updates).toHaveLength(2);
+    expect(r.creates).toEqual([]);
+  });
+
+  it('frees a day covered by two overlapping periods from both', () => {
+    const periods = [p('a', '2026-12-01', '2026-12-10'), p('b', '2026-12-08', '2026-12-20')];
+    const r = plan(periods, '2026-12-09', '2026-12-09');
+    const after = [
+      ...periods.filter((x) => !r.removes.includes(x.id)).map((x) => r.updates.find((u) => u.id === x.id) ?? x),
+      ...r.creates,
+    ];
+    expect(after.some((x) => x.startDate <= '2026-12-09' && (x.endDate === null || x.endDate >= '2026-12-09'))).toBe(false);
+    expect(after.some((x) => x.startDate <= '2026-12-08' && (x.endDate === null || x.endDate >= '2026-12-08'))).toBe(true);
+    expect(after.some((x) => x.startDate <= '2026-12-10' && (x.endDate === null || x.endDate >= '2026-12-10'))).toBe(true);
+  });
+
+  it('leaves the second part open ended when freeing the middle of an absence until further notice', () => {
+    const r = plan([p('a', '2026-12-01', null)], '2026-12-10', '2026-12-12');
+    expect(r.updates).toEqual([{ id: 'a', startDate: '2026-12-01', endDate: '2026-12-09' }]);
+    expect(r.creates).toEqual([{ startDate: '2026-12-13', endDate: null }]);
+  });
+
+  it('ends an absence until further notice the day before when freeing from a day onward', () => {
+    const r = plan([p('a', '2026-12-01', null)], '2026-12-10', null);
+    expect(r).toEqual({ updates: [{ id: 'a', startDate: '2026-12-01', endDate: '2026-12-09' }], creates: [], removes: [] });
+  });
+
+  it('removes a period that starts inside the days freed onward', () => {
+    expect(plan([p('a', '2026-12-15', '2026-12-18'), p('b', '2026-12-20', null)], '2026-12-10', null)).toEqual({
+      updates: [],
+      creates: [],
+      removes: ['a', 'b'],
+    });
+  });
+
+  it('changes nothing when nothing is declared in the range', () => {
+    const r = plan([p('a', '2026-12-01', '2026-12-05'), p('b', '2026-12-20', '2026-12-25')], '2026-12-10', '2026-12-12');
+    expect(r).toEqual({ updates: [], creates: [], removes: [] });
+  });
+
+  it('allows today and refuses a range that starts before today', () => {
+    expect(freeDays([p('a', '2026-12-01', '2026-12-20')], { from: '2026-12-01', to: '2026-12-02' }, today)).toEqual({
+      updates: [{ id: 'a', startDate: '2026-12-03', endDate: '2026-12-20' }],
+      creates: [],
+      removes: [],
+    });
+    expect(freeDays([p('a', '2026-11-20', '2026-12-20')], { from: '2026-11-30', to: '2026-12-05' }, today)).toEqual({ error: 'ABSENCE_DAYS_IN_PAST' });
+    expect(freeDays([], { from: '2026-11-30', to: null }, today)).toEqual({ error: 'ABSENCE_DAYS_IN_PAST' });
+  });
+
+  it('never touches past days: the past part of a period stays as declared', () => {
+    const r = plan([p('a', '2026-11-20', '2026-12-20')], '2026-12-05', null);
+    expect(r.updates).toEqual([{ id: 'a', startDate: '2026-11-20', endDate: '2026-12-04' }]);
+  });
+
+  it('refuses days that are not real or an end before the start', () => {
+    expect(freeDays([], { from: '2026-12-32', to: null }, today)).toEqual({ error: 'INVALID_DATA' });
+    expect(freeDays([], { from: '2026-12-10', to: '2026-12-09' }, today)).toEqual({ error: 'INVALID_DATA' });
+    expect(freeDays([], { from: '2026-12-10', to: '2026-13-01' }, today)).toEqual({ error: 'INVALID_DATA' });
   });
 });

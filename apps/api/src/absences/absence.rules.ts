@@ -77,3 +77,53 @@ export interface AbsenceCallup {
 export function declinable<T extends AbsenceCallup>(rows: readonly T[], p: Period): T[] {
   return rows.filter((r) => r.open && r.response !== CallupResponse.DECLINED && covers(p, r.day));
 }
+
+export function previousDay(day: string): string {
+  const d = new Date(`${day}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+/** A declared period with its record id. */
+export interface IdentifiedPeriod extends Period {
+  id: string;
+}
+
+/** The days to free: `to` null means "from this day onward". */
+export interface FreeRange {
+  from: string;
+  to: string | null;
+}
+
+/** What to write so the freed days are covered by no period: shorten or split records, create the second part, delete. */
+export interface FreePlan {
+  updates: IdentifiedPeriod[];
+  creates: Period[];
+  removes: string[];
+}
+
+/**
+ * Frees days from `today` onward in the periods of one enrollment (issue 25). Every period that touches the range is
+ * treated, so a day covered by two overlapping periods is freed from both. The first part of a split keeps the record and
+ * its start, the second part is a new record that keeps the end (open ended stays open ended). Days before the range and
+ * after it stay as declared; a range that starts before `today` is refused, today itself is allowed.
+ */
+export function freeDays(periods: readonly IdentifiedPeriod[], range: FreeRange, today: string): FreePlan | { error: 'INVALID_DATA' | 'ABSENCE_DAYS_IN_PAST' } {
+  const { from, to } = range;
+  if (!isDay(from) || (to !== null && (!isDay(to) || to < from))) return { error: 'INVALID_DATA' };
+  if (from < today) return { error: 'ABSENCE_DAYS_IN_PAST' };
+
+  const plan: FreePlan = { updates: [], creates: [], removes: [] };
+  for (const p of periods) {
+    const touches = (to === null || p.startDate <= to) && (p.endDate === null || p.endDate >= from);
+    if (!touches) continue;
+    const before = p.startDate < from;
+    const after = to !== null && (p.endDate === null || p.endDate > to);
+    if (!before && !after) plan.removes.push(p.id);
+    else if (before) {
+      plan.updates.push({ id: p.id, startDate: p.startDate, endDate: previousDay(from) });
+      if (after) plan.creates.push({ startDate: nextDay(to), endDate: p.endDate });
+    } else plan.updates.push({ id: p.id, startDate: nextDay(to as string), endDate: p.endDate });
+  }
+  return plan;
+}

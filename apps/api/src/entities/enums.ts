@@ -160,6 +160,8 @@ export enum NotificationType {
   /** Digest for staff with the certificates permission: how many certificates of their people are due. Counts only. */
   CERTIFICATES_DUE = 'certificates_due',
   ABSENCE_DECLARED = 'absence_declared',
+  /** Days freed inside a declared absence, told to the staff of the season. Dates only. */
+  ABSENCE_FREED = 'absence_freed',
 }
 
 export enum AuditAction {

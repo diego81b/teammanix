@@ -34,6 +34,13 @@ export class AbsencesController {
     return this.absences.create(a, id, dto);
   }
 
+  /** Frees days from today onward in the person's own declared absences: shortens, splits or removes the periods. */
+  @Post('enrollments/:id/absences/free')
+  @HttpCode(200)
+  free(@CurrentAuth() a: AuthContext, @Param('id', ParseUUIDPipe) id: string, @Body() dto: AbsenceDto) {
+    return this.absences.free(a, id, dto);
+  }
+
   @Patch('absences/:id')
   update(@CurrentAuth() a: AuthContext, @Param('id', ParseUUIDPipe) id: string, @Body() dto: AbsenceDto) {
     return this.absences.update(a, id, dto);

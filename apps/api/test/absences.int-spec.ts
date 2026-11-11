@@ -3,6 +3,7 @@ import { Callup } from '../src/entities/callup.entity';
 import { CallupResponseChange } from '../src/entities/callup-response-change.entity';
 import { Notification } from '../src/entities/notification.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
+import { localDate } from '../src/events/event.rules';
 import { Environment, startEnvironment } from './helpers';
 
 const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
@@ -568,6 +569,238 @@ const row = (rows: any[], id: string) => rows.find((r) => r.enrollmentId === id)
       expect(d.status).toBe(200);
       const rows = await t.orm.em.fork().find(Callup, { enrollment: s.assistant.enrollmentId }, { filters: false });
       expect([rows[0]?.response, rows[0]?.reason]).toEqual(['declined', null]);
+    });
+  });
+
+  describe('free days (issue 25)', () => {
+    const free = (token: string, enrollmentId: string, startDate: string, endDate?: string | null) =>
+      send(token, 'POST', `/enrollments/${enrollmentId}/absences/free`, { startDate, ...(endDate ? { endDate } : {}) });
+    const periods = async (token: string, enrollmentId: string) => {
+      const g = await send(token, 'GET', `/enrollments/${enrollmentId}/absences`);
+      expect(g.status).toBe(200);
+      return (g.body.absences as { startDate: string; endDate: string | null }[]).map((a) => [a.startDate, a.endDate]);
+    };
+    const notifications = (userId: string) => t.orm.em.fork().find(Notification, { user: userId, type: 'absence_freed' as never }, { filters: false });
+
+    it('freeing days in the middle splits the absence in two and answers with the list', async () => {
+      const s = await club('fd-1@test.it');
+      await declare(s.player.token, s.player.enrollmentId, day(0), day(19));
+      const r = await free(s.player.token, s.player.enrollmentId, day(9), day(11));
+      expect(r.status).toBe(200);
+      expect(r.body.absences.map((a: { startDate: string; endDate: string | null }) => [a.startDate, a.endDate])).toEqual([
+        [day(0), day(8)],
+        [day(12), day(19)],
+      ]);
+      expect(await periods(s.player.token, s.player.enrollmentId)).toEqual([
+        [day(0), day(8)],
+        [day(12), day(19)],
+      ]);
+    });
+
+    it('freeing the last days shortens the absence, freeing all of it removes it, today is allowed', async () => {
+      const s = await club('fd-2@test.it');
+      const today = localDate(new Date()); // the club day, which can be one ahead of the UTC day
+      await declare(s.player.token, s.player.enrollmentId, today, day(19));
+      expect((await free(s.player.token, s.player.enrollmentId, day(17), day(19))).status).toBe(200);
+      expect(await periods(s.player.token, s.player.enrollmentId)).toEqual([[today, day(16)]]);
+      expect((await free(s.player.token, s.player.enrollmentId, today, day(16))).status).toBe(200);
+      expect(await periods(s.player.token, s.player.enrollmentId)).toEqual([]);
+    });
+
+    it('every declared period the range touches is treated, single days included', async () => {
+      const s = await club('fd-3@test.it');
+      for (const [a, b] of [[3, 3], [5, 5], [8, 12], [4, 30]] as const) await declare(s.player.token, s.player.enrollmentId, day(a), day(b));
+      expect((await free(s.player.token, s.player.enrollmentId, day(4), day(9))).status).toBe(200);
+      expect(await periods(s.player.token, s.player.enrollmentId)).toEqual([
+        [day(3), day(3)],
+        [day(10), day(12)],
+        [day(10), day(30)],
+      ]);
+    });
+
+    it('a day covered by two overlapping periods is freed from both', async () => {
+      const s = await club('fd-4@test.it');
+      await declare(s.player.token, s.player.enrollmentId, day(1), day(10));
+      await declare(s.player.token, s.player.enrollmentId, day(8), day(20));
+      expect((await free(s.player.token, s.player.enrollmentId, day(9), day(9))).status).toBe(200);
+      const all = await periods(s.player.token, s.player.enrollmentId);
+      const covering = (d: string) => all.filter(([a, b]) => (a as string) <= d && (b === null || (b as string) >= d)).length;
+      expect([covering(day(8)), covering(day(9)), covering(day(10))]).toEqual([2, 0, 2]); // each period split in two, the day between freed from both
+      expect(all).toHaveLength(4);
+    });
+
+    it('an absence until further notice keeps no end on the second part, and ends the day before when freed onward', async () => {
+      const s = await club('fd-5@test.it');
+      await declare(s.player.token, s.player.enrollmentId, day(1));
+      await free(s.player.token, s.player.enrollmentId, day(10), day(12));
+      expect(await periods(s.player.token, s.player.enrollmentId)).toEqual([
+        [day(1), day(9)],
+        [day(13), null],
+      ]);
+      await free(s.player.token, s.player.enrollmentId, day(20));
+      expect(await periods(s.player.token, s.player.enrollmentId)).toEqual([
+        [day(1), day(9)],
+        [day(13), day(19)],
+      ]);
+    });
+
+    it('a range where nothing is declared changes nothing: no audit, no notification', async () => {
+      const s = await club('fd-6@test.it');
+      await declare(s.player.token, s.player.enrollmentId, day(1), day(5));
+      const before = await t.orm.em.fork().count(AuditLog, { entity: 'absence' }, { filters: false });
+      const r = await free(s.player.token, s.player.enrollmentId, day(10), day(12));
+      expect(r.status).toBe(200);
+      expect(await periods(s.player.token, s.player.enrollmentId)).toEqual([[day(1), day(5)]]);
+      expect(await t.orm.em.fork().count(AuditLog, { entity: 'absence' }, { filters: false })).toBe(before);
+      expect(await notifications(s.coach1.userId)).toEqual([]);
+    });
+
+    it('a range that starts before today is refused and nothing changes; invalid days are refused', async () => {
+      const s = await club('fd-7@test.it');
+      await declare(s.player.token, s.player.enrollmentId, day(-5), day(5));
+      const past = await free(s.player.token, s.player.enrollmentId, day(-1), day(2));
+      expect([past.status, past.body.code]).toEqual([400, 'ABSENCE_DAYS_IN_PAST']);
+      const bad = await free(s.player.token, s.player.enrollmentId, 'not-a-day');
+      expect([bad.status, bad.body.code]).toEqual([400, 'INVALID_DATA']);
+      const reversed = await free(s.player.token, s.player.enrollmentId, day(4), day(3));
+      expect([reversed.status, reversed.body.code]).toEqual([400, 'INVALID_DATA']);
+      expect(await periods(s.player.token, s.player.enrollmentId)).toEqual([[day(-5), day(5)]]);
+    });
+
+    it('past days of an absence that reaches into the past stay as declared', async () => {
+      const s = await club('fd-8@test.it');
+      await declare(s.player.token, s.player.enrollmentId, day(-5), day(20));
+      await free(s.player.token, s.player.enrollmentId, day(3));
+      expect(await periods(s.player.token, s.player.enrollmentId)).toEqual([[day(-5), day(2)]]);
+    });
+  });
+
+  describe('free days: call-ups, other blocks and answers', () => {
+    const free = (token: string, enrollmentId: string, startDate: string, endDate?: string | null) =>
+      send(token, 'POST', `/enrollments/${enrollmentId}/absences/free`, { startDate, ...(endDate ? { endDate } : {}) });
+
+    it('the call-up of a freed day no longer shows the absence, the other days still do', async () => {
+      const s = await club('fd-20@test.it');
+      const [on, off] = [await s.event(s.t1.teamId, 10), await s.event(s.t1.teamId, 6)];
+      await declare(s.player.token, s.player.enrollmentId, day(5), day(15));
+      expect(row((await lists(s.coach1.token, on.id)).notCallable, s.player.enrollmentId)).toBeDefined();
+      await free(s.player.token, s.player.enrollmentId, day(9), day(11));
+      const l = await lists(s.coach1.token, on.id);
+      expect(row(l.callable, s.player.enrollmentId)).toBeDefined();
+      expect(row(l.notCallable, s.player.enrollmentId)).toBeUndefined();
+      expect(row((await lists(s.coach1.token, off.id)).notCallable, s.player.enrollmentId).reasons).toEqual([{ code: 'absence', severity: 'confirm', until: day(8) }]);
+    });
+
+    it('an injured player with a freed day is still not callable, because of the injury only', async () => {
+      const s = await club('fd-21@test.it');
+      const ev = await s.event(s.t1.teamId, 10);
+      await declare(s.player.token, s.player.enrollmentId, day(5), day(15));
+      expect((await send(s.admin, 'PATCH', `/enrollments/${s.player.enrollmentId}`, { status: 'injured' })).status).toBe(200);
+      await free(s.player.token, s.player.enrollmentId, day(9), day(11));
+      const r = row((await lists(s.coach1.token, ev.id)).notCallable, s.player.enrollmentId);
+      expect(r.reasons).toEqual([{ code: 'injured', severity: 'hard' }]);
+    });
+
+    it('a match covered by a suspension stays blocked when the absence of that day is freed', async () => {
+      const s = await club('fd-22@test.it');
+      const m = await s.event(s.t1.teamId, 10, { type: 'match', opponent: 'Rivals', homeAway: 'home', competition: 'League' });
+      await declare(s.player.token, s.player.enrollmentId, day(5), day(15));
+      await post(s.coach1.token, `/enrollments/${s.player.enrollmentId}/suspensions`, { form: 'period', startDate: day(8), endDate: day(12) });
+      await free(s.player.token, s.player.enrollmentId, day(9), day(11));
+      const r = row((await lists(s.coach1.token, m.id)).notCallable, s.player.enrollmentId);
+      expect(r.reasons.map((x: { code: string }) => x.code)).toEqual(['suspended']);
+    });
+
+    it('an answer already declined because of the absence stays declined: nothing is re-opened', async () => {
+      const s = await club('fd-23@test.it');
+      const ev = await s.event(s.t1.teamId, 10);
+      await callUp(s.coach1.token, ev.id, s.player.enrollmentId);
+      const made = await declare(s.player.token, s.player.enrollmentId, day(5), day(15));
+      expect((await send(s.player.token, 'POST', `/absences/${made.body.absence.id}/decline`, { eventIds: [ev.id] })).status).toBe(200);
+      await free(s.player.token, s.player.enrollmentId, day(9), day(11));
+      const rows = await t.orm.em.fork().find(Callup, { enrollment: s.player.enrollmentId }, { filters: false });
+      expect(rows.map((c) => c.response)).toEqual(['declined']);
+    });
+  });
+
+  describe('free days: who may, audit and notification', () => {
+    const free = (token: string, enrollmentId: string, startDate: string, endDate?: string | null) =>
+      send(token, 'POST', `/enrollments/${enrollmentId}/absences/free`, { startDate, ...(endDate ? { endDate } : {}) });
+    const notifications = (userId: string) => t.orm.em.fork().find(Notification, { user: userId, type: 'absence_freed' as never }, { filters: false });
+
+    it('only the person concerned may: not a teammate, the coach or the admin; across clubs it is a 404', async () => {
+      const s = await club('fd-30@test.it');
+      await declare(s.player.token, s.player.enrollmentId, day(1), day(20));
+      for (const who of [s.mate.token, s.coach1.token, s.assistant.token, s.coach2.token, s.admin]) {
+        const r = await free(who, s.player.enrollmentId, day(5), day(6));
+        expect([r.status, r.body.code]).toEqual([403, 'PERMISSION_DENIED']);
+      }
+      const other = await club('fd-30b@test.it');
+      const cross = await free(other.admin, s.player.enrollmentId, day(5), day(6));
+      expect([cross.status, cross.body.code]).toEqual([404, 'ENROLLMENT_NOT_FOUND']);
+      const g = await send(s.player.token, 'GET', `/enrollments/${s.player.enrollmentId}/absences`);
+      expect(g.body.absences).toHaveLength(1);
+    });
+
+    it('a closed season refuses it', async () => {
+      const s = await club('fd-31@test.it');
+      await declare(s.player.token, s.player.enrollmentId, day(1), day(20));
+      expect((await t.req('POST', `/seasons/${s.t1.seasonId}/close`, { token: s.admin })).status).toBe(200);
+      const r = await free(s.player.token, s.player.enrollmentId, day(5), day(6));
+      expect([r.status, r.body.code]).toEqual([409, 'SEASON_CLOSED']);
+    });
+
+    it('the audit lists each absence touched with the dates only', async () => {
+      const s = await club('fd-32@test.it');
+      const a = await declare(s.player.token, s.player.enrollmentId, day(0), day(19));
+      const b = await declare(s.player.token, s.player.enrollmentId, day(10), day(10));
+      const em = () => t.orm.em.fork();
+      const before = await em().count(AuditLog, { entity: 'absence' }, { filters: false });
+      await free(s.player.token, s.player.enrollmentId, day(9), day(11));
+      const log = (await em().find(AuditLog, { entity: 'absence' }, { filters: false, orderBy: { createdAt: 'asc' } })).slice(before);
+      expect(log.map((l) => l.action).sort()).toEqual(['absence_cancelled', 'absence_created', 'absence_modified']);
+      const by = (action: string) => log.find((l) => l.action === action);
+      expect(by('absence_modified')?.entityId).toBe(a.body.absence.id);
+      expect(by('absence_modified')?.meta).toEqual({ enrollmentId: s.player.enrollmentId, startDate: day(0), endDate: day(8) });
+      expect(by('absence_cancelled')?.entityId).toBe(b.body.absence.id);
+      expect(by('absence_cancelled')?.meta).toEqual({ enrollmentId: s.player.enrollmentId, startDate: day(10), endDate: day(10) });
+      expect(by('absence_created')?.meta).toEqual({ enrollmentId: s.player.enrollmentId, startDate: day(12), endDate: day(19) });
+      for (const l of log) expect(l.user?.id).toBe(s.player.userId);
+    });
+
+    it('the staff of the season get one notification per operation with the person and the freed days, nobody else', async () => {
+      const s = await club('fd-33@test.it');
+      await declare(s.player.token, s.player.enrollmentId, day(1), day(30));
+      await free(s.player.token, s.player.enrollmentId, day(9), day(11));
+      for (const who of [s.coach1, s.assistant]) {
+        const n = await notifications(who.userId);
+        expect(n).toHaveLength(1);
+        expect(n[0]?.params).toMatchObject({ person: 'p1 Rossi', from: day(9), until: day(11) });
+        expect(Object.keys(n[0]?.params ?? {}).sort()).toEqual(['club', 'from', 'person', 'until']);
+      }
+      for (const who of [s.coach2, s.player, s.mate]) expect(await notifications(who.userId)).toEqual([]);
+    });
+
+    it('freed from a day onward carries no end, and an operation that changes nothing does not notify', async () => {
+      const s = await club('fd-34@test.it');
+      await declare(s.player.token, s.player.enrollmentId, day(1), day(30));
+      await free(s.player.token, s.player.enrollmentId, day(20));
+      await free(s.player.token, s.player.enrollmentId, day(20));
+      const n = await notifications(s.coach1.userId);
+      expect(n).toHaveLength(1);
+      expect(n[0]?.params).toMatchObject({ from: day(20) });
+      expect(n[0]?.params).not.toHaveProperty('until');
+      await declare(s.player.token, s.player.enrollmentId, day(20), day(25));
+      await free(s.player.token, s.player.enrollmentId, day(20));
+      expect(await notifications(s.coach1.userId)).toHaveLength(2);
+    });
+
+    it('a staff member frees their own days and the other staff are told, not themselves', async () => {
+      const s = await club('fd-35@test.it');
+      await declare(s.assistant.token, s.assistant.enrollmentId, day(1), day(20));
+      expect((await free(s.assistant.token, s.assistant.enrollmentId, day(5), day(6))).status).toBe(200);
+      expect(await notifications(s.coach1.userId)).toHaveLength(1);
+      expect(await notifications(s.assistant.userId)).toEqual([]);
     });
   });
 });
