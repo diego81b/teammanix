@@ -107,7 +107,10 @@ export function notificationText(n: Pick<NotificationItem, 'type' | 'params'>, l
   if (n.type === 'event_cancelled' && p.kind === 'series') params.days = removedDays(p.days, locale, t)
   for (const key of ['expiry', 'from', 'until']) if (p[key]) params[key] = formatDate(String(p[key]), locale)
   const v = variant(n)
-  return { title: t(`notifications.types.${v}.title`, params), body: t(`notifications.types.${v}.body`, params) }
+  const body = t(`notifications.types.${v}.body`, params)
+  // The digest of a team opens with the team, as the text sent by the server does.
+  const named = n.type === 'certificates_due' && p.team
+  return { title: t(`notifications.types.${v}.title`, params), body: named ? t('notifications.forTeam', { team: str(p.team), text: body }) : body }
 }
 
 /** A link with `?club=` opens in that club: the notification may come from a club that is not the active one. */

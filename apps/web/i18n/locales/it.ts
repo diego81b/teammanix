@@ -1014,6 +1014,7 @@ const it = {
     settings: 'Scegli come ricevere gli avvisi',
     more: 'e altri {n}',
     inDays: { today: 'oggi', tomorrow: 'domani', other: 'tra {n} giorni' },
+    forTeam: '{team}: {text}',
     unknown: { title: 'Nuova notifica', body: "Aggiorna l'app per leggerla." },
     types: {
       callup: { title: '{club}: nuova convocazione', body: '{what}, {when}. Apri per rispondere.' },

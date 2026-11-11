@@ -90,6 +90,25 @@ describe('notificationText', () => {
     expect(only(2, 1)).toContain('"expiring":2')
   })
 
+  it('the digest of a team names the team and keeps the text of what is due; the digest of the club does not', () => {
+    const view = (params: Record<string, string | number>) => notificationText({ ...base, type: 'certificates_due', params: { club: 'C', ...params } }, 'it', t)
+    const team = view({ team: 'Under 15', expiring: 2, expired: 1 })
+    expect(team.body).toContain('notifications.forTeam')
+    expect(team.body).toContain('"team":"Under 15"')
+    expect(team.body).toContain('notifications.types.certificates_due_both.body')
+    expect(team.title).toContain('notifications.types.certificates_due_both.title')
+    expect(team.title).not.toContain('notifications.forTeam')
+    const club = view({ expiring: 2, expired: 1 })
+    expect(club.body).not.toContain('notifications.forTeam')
+    expect(club.body).toContain('notifications.types.certificates_due_both.body')
+  })
+
+  it('a team digest picks the text for what is due in that team', () => {
+    const body = (expiring: number, expired: number) => notificationText({ ...base, type: 'certificates_due', params: { club: 'C', team: 'U15', expiring, expired } }, 'it', t).body
+    expect(body(2, 0)).toContain('certificates_due_expiring')
+    expect(body(0, 2)).toContain('certificates_due_expired')
+  })
+
   it('a certificate alert says today, tomorrow or in N days, with the text of the language', () => {
     const body = (days: number) => notificationText({ ...base, type: 'certificate_expiring', params: { club: 'C', expiry: '2026-12-10', days } }, 'it', t).body
     expect(body(0)).toContain('notifications.inDays.today')

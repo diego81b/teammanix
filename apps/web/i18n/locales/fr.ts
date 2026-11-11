@@ -1010,6 +1010,7 @@ const fr: typeof it = {
     settings: 'Choisir comment recevoir les alertes',
     more: 'et {n} autres',
     inDays: { today: "aujourd'hui", tomorrow: 'demain', other: 'dans {n} jours' },
+    forTeam: '{team} : {text}',
     unknown: { title: 'Nouvelle notification', body: "Mettez à jour l'application pour la lire." },
     types: {
       callup: { title: '{club} : nouvelle convocation', body: "{what}, {when}. Ouvrez pour répondre." },
