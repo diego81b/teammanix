@@ -7,8 +7,8 @@ import { canReadSeasonEvents, type SeasonTarget } from '../events/visibility';
  * Pure rules of the call-up (ANALISI rules 2, 3 and 6). No DB, no Nest.
  *
  * Why a person cannot or should not be called up is a list of reasons. Each reason has a severity:
- * - hard: refuses the call-up, nobody can force it (injured, suspended, declared absence, certificate when the club blocks);
- * - confirm: refuses unless the coach confirms (no provider uses it today, it stays for new reasons);
+ * - hard: refuses the call-up, nobody can force it (injured, suspended, certificate when the club blocks);
+ * - confirm: refuses unless the coach confirms (declared absence); a hard reason next to it still refuses;
  * - warning: lets it through and shows a notice (certificate expiring, or expired when the club only warns, overlapping event).
  */
 export type Severity = 'hard' | 'confirm' | 'warning';
@@ -57,9 +57,9 @@ export const certificateProvider: ReasonProvider = (c, ctx) => {
   }
 };
 
-/** A declared absence (rule 10) refuses the call-up for good: to be callable again the player removes or shortens it. */
+/** A declared absence (rule 10) warns staff, who can call the player up anyway after a confirmation. It never overrides a hard reason. */
 export const absenceProvider: ReasonProvider = (c) =>
-  c.absence ? [{ code: 'absence', severity: 'hard', ...(c.absence.until ? { until: c.absence.until } : {}) }] : [];
+  c.absence ? [{ code: 'absence', severity: 'confirm', ...(c.absence.until ? { until: c.absence.until } : {}) }] : [];
 
 /**
  * A suspension (rule 13) refuses the call-up for the matches it covers, with no override, and only for matches: for a

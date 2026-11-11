@@ -275,6 +275,23 @@ describe('suspensions (rule 13)', () => {
       expect((await callUp(s.admin, m1.id, s.player.enrollmentId, { confirm: true })).status).toBe(409);
     });
 
+    it('a declared absence on a covered match does not open the suspension: the confirmation is still refused', async () => {
+      const s = await club('su-c2b@test.it');
+      const m1 = await s.match(s.t1.teamId, 5);
+      const train = await s.event(s.t1.teamId, 5);
+      await suspend(s.coach1.token, s.player.enrollmentId, byMatches(1));
+      const made = await send(s.player.token, 'POST', `/enrollments/${s.player.enrollmentId}/absences`, { startDate: day(3), endDate: day(8) });
+      expect(made.status).toBe(201);
+      for (const extra of [{}, { confirm: true }]) {
+        const refused = await callUp(s.coach1.token, m1.id, s.player.enrollmentId, extra);
+        expect([refused.status, refused.body.code, refused.body.reasons]).toEqual([409, 'ENROLLMENT_NOT_CALLABLE', ['suspended']]);
+      }
+      // A training is not covered by the suspension: the absence alone asks for the confirmation.
+      const needs = await callUp(s.coach1.token, train.id, s.player.enrollmentId);
+      expect([needs.status, needs.body.code]).toEqual([409, 'CALLUP_CONFIRMATION_REQUIRED']);
+      expect((await callUp(s.coach1.token, train.id, s.player.enrollmentId, { confirm: true })).status).toBe(201);
+    });
+
     it('trainings stay open to the suspended player, on the same days too', async () => {
       const s = await club('su-c3@test.it');
       await s.match(s.t1.teamId, 5);

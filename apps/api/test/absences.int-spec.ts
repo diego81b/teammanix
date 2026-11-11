@@ -86,7 +86,7 @@ const row = (rows: any[], id: string) => rows.find((r) => r.enrollmentId === id)
       expect((await declare(s.player.token, s.player.enrollmentId, day(10), day(15))).status).toBe(201);
       const l = await lists(s.coach1.token, ev.id);
       expect(row(l.callable, s.player.enrollmentId)).toBeUndefined();
-      expect(row(l.notCallable, s.player.enrollmentId).reasons).toEqual([{ code: 'absence', severity: 'hard', until: day(15) }]);
+      expect(row(l.notCallable, s.player.enrollmentId).reasons).toEqual([{ code: 'absence', severity: 'confirm', until: day(15) }]);
       expect(row(l.callable, s.mate.enrollmentId)).toBeDefined();
     });
 
@@ -100,15 +100,45 @@ const row = (rows: any[], id: string) => rows.find((r) => r.enrollmentId === id)
       }
     });
 
-    it('the coach cannot call the player up, not even with a confirmation; removing the absence makes the player callable', async () => {
+    it('the coach calls the player up only after a confirmation, and nothing is saved without it', async () => {
       const s = await club('ab-3@test.it');
       const ev = await s.event(s.t1.teamId, 12);
       const made = await declare(s.player.token, s.player.enrollmentId, day(10), day(15));
       const refused = await callUp(s.coach1.token, ev.id, s.player.enrollmentId);
-      expect([refused.status, refused.body.code, refused.body.reasons]).toEqual([409, 'ENROLLMENT_NOT_CALLABLE', ['absence']]);
-      expect((await callUp(s.coach1.token, ev.id, s.player.enrollmentId, { confirm: true })).status).toBe(409);
+      expect([refused.status, refused.body.code, refused.body.reasons]).toEqual([409, 'CALLUP_CONFIRMATION_REQUIRED', ['absence']]);
+      expect(await t.orm.em.fork().count(Callup, { event: ev.id, enrollment: s.player.enrollmentId }, { filters: false })).toBe(0);
+      expect(row((await lists(s.coach1.token, ev.id)).notCallable, s.player.enrollmentId)).toBeDefined();
+      const done = await callUp(s.coach1.token, ev.id, s.player.enrollmentId, { confirm: true });
+      expect(done.status).toBe(201);
+      expect(row((await lists(s.coach1.token, ev.id)).calledUp, s.player.enrollmentId)).toBeDefined();
+      // Removing the absence makes the player callable with no confirmation at all.
+      const other = await s.event(s.t1.teamId, 13);
       expect((await send(s.player.token, 'DELETE', `/absences/${made.body.absence.id}`)).status).toBe(204);
-      expect((await callUp(s.coach1.token, ev.id, s.player.enrollmentId)).status).toBe(201);
+      expect((await callUp(s.coach1.token, other.id, s.player.enrollmentId)).status).toBe(201);
+    });
+
+    it('a player called up despite the absence sees the call-up and answers as usual', async () => {
+      const s = await club('ab-3b@test.it');
+      const ev = await s.event(s.t1.teamId, 12);
+      await declare(s.player.token, s.player.enrollmentId, day(10), day(15));
+      expect((await callUp(s.coach1.token, ev.id, s.player.enrollmentId, { confirm: true })).status).toBe(201);
+      expect((await send(s.coach1.token, 'POST', `/events/${ev.id}/callups/send`)).status).toBe(200);
+      const mine = (await lists(s.player.token, ev.id)).calledUp.find((r: { mine: boolean }) => r.mine);
+      expect(mine.response).toBe('pending');
+      expect((await send(s.player.token, 'PUT', `/events/${ev.id}/callups/me`, { response: 'confirmed' })).status).toBe(200);
+      expect((await send(s.player.token, 'PUT', `/events/${ev.id}/callups/me`, { response: 'declined', reason: 'work' })).status).toBe(200);
+    });
+
+    it('the confirmation never overrides a hard block: an injured player in absence stays refused', async () => {
+      const s = await club('ab-3c@test.it');
+      const ev = await s.event(s.t1.teamId, 12);
+      await declare(s.player.token, s.player.enrollmentId, day(10), day(15));
+      expect((await send(s.admin, 'PATCH', `/enrollments/${s.player.enrollmentId}`, { status: 'injured' })).status).toBe(200);
+      for (const extra of [{}, { confirm: true }]) {
+        const refused = await callUp(s.coach1.token, ev.id, s.player.enrollmentId, extra);
+        expect([refused.status, refused.body.code, refused.body.reasons]).toEqual([409, 'ENROLLMENT_NOT_CALLABLE', ['injured']]);
+      }
+      expect(await t.orm.em.fork().count(Callup, { event: ev.id }, { filters: false })).toBe(0);
     });
 
     it('an absence without an end blocks every later event, with no end date', async () => {
@@ -116,7 +146,7 @@ const row = (rows: any[], id: string) => rows.find((r) => r.enrollmentId === id)
       await declare(s.player.token, s.player.enrollmentId, day(10));
       const ev = await s.event(s.t1.teamId, 200);
       const l = await lists(s.coach1.token, ev.id);
-      expect(row(l.notCallable, s.player.enrollmentId).reasons).toEqual([{ code: 'absence', severity: 'hard' }]);
+      expect(row(l.notCallable, s.player.enrollmentId).reasons).toEqual([{ code: 'absence', severity: 'confirm' }]);
     });
 
     it('adjacent absences read as one: the end date is the end of the continuous block', async () => {

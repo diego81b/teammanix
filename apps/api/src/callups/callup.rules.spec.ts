@@ -229,12 +229,12 @@ describe('no coach available', () => {
 });
 
 describe('declared absence (rule 10)', () => {
-  it('a person in absence gets a hard reason with the end of the block', () => {
-    expect(evaluate({ ...fit, absence: { until: '2026-11-15' } }, ctx)).toEqual([{ code: 'absence', severity: 'hard', until: '2026-11-15' }]);
+  it('a person in absence gets a confirm reason with the end of the block', () => {
+    expect(evaluate({ ...fit, absence: { until: '2026-11-15' } }, ctx)).toEqual([{ code: 'absence', severity: 'confirm', until: '2026-11-15' }]);
   });
 
   it('an absence until further notice has no end', () => {
-    expect(evaluate({ ...fit, absence: { until: null } }, ctx)).toEqual([{ code: 'absence', severity: 'hard' }]);
+    expect(evaluate({ ...fit, absence: { until: null } }, ctx)).toEqual([{ code: 'absence', severity: 'confirm' }]);
   });
 
   it('no absence, no reason', () => {
@@ -242,13 +242,31 @@ describe('declared absence (rule 10)', () => {
     expect(absenceProvider({ ...fit, absence: null }, ctx)).toEqual([]);
   });
 
-  it('nobody can call up a player in absence, a confirmation does not change it', () => {
+  it('staff can call up a player in absence only after a confirmation', () => {
     const reasons = evaluate({ ...fit, absence: { until: '2026-11-15' } }, ctx);
+    expect(canCallUp(reasons, false)).toBe('CONFIRMATION_REQUIRED');
+    expect(canCallUp(reasons, true)).toBe('ok');
+  });
+
+  it('an injured player in absence stays refused after the confirmation', () => {
+    const reasons = evaluate({ ...fit, status: EnrollmentStatus.INJURED, absence: { until: null } }, ctx);
     expect(canCallUp(reasons, false)).toBe('NOT_CALLABLE');
     expect(canCallUp(reasons, true)).toBe('NOT_CALLABLE');
   });
 
-  it('a player in absence goes to the not callable list', () => {
+  it('an expired certificate that the club blocks stays refused after the confirmation, a warning does not', () => {
+    const expired: Candidate = { ...fit, certificate: 'expired', absence: { until: null } };
+    expect(canCallUp(evaluate(expired, ctx), true)).toBe('NOT_CALLABLE');
+    expect(canCallUp(evaluate(expired, { ...ctx, blockCertificate: false }), true)).toBe('ok');
+  });
+
+  it('a suspension on a match stays refused after the confirmation, on a training the absence alone asks for it', () => {
+    const both: Candidate = { ...fit, absence: { until: '2026-11-15' }, suspension: { match: 1, total: 2, until: null } };
+    expect(canCallUp(evaluate(both, { ...ctx, eventType: EventType.MATCH }), true)).toBe('NOT_CALLABLE');
+    expect(canCallUp(evaluate(both, ctx), true)).toBe('ok');
+  });
+
+  it('a player in absence stays in the not callable list', () => {
     const row = { enrollmentId: 'a', calledUp: false, reasons: evaluate({ ...fit, absence: { until: null } }, ctx) };
     expect(partition([row]).notCallable).toHaveLength(1);
   });
