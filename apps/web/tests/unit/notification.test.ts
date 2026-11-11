@@ -53,6 +53,29 @@ describe('notificationText', () => {
     expect(key(notificationText({ ...base, type: 'event_modified', params: { ...event, count: 2 } }, 'it', t).body)).toBe(key(many.body))
   })
 
+  it('a cancellation of one event and of a series use different texts', () => {
+    const one = notificationText({ ...base, type: 'event_cancelled', params: event }, 'it', t)
+    const series = { ...event, kind: 'series', start: '', count: 3, days: '2026-12-03,2026-12-05,2026-12-10' }
+    const many = notificationText({ ...base, type: 'event_cancelled', params: series }, 'it', t)
+    expect(one.body).toContain('notifications.types.event_cancelled.body')
+    expect(many.title).toContain('notifications.types.event_cancelled_many.title')
+    expect(many.body).toContain('notifications.types.event_cancelled_many.body')
+    expect(many.body).toContain('"count":3')
+  })
+
+  it('a removed series lists its days in the language of the reader', () => {
+    const view = notificationText({ ...base, type: 'event_cancelled', params: { club: 'C', kind: 'series', title: 'Team training', start: '', count: 3, days: '2026-12-03,2026-12-05,2026-12-10' } }, 'it', t)
+    expect(view.body).toContain('"days":"gio 3 dic, sab 5 dic, gio 10 dic"')
+  })
+
+  it('a removed series shows five days at most, then how many more', () => {
+    const days = ['2026-12-01', '2026-12-02', '2026-12-03', '2026-12-04', '2026-12-05', '2026-12-06', '2026-12-07'].join(',')
+    const view = notificationText({ ...base, type: 'event_cancelled', params: { club: 'C', kind: 'series', title: '', start: '', count: 7, days } }, 'en', t)
+    expect(view.body).toContain('Tue 1 Dec, Wed 2 Dec, Thu 3 Dec, Fri 4 Dec, Sat 5 Dec')
+    expect(view.body).not.toContain('6 Dec')
+    expect(view.body).toContain('Sat 5 Dec notifications.more {\\"n\\":2}')
+  })
+
   it('an absence without an end says "until further notice"', () => {
     const open = notificationText({ ...base, type: 'absence_declared', params: { club: 'C', person: 'Awa', from: '2026-12-01' } }, 'it', t)
     const closed = notificationText({ ...base, type: 'absence_declared', params: { club: 'C', person: 'Awa', from: '2026-12-01', until: '2026-12-15' } }, 'it', t)

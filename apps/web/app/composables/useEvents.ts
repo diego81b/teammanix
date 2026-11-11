@@ -1,4 +1,4 @@
-import type { EventDto, OpponentDto, SeriesDto, VenueDto } from '../types/api'
+import type { EventDto, OpponentDto, SeriesDto, SeriesRemovalDto, VenueDto } from '../types/api'
 import type { EventPayload } from '../utils/event'
 import type { SeriesCreatePayload, SeriesEditPayload } from '../utils/series'
 
@@ -23,6 +23,10 @@ export function useEvents() {
     /** "All future ones". "Only this one" is `edit` on the event. */
     editSeries: (id: string, data: SeriesEditPayload) =>
       api<SeriesDto>(`/series/${id}`, { method: 'PATCH', body: { ...data } }),
+    /** The numbers the removal of the future sessions would give. Nothing changes. */
+    removalPreview: (id: string) => api<SeriesRemovalDto>(`/series/${id}/future-sessions`),
+    /** Removes the sessions whose attendance check has not opened and ends the series before them. */
+    removeFuture: (id: string) => api<SeriesRemovalDto>(`/series/${id}/future-sessions`, { method: 'DELETE' }),
     cancel: (id: string) => api<EventDto>(`/events/${id}/cancel`, { method: 'POST', body: {} }),
     postpone: (id: string) => api<EventDto>(`/events/${id}/postpone`, { method: 'POST', body: {} }),
     createVenue: (data: { name: string, address?: string }) =>

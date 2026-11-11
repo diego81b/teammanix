@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDate, formatDay, formatMonth, weekdayLabels } from '../../app/utils/date'
+import { formatDate, formatDay, formatMonth, formatShortDay, weekdayLabels } from '../../app/utils/date'
 
 describe('formatDate', () => {
   it('formats an ISO date without shifting the timezone', () => {
@@ -20,6 +20,14 @@ describe('formatDay', () => {
     expect(formatDay('2026-10-06', 'en')).toBe('Tuesday 6 October')
   })
   it('without a valid day it returns a dash', () => expect(formatDay('', 'it')).toBe('-'))
+})
+
+describe('formatShortDay', () => {
+  it('writes a short weekday, the day and a short month, without a comma', () => {
+    expect(formatShortDay('2026-12-03', 'it')).toBe('gio 3 dic')
+    expect(formatShortDay('2026-12-03', 'en')).toBe('Thu 3 Dec')
+  })
+  it('without a valid day it returns a dash', () => expect(formatShortDay('3 dec', 'it')).toBe('-'))
 })
 
 describe('formatMonth and weekdayLabels', () => {

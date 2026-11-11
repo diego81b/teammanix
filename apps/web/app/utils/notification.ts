@@ -1,4 +1,4 @@
-import { formatDate } from './date'
+import { formatDate, formatShortDay } from './date'
 import { splitInstant } from './event'
 
 /**
@@ -69,12 +69,25 @@ function when(start: string | number | undefined, locale: string): string {
   return `${formatDate(date, locale)} · ${time}`
 }
 
+/** How many days a text lists before it counts the rest: a long series must not fill a lock screen. */
+const LISTED_DAYS = 5
+
+/** The days of a removed series (`YYYY-MM-DD` joined by commas): the first few, then how many more. */
+function removedDays(days: string | number | undefined, locale: string, t: Translate): string {
+  const all = str(days).split(',').filter(Boolean)
+  const shown = all.slice(0, LISTED_DAYS).map(d => formatShortDay(d, locale)).join(', ')
+  const rest = all.length - LISTED_DAYS
+  return rest > 0 ? `${shown} ${t('notifications.more', { n: rest })}` : shown
+}
+
 /** Which of the texts of a type applies: some types have a plural or an optional part. */
 function variant(n: Pick<NotificationItem, 'type' | 'params'>): string {
   const p = n.params
   switch (n.type) {
     case 'event_modified':
       return Number(p.count) > 1 || p.kind === 'series' ? 'event_modified_many' : 'event_modified'
+    case 'event_cancelled':
+      return p.kind === 'series' ? 'event_cancelled_many' : 'event_cancelled'
     case 'absence_declared':
       return p.until ? 'absence_declared' : 'absence_declared_open'
     case 'certificates_due':
@@ -91,6 +104,7 @@ export function notificationText(n: Pick<NotificationItem, 'type' | 'params'>, l
   const p = n.params
   const params: Record<string, unknown> = { ...p, what: what(p, t), when: when(p.start, locale) }
   if (n.type === 'certificate_expiring') params.inDays = inDays(p.days, t)
+  if (n.type === 'event_cancelled' && p.kind === 'series') params.days = removedDays(p.days, locale, t)
   for (const key of ['expiry', 'from', 'until']) if (p[key]) params[key] = formatDate(String(p[key]), locale)
   const v = variant(n)
   return { title: t(`notifications.types.${v}.title`, params), body: t(`notifications.types.${v}.body`, params) }

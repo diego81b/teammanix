@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  canConfirmRemoval,
+  canRemoveFuture,
   emptyRepeat,
   formFromSeries,
   minutesBetween,
+  removalMessage,
   repeatIssue,
   seriesCreatePayload,
   seriesEditPayload,
@@ -10,7 +13,7 @@ import {
   type RepeatForm,
 } from '../../app/utils/series'
 import type { EventForm } from '../../app/utils/event'
-import type { EventDto, SeriesDto } from '../../app/types/api'
+import type { EventDto, SeriesDto, SeriesRemovalDto } from '../../app/types/api'
 
 const form = (over: Partial<EventForm> = {}): EventForm => ({
   type: 'training', title: '', date: '2026-10-06', startTime: '18:00', endTime: '19:30',
@@ -125,5 +128,48 @@ describe('formFromSeries', () => {
   it('ends the form time at start plus the duration, empty title and venue when the series has none', () => {
     const { form: f } = formFromSeries(series({ title: null, venue: null, timeStart: '17:30', durationMinutes: 45 }), event)
     expect(f).toMatchObject({ title: '', venueId: '', startTime: '17:30', endTime: '18:15' })
+  })
+})
+
+describe('canRemoveFuture', () => {
+  it('is offered on a session that comes from a series, whatever its status', () => {
+    expect(canRemoveFuture({ seriesId: 'sr1' })).toBe(true)
+  })
+  it('is not offered on an event planned one by one', () => {
+    expect(canRemoveFuture({ seriesId: null })).toBe(false)
+  })
+})
+
+describe('canConfirmRemoval', () => {
+  it('needs the numbers and at least one session to remove', () => {
+    expect(canConfirmRemoval(null)).toBe(false)
+    expect(canConfirmRemoval({ sessions: 0, players: 0, kept: 3 })).toBe(false)
+    expect(canConfirmRemoval({ sessions: 1, players: 0, kept: 0 })).toBe(true)
+  })
+})
+
+describe('removalMessage', () => {
+  /** A `t` that shows the key and the params, so a test sees which text was chosen and what fills it. */
+  const t = (key: string, params: Record<string, unknown> = {}) => `${key}${Object.keys(params).length ? ` ${JSON.stringify(params)}` : ''}`
+  const r = (over: Partial<SeriesRemovalDto>): SeriesRemovalDto => ({ sessions: 4, players: 12, kept: 6, ...over })
+
+  it('says how many sessions go, how many players are touched and how many past ones stay', () => {
+    expect(removalMessage(r({}), t)).toBe(
+      'events.removeFuture.sessions.other {"n":4} events.removeFuture.players.other {"n":12} events.removeFuture.kept.other {"n":6}',
+    )
+  })
+  it('picks the singular for one', () => {
+    const text = removalMessage(r({ sessions: 1, players: 1, kept: 1 }), t)
+    expect(text).toContain('events.removeFuture.sessions.one {"n":1}')
+    expect(text).toContain('events.removeFuture.players.one {"n":1}')
+    expect(text).toContain('events.removeFuture.kept.one {"n":1}')
+  })
+  it('has its own text for no players and no past session', () => {
+    const text = removalMessage(r({ players: 0, kept: 0 }), t)
+    expect(text).toContain('events.removeFuture.players.none')
+    expect(text).toContain('events.removeFuture.kept.none')
+  })
+  it('says there is nothing to remove when no session goes', () => {
+    expect(removalMessage(r({ sessions: 0, players: 0 }), t)).toBe('events.removeFuture.nothing')
   })
 })

@@ -72,6 +72,15 @@ describe('useEvents', () => {
     expect(last['PATCH /series/sr1']).toMatchObject({ method: 'PATCH', body: { weekdays: ['MO'], endDate: null, timeStart: '19:00' } })
   })
 
+  it('reads what removing the future sessions would do, then removes them', async () => {
+    endpoint('/series/sr1/future-sessions', { sessions: 4, players: 12, kept: 6 })
+    const ev = useEvents()
+    expect(await ev.removalPreview('sr1')).toEqual({ sessions: 4, players: 12, kept: 6 })
+    expect(last['GET /series/sr1/future-sessions']).toMatchObject({ method: 'GET' })
+    expect(await ev.removeFuture('sr1')).toEqual({ sessions: 4, players: 12, kept: 6 })
+    expect(last['DELETE /series/sr1/future-sessions']).toMatchObject({ method: 'DELETE' })
+  })
+
   it('creates and edits a venue', async () => {
     endpoint('/venues', { id: 'v1' })
     endpoint('/venues/v1', { id: 'v1' })

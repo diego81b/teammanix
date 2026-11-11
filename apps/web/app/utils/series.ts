@@ -1,4 +1,4 @@
-import type { EventDto, EventType, SeriesDto, Weekday } from '../types/api'
+import type { EventDto, EventType, SeriesDto, SeriesRemovalDto, Weekday } from '../types/api'
 import { splitInstant, type EventForm } from './event'
 
 export const WEEKDAYS: readonly Weekday[] = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
@@ -131,4 +131,23 @@ export function formFromSeries(s: SeriesDto, e: EventDto): { form: EventForm, re
     },
     repeat: { on: true, weekdays: [...s.weekdays], intervalWeeks: s.intervalWeeks, endDate: s.endDate },
   }
+}
+
+/** "Remove the future sessions" is offered on any session that comes from a series, cancelled or postponed ones included. */
+export const canRemoveFuture = (e: Pick<EventDto, 'seriesId'>): boolean => e.seriesId !== null
+
+/** The confirmation needs the numbers, and something to remove. */
+export const canConfirmRemoval = (r: SeriesRemovalDto | null): boolean => r !== null && r.sessions > 0
+
+/** "none", "one" or "other": the texts differ in the languages, so they are keys, not a plural. */
+const pick = (n: number, none: boolean): 'none' | 'one' | 'other' => (n === 0 && none ? 'none' : n === 1 ? 'one' : 'other')
+
+/** The confirmation: how many sessions go, how many players have a call-up or a response, how many past sessions stay. */
+export function removalMessage(r: SeriesRemovalDto, t: (key: string, params?: Record<string, unknown>) => string): string {
+  if (r.sessions === 0) return t('events.removeFuture.nothing')
+  return [
+    t(`events.removeFuture.sessions.${pick(r.sessions, false)}`, { n: r.sessions }),
+    t(`events.removeFuture.players.${pick(r.players, true)}`, { n: r.players }),
+    t(`events.removeFuture.kept.${pick(r.kept, true)}`, { n: r.kept }),
+  ].join(' ')
 }

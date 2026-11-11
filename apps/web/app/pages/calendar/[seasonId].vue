@@ -36,6 +36,7 @@
       </CalendarView>
 
       <EventForm v-model:open="open.form" :team-id="data.access.teamId" :season-id="seasonId" :event="choice" @saved="load" />
+      <RemoveFutureSessions v-model:open="open.removeFuture" :series-id="seriesChoice" @removed="load" />
       <UModal
         v-model:open="open.confirm"
         :title="confirm === 'cancel' ? $t('events.cancelTitle') : $t('events.postponeTitle')"
@@ -61,6 +62,7 @@ import type { DropdownMenuItem } from '@nuxt/ui'
 import type { EventDto } from '~/types/api'
 import { eventHeading } from '~/utils/calendar'
 import { eventActions } from '~/utils/event'
+import { canRemoveFuture } from '~/utils/series'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -81,8 +83,9 @@ const { data, loading, error, reload: load } = useLoad(async () => {
 })
 useHead({ title: () => `${t('events.title')} · TeamManix` })
 
-const open = reactive({ form: false, confirm: false })
+const open = reactive({ form: false, confirm: false, removeFuture: false })
 const choice = ref<EventDto | null>(null)
+const seriesChoice = ref<string | null>(null)
 const confirm = ref<'cancel' | 'postpone'>('cancel')
 
 function openNew() {
@@ -101,6 +104,10 @@ function menu(e: EventDto): DropdownMenuItem[][] {
   if (can.edit) items.push({ label: t('common.edit'), icon: 'i-tm-edit', onSelect: () => { choice.value = e; open.form = true } })
   if (can.postpone) items.push({ label: t('events.postpone'), icon: 'i-tm-clock', onSelect: ask('postpone') })
   if (can.cancel) items.push({ label: t('events.cancel'), icon: 'i-tm-calendar-x', color: 'error' as const, onSelect: ask('cancel') })
+  // Not tied to the status: cancelled and postponed sessions of a series go too, and the series can be cut from any of them.
+  if (canRemoveFuture(e)) {
+    items.push({ label: t('events.removeFuture.action'), icon: 'i-tm-trash', color: 'error' as const, onSelect: () => { seriesChoice.value = e.seriesId; open.removeFuture = true } })
+  }
   return items.length ? [items] : []
 }
 

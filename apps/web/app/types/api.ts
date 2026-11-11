@@ -317,6 +317,16 @@ export interface SeriesDto {
   eventCount: number
 }
 
+/** What removing the future sessions of a series does (the confirmation) or did (the result). */
+export interface SeriesRemovalDto {
+  /** Sessions that go. */
+  sessions: number
+  /** Players with a call-up or a response on them. */
+  players: number
+  /** Sessions of the series that stay: held, in progress or with the attendance check open. */
+  kept: number
+}
+
 /** An event in the personal calendar or the home: the event plus where it belongs. */
 export interface CalendarEntryDto extends EventDto {
   teamName: string

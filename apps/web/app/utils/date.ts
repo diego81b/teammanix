@@ -16,6 +16,14 @@ export function formatDay(day: string, language: string): string {
   return new Intl.DateTimeFormat(LOCALE[language] ?? 'it-IT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(d).replace(',', '')
 }
 
+/** Local day `YYYY-MM-DD` as a short weekday, day and short month ("gio 3 dic"), for a list of days. */
+export function formatShortDay(day: string, language: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return '-'
+  const d = new Date(`${day}T00:00:00Z`)
+  if (Number.isNaN(d.getTime())) return '-'
+  return new Intl.DateTimeFormat(LOCALE[language] ?? 'it-IT', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(d).replace(',', '')
+}
+
 /** Month and year ("ottobre 2026"). `month` is 1 to 12. */
 export function formatMonth(m: { year: number, month: number }, language: string): string {
   const d = new Date(Date.UTC(m.year, m.month - 1, 1))
