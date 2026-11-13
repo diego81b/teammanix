@@ -1,7 +1,7 @@
 import { EntityManager } from '@mikro-orm/postgresql';
 import { BadRequestException, ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
 import type { AuthContext } from '../common/auth-context';
-import { EventStatus, EventType, HomeAway, NotificationType, SeasonStatus } from '../entities/enums';
+import { EnrollmentType, EventStatus, EventType, HomeAway, NotificationType, SeasonStatus } from '../entities/enums';
 import { Enrollment } from '../entities/enrollment.entity';
 import { Event } from '../entities/event.entity';
 import { Season } from '../entities/season.entity';
@@ -22,6 +22,7 @@ import {
   type EventFields,
   type EventIssue,
 } from './event.rules';
+import { statisticsView } from '../statistics/statistics.rules';
 import { canReadRoster, canReadSeasonEvents } from './visibility';
 
 export interface EventDto {
@@ -214,16 +215,24 @@ export class EventsService {
   }
 
   /** The team of the season and whether the person can plan events (policy in scope and active season) and record suspensions (policy in scope, season not closed) now, and whether they read the declared absences of the team (staff of the season, managers in scope, admin) and the certificates due (policy `certificates.status` in scope). For the UI only, the writes check again. */
-  async access(a: AuthContext, seasonId: string): Promise<{ teamId: string; canManage: boolean; canSuspend: boolean; canSeeAbsences: boolean; canSeeCertificates: boolean; canSeeRoster: boolean }> {
+  async access(a: AuthContext, seasonId: string): Promise<{ teamId: string; canManage: boolean; canSuspend: boolean; canSeeAbsences: boolean; canSeeCertificates: boolean; canSeeRoster: boolean; canSeeStatistics: boolean }> {
     const target = await this.authz.target(a.clubId as string, { seasonId }); // 404 SEASON_NOT_FOUND
     const season = await this.em.findOneOrFail(Season, { id: seasonId, club: a.clubId as string }, { filters: false, fields: ['status'] });
     const canManage = canPlanEvents(season.status) && (await this.authz.can(a, 'events.manage', { seasonId }));
     const canSuspend = season.status !== SeasonStatus.CLOSED && (await this.authz.can(a, 'suspensions.manage', { seasonId }));
-    const own = a.personId ? await this.em.find(Enrollment, { person: a.personId, season: seasonId }, { filters: false, fields: ['type'] }) : [];
-    const canSeeAbsences = canReadRoster(a.roles, own.map((e) => e.type), { id: seasonId, activityId: target.activityId as string, teamId: target.teamId as string });
+    const own = a.personId ? await this.em.find(Enrollment, { person: a.personId, season: seasonId }, { filters: false, fields: ['type', 'endedAt'] }) : [];
+    const seasonTarget = { id: seasonId, activityId: target.activityId as string, teamId: target.teamId as string };
+    const canSeeStatistics =
+      statisticsView({
+        isStaff: own.some((e) => e.type === EnrollmentType.STAFF && e.endedAt === null),
+        isAdmin: a.isAdmin,
+        readsSeason: a.isAdmin || canReadSeasonEvents(a.roles, [], seasonTarget),
+        isPlayer: own.some((e) => e.type === EnrollmentType.PLAYER),
+      }) !== 'none';
+    const canSeeAbsences = canReadRoster(a.roles, own.map((e) => e.type), seasonTarget);
     const canSeeCertificates = await this.authz.can(a, 'certificates.status', { seasonId });
     // Same rule as the absences of the team: who reads the roster of the season.
-    return { teamId: target.teamId as string, canManage, canSuspend, canSeeAbsences, canSeeCertificates, canSeeRoster: canSeeAbsences };
+    return { teamId: target.teamId as string, canManage, canSuspend, canSeeAbsences, canSeeCertificates, canSeeRoster: canSeeAbsences, canSeeStatistics };
   }
 
   /** Competition names already used in the season, to suggest them in the form. */

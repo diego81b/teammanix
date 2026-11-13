@@ -16,8 +16,9 @@
         <div class="flex flex-wrap items-center justify-between gap-3">
           <h1 class="text-2xl font-bold">{{ $t('events.title') }}</h1>
           <div class="flex flex-wrap gap-2">
+            <UButton v-if="data.access.canSeeStatistics" color="neutral" variant="outline" size="lg" class="min-h-11" icon="i-tm-trend-up" :label="$t('statistics.title')" :to="`/statistics/${seasonId}`" />
             <UButton v-if="data.access.canSeeRoster" color="neutral" variant="outline" size="lg" class="min-h-11" icon="i-tm-users" :label="$t('teamRoster.title')" :to="`/team-roster/${seasonId}`" />
-            <UButton v-if="data.access.canSeeAbsences"color="neutral" variant="outline" size="lg" class="min-h-11" icon="i-tm-calendar-x" :label="$t('teamAbsences.title')" :to="`/team-absences/${seasonId}`" />
+            <UButton v-if="data.access.canSeeAbsences" color="neutral" variant="outline" size="lg" class="min-h-11" icon="i-tm-calendar-x" :label="$t('teamAbsences.title')" :to="`/team-absences/${seasonId}`" />
             <UButton v-if="data.access.canSeeCertificates" color="neutral" variant="outline" size="lg" class="min-h-11" icon="i-tm-shield" :label="$t('certificatesDue.title')" :to="`/team-certificates/${seasonId}`" />
             <UButton v-if="data.access.canSuspend" color="neutral" variant="outline" size="lg" class="min-h-11" icon="i-tm-ban" :label="$t('suspensions.title')" :to="`/suspensions/${seasonId}`" />
             <UButton v-if="data.access.canManage" size="lg" class="min-h-11" icon="i-tm-plus" :label="$t('events.newEvent')" @click="openNew" />

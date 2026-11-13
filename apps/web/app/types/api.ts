@@ -598,3 +598,42 @@ export type AttendanceDto =
     mine: { enrollmentId: string, outcome: AttendanceOutcome | null } | null
     staffPresent: { enrollmentId: string, name: string | null, surname: string | null, staffRole: StaffRole | null }[]
   }
+
+/** Counts of the outcomes recorded plus the days and matches missed, for one player or for the whole team (#20). `injured` is a count only. */
+export interface StatisticsTotals {
+  present: number
+  late: number
+  absentExcused: number
+  absent: number
+  injured: number
+  attended: number
+  /** Attended over the events recorded where the person was available, 0 to 1; null when none. */
+  rate: number | null
+  absenceDays: number
+  suspendedMatches: number
+}
+
+export interface StatisticsRow extends StatisticsTotals {
+  enrollmentId: string
+  name: string | null
+  surname: string | null
+  disabled: boolean
+}
+
+export interface SeasonStatistics {
+  view: 'full' | 'totals' | 'own'
+  teamName: string
+  seasonName: string
+  seasonStatus: SeasonStatus
+  rows: StatisticsRow[]
+  totals: StatisticsTotals | null
+  mine: StatisticsRow | null
+}
+
+export interface OwnStatistics {
+  seasonId: string
+  teamName: string
+  seasonName: string
+  seasonStatus: SeasonStatus
+  mine: StatisticsRow
+}

@@ -257,6 +257,17 @@ describe('season statistics (slice 5, rules 10 to 13)', () => {
     });
   });
 
+  describe('events access', () => {
+    it('flags the statistics for whoever reads them: staff, admin, manager, player; not another team', async () => {
+      const s = await club('st-40@test.it');
+      const m = await s.manager('mg');
+      const flag = async (token: string) => (await send(token, 'GET', `/seasons/${s.t1.seasonId}/events-access`)).body.canSeeStatistics;
+      expect([await flag(s.coach1.token), await flag(s.admin), await flag(m.token), await flag(s.player.token)]).toEqual([true, true, true, true]);
+      // A coach of another team cannot even read the events of this season, so the flag is not asked of them.
+      expect((await send(s.coach2.token, 'GET', `/seasons/${s.t1.seasonId}/events-access`)).body.canSeeStatistics ?? false).toBe(false);
+    });
+  });
+
   describe('audit', () => {
     it('every read is audited with the season and the view, never the figures', async () => {
       const s = await club('st-30@test.it');
