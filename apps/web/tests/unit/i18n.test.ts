@@ -74,6 +74,33 @@ describe('API contract', () => {
   }
 })
 
+// Literal keys in the app sources ($t('a.b'), t('a.b'), keypath="a.b") must exist, or the page shows the key.
+describe('keys used in the app', () => {
+  const root = join(__dirname, '../../app')
+  const files = (d: string): string[] =>
+    readdirSync(d).flatMap((f) => {
+      const p = join(d, f)
+      if (statSync(p).isDirectory()) return files(p)
+      return /\.(vue|ts)$/.test(p) ? [p] : []
+    })
+  const used = [
+    ...new Set(files(root).flatMap((f) => {
+      const src = readFileSync(f, 'utf8')
+      return [
+        ...[...src.matchAll(/(?<![\w.])\$?t\(\s*'([a-zA-Z][\w.]*)'/g)].map(m => m[1]!),
+        ...[...src.matchAll(/keypath="([a-zA-Z][\w.]*)"/g)].map(m => m[1]!),
+      ]
+    })),
+  ].sort()
+
+  it('finds keys in the sources (the test is not empty)', () => {
+    expect(used.length).toBeGreaterThan(100)
+  })
+  it('every literal key has a text in it', () => {
+    expect(used.filter(k => !flat.it![k])).toEqual([])
+  })
+})
+
 // Sport profiles come from the API as codes (seed): sport name and positions are translated here.
 describe('sport profiles (API seed)', () => {
   const seed = readFileSync(join(__dirname, '../../../api/src/seed/sport-profiles.ts'), 'utf8')
