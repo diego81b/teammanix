@@ -988,11 +988,11 @@ const it = {
     },
     warnNoCoachAvailable: {
       label: 'Avvisa se nessun allenatore è disponibile',
-      text: 'Se attivo, lo staff vede un avviso quando nessun allenatore ha dichiarato la disponibilità per un evento.',
+      text: 'Se attivo, lo staff vede un avviso quando nessuno dei ruoli scelti qui sotto ha dato la disponibilità per un evento.',
     },
     coachRoles: {
-      label: 'Ruoli che contano come allenatore',
-      text: 'Servono per l\'avviso sulla disponibilità. Ne serve almeno uno.',
+      label: 'Ruoli che devono dare la disponibilità',
+      text: 'L\'avviso compare se nessuno di questi ruoli ha risposto "Ci sono" all\'evento. Con solo Allenatore selezionato, la risposta del vice non lo spegne. Ne serve almeno uno.',
       atLeastOne: 'Deve restare almeno un ruolo selezionato.',
     },
   },

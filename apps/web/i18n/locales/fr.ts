@@ -984,11 +984,11 @@ const fr: typeof it = {
     },
     warnNoCoachAvailable: {
       label: 'Avertir si aucun entraîneur n\'est disponible',
-      text: 'Si activé, le staff voit un avertissement quand aucun entraîneur n\'a déclaré sa disponibilité pour un événement.',
+      text: 'Si activé, le staff voit un avertissement quand aucun des rôles choisis ci-dessous n\'a déclaré sa disponibilité pour un événement.',
     },
     coachRoles: {
-      label: 'Rôles comptant comme entraîneur',
-      text: 'Utilisés pour l\'avertissement de disponibilité. Il en faut au moins un.',
+      label: 'Rôles qui doivent être disponibles',
+      text: 'L\'avertissement s\'affiche si personne dans ces rôles n\'a répondu "Je viens" à l\'événement. Avec seulement Entraîneur sélectionné, la réponse de l\'adjoint ne le supprime pas. Il en faut au moins un.',
       atLeastOne: 'Au moins un rôle doit rester sélectionné.',
     },
   },

@@ -365,7 +365,7 @@ const en: typeof it = {
     coach: 'Coach',
     assistant_coach: 'Assistant coach',
     trainer: 'Trainer',
-    escort: 'Team escort',
+    escort: 'Team official',
     other: 'Other',
   },
   sport: {
@@ -984,11 +984,11 @@ const en: typeof it = {
     },
     warnNoCoachAvailable: {
       label: 'Warn when no coach is available',
-      text: 'When on, staff see a warning when no coach has declared available for an event.',
+      text: 'When on, staff see a warning when nobody in the roles chosen below has declared available for an event.',
     },
     coachRoles: {
-      label: 'Roles that count as coach',
-      text: 'Used for the availability warning. At least one is required.',
+      label: 'Roles that must be available',
+      text: 'The warning shows when nobody in these roles has answered "I am in" for the event. With only Coach selected, the assistant coach\'s answer does not clear it. At least one is required.',
       atLeastOne: 'At least one role must stay selected.',
     },
   },

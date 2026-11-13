@@ -26,7 +26,7 @@
             @update:model-value="(v: boolean) => change(s.key, { [s.key]: v })"
           />
         </li>
-        <li class="p-4">
+        <li v-if="data.warnNoCoachAvailable" class="p-4">
           <fieldset class="space-y-3" :aria-describedby="saveErrorRoles ? 'coach-roles-error' : undefined">
             <legend class="font-medium">{{ $t('settings.coachRoles.label') }}</legend>
             <p class="text-sm text-muted">{{ $t('settings.coachRoles.text') }}</p>
