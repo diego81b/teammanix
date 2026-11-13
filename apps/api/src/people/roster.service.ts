@@ -1,6 +1,6 @@
 import { UniqueConstraintViolationException } from '@mikro-orm/core';
 import { EntityManager } from '@mikro-orm/postgresql';
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { AuthorizationsService } from '../permissions/authorizations.service';
 import type { SummaryCertificate } from '../certificates/certificates.service';
@@ -10,6 +10,7 @@ import { AuditAction, SeasonStatus, StaffRole, EnrollmentStatus, EnrollmentType 
 import { Enrollment } from '../entities/enrollment.entity';
 import { Person } from '../entities/person.entity';
 import { Season } from '../entities/season.entity';
+import { canReadRoster, canReadSeasonEvents } from '../events/visibility';
 import { editable } from '../structure/season.rules';
 import type { EnrollmentDto, EditEnrollmentDto, EnrollmentStatusDto } from './dto-admin';
 import { type EnrollmentData, type EnrollmentError, allowedPosition, validateEnrollment } from './enrollment.rules';
@@ -47,6 +48,17 @@ export async function startingStatus(em: EntityManager, personId: string, type: 
     season: { status: { $ne: SeasonStatus.CLOSED } },
   });
   return injured > 0 ? EnrollmentStatus.INJURED : EnrollmentStatus.AVAILABLE;
+}
+
+/** The roster as staff reads it (#29): who is in the team, no contacts. Certificates only with `certificates.status`. */
+export interface TeamRoster {
+  teamName: string;
+  seasonName: string;
+  seasonStatus: SeasonStatus;
+  /** The person can set the injured state (`people.manage`, season not closed). For the UI only: the route checks again. */
+  canSetStatus: boolean;
+  canSeeCertificates: boolean;
+  rows: RosterRow[];
 }
 
 export const ERRORS: Record<EnrollmentError, { message: string; code: string }> = {
@@ -107,6 +119,28 @@ export class RosterService {
       surname: i.person.surname,
       certificate: certificates.get(i.person.id) ?? null,
     }));
+  }
+
+  /**
+   * The roster of a season for staff of that season, managers in scope and the admin (same rule as the declared
+   * absences of the team). A player of the team is refused (403); who has no relation with the team gets 404, as for
+   * a season that does not exist: players of other teams are not even visible.
+   */
+  async teamRoster(a: AuthContext, seasonId: string): Promise<TeamRoster> {
+    const target = await this.authz.target(a.clubId as string, { seasonId }); // 404 SEASON_NOT_FOUND
+    const season = await this.em.findOneOrFail(Season, { id: seasonId, club: a.clubId as string }, { filters: false, populate: ['team'] });
+    const own = a.personId ? await this.em.find(Enrollment, { person: a.personId, season: seasonId }, { filters: false, fields: ['type'] }) : [];
+    const scope = { id: seasonId, activityId: target.activityId as string, teamId: target.teamId as string };
+    if (!canReadRoster(a.roles, own.map((e) => e.type), scope)) {
+      if (!canReadSeasonEvents(a.roles, own.length ? [seasonId] : [], scope)) {
+        throw new NotFoundException({ message: 'Season not found', code: 'SEASON_NOT_FOUND' });
+      }
+      throw new ForbiddenException({ message: 'You do not have permission for this operation', code: 'PERMISSION_DENIED' });
+    }
+    const canSeeCertificates = await this.authz.can(a, 'certificates.status', { seasonId });
+    const canSetStatus = season.status !== SeasonStatus.CLOSED && (await this.authz.can(a, 'people.manage', { seasonId }));
+    const rows = (await this.roster(seasonId)).map((r) => ({ ...r, certificate: canSeeCertificates ? r.certificate : null }));
+    return { teamName: season.team.name, seasonName: season.name, seasonStatus: season.status, canSetStatus, canSeeCertificates, rows };
   }
 
   async enroll(a: AuthContext, seasonId: string, dto: EnrollmentDto): Promise<EnrollmentOut> {
