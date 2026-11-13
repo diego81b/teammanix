@@ -27,7 +27,21 @@
 
       <p v-if="data.list.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">{{ $t('suspensions.none') }}</p>
       <template v-else>
-        <template v-for="g in groups" :key="g.key">
+        <div class="flex gap-1" role="group" :aria-label="$t('calendar.viewLabel')">
+          <UButton
+            v-for="v in VIEWS"
+            :key="v"
+            size="lg"
+            class="min-h-11"
+            :color="view === v ? 'primary' : 'neutral'"
+            :variant="view === v ? 'soft' : 'outline'"
+            :aria-pressed="view === v"
+            :label="$t(v === 'list' ? 'suspensions.viewList' : 'suspensions.viewCalendar')"
+            @click="view = v"
+          />
+        </div>
+        <SuspensionCalendar v-if="view === 'calendar'" :suspensions="data.list" :match-days="data.matchDays" />
+        <template v-for="g in view === 'list' ? groups : []" :key="g.key">
           <section v-if="g.items.length" class="space-y-2" :aria-label="$t(`suspensions.${g.key}`)">
             <h2 class="text-sm font-semibold text-muted">{{ $t(`suspensions.${g.key}`) }} ({{ g.items.length }})</h2>
             <ul class="space-y-2">
@@ -66,6 +80,7 @@
 
 <script setup lang="ts">
 import type { SeasonSuspension } from '~/types/api'
+import { matchDays } from '~/utils/suspension-calendar'
 import { splitSuspensions } from '~/utils/suspension'
 
 const { t } = useI18n()
@@ -76,9 +91,17 @@ const events = useEvents()
 const seasonId = computed(() => String(route.params.seasonId))
 useHead({ title: () => `${t('suspensions.title')} · TeamManix` })
 
+const VIEWS = ['list', 'calendar'] as const
+const view = ref<(typeof VIEWS)[number]>('list')
+
 const { data, loading, error, reload: load } = useLoad(async () => {
-  const [context, list] = await Promise.all([suspensions.context(seasonId.value), suspensions.ofSeason(seasonId.value)])
-  return { context, list }
+  // The match days only underline the calendar: without them the view still works.
+  const [context, list, days] = await Promise.all([
+    suspensions.context(seasonId.value),
+    suspensions.ofSeason(seasonId.value),
+    events.list(seasonId.value).then(matchDays).catch(() => new Set<string>()),
+  ])
+  return { context, list, matchDays: days }
 })
 
 const groups = computed(() => {
