@@ -198,4 +198,8 @@ export enum AuditAction {
   ATTENDANCE_MODIFIED = 'attendance_modified',
   ATTENDANCE_CLEARED = 'attendance_cleared',
   STATISTICS_READ = 'statistics_read',
+  EXPECTED_INJURY_CREATED = 'expected_injury_created',
+  EXPECTED_INJURY_MODIFIED = 'expected_injury_modified',
+  EXPECTED_INJURY_ENDED = 'expected_injury_ended',
+  EXPECTED_INJURY_READ = 'expected_injury_read',
 }

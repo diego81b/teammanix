@@ -8,11 +8,13 @@ import type { AuthContext } from '../common/auth-context';
 import { Club } from '../entities/club.entity';
 import { Enrollment } from '../entities/enrollment.entity';
 import { Season } from '../entities/season.entity';
-import { AuditAction, CallupResponse, EnrollmentType, NotificationType, ReasonDecline, SeasonStatus, StaffRole } from '../entities/enums';
+import { AuditAction, CallupResponse, EnrollmentStatus, EnrollmentType, NotificationType, ReasonDecline, SeasonStatus, StaffRole } from '../entities/enums';
 import { canPlanEvents, editableEvent, localDate } from '../events/event.rules';
 import { NotificationsService } from '../notifications/notifications.service';
 import { canReadRoster } from '../events/visibility';
 import { ResponsesService } from '../callups/responses.service';
+import { currentByPerson } from '../people/expected-injury.loader';
+import type { ExpectedPeriod } from '../people/expected-injury.rules';
 import type { AbsenceDto, DeclineDto } from './dto';
 import { covers, declinable, freeDays, mergePeriods, validatePeriod, type Period } from './absence.rules';
 
@@ -55,6 +57,9 @@ export interface MyEnrollmentAbsences {
   seasonStatus: SeasonStatus;
   seasonStart: string;
   seasonEnd: string;
+  /** Players only: the person's own state and the expected injury still running (#21). Staff get `available` and null. */
+  status: EnrollmentStatus;
+  expectedInjury: ExpectedPeriod | null;
   absences: AbsenceOut[];
 }
 
@@ -87,6 +92,9 @@ export class AbsencesService {
       { populate: ['season.team'], orderBy: { season: { startDate: 'desc' } } },
     );
     const rows = await this.em.find(Absence, { enrollment: { $in: enrollments.map((e) => e.id) } });
+    const expected = enrollments.some((e) => e.type === EnrollmentType.PLAYER) ? (await currentByPerson(this.em, [a.personId])).get(a.personId) ?? null : null;
+    // The dates of an expected injury are health data (art. 9): the person's own read is audited too, never the dates.
+    if (expected) await this.audit.register({ action: AuditAction.EXPECTED_INJURY_READ, userId: a.userId, clubId: a.clubId, entity: 'Person', entityId: a.personId });
     return enrollments.map((e) => ({
       enrollmentId: e.id,
       type: e.type,
@@ -95,6 +103,8 @@ export class AbsencesService {
       seasonStatus: e.season.status,
       seasonStart: e.season.startDate,
       seasonEnd: e.season.endDate,
+      status: e.type === EnrollmentType.PLAYER ? e.status : EnrollmentStatus.AVAILABLE,
+      expectedInjury: e.type === EnrollmentType.PLAYER ? expected : null,
       absences: rows.filter((r) => r.enrollment.id === e.id).map(out).sort(byStart),
     }));
   }

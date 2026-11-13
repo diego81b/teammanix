@@ -32,6 +32,8 @@ export interface Candidate {
   absence?: { until: string | null } | null;
   /** Suspension that covers this match (rule 13): its place in the count, and the end day for a period. Matches only. */
   suspension?: { match: number; total: number; until: string | null } | null;
+  /** Expected injury that covers the day of the event (#21): `until` is the expected return. Never blocks. */
+  expectedInjury?: { until: string } | null;
 }
 
 export interface EventContext {
@@ -70,7 +72,17 @@ export const suspensionProvider: ReasonProvider = (c, ctx) =>
     ? [{ code: 'suspended', severity: 'hard', match: c.suspension.match, total: c.suspension.total, ...(c.suspension.until ? { until: c.suspension.until } : {}) }]
     : [];
 
-export const DEFAULT_PROVIDERS: readonly ReasonProvider[] = [statusProvider, certificateProvider, absenceProvider, suspensionProvider];
+/**
+ * A player staff expect to be out (#21) is "probably injured": a warning only, staff stay in control. Once the injury is
+ * confirmed the hard `injured` reason says it all, so the warning goes.
+ */
+export const expectedInjuryProvider: ReasonProvider = (c) =>
+  c.expectedInjury && c.status !== EnrollmentStatus.INJURED ? [{ code: 'probably_injured', severity: 'warning', until: c.expectedInjury.until }] : [];
+
+/** Health data (art. 9): only staff of the season and the admin read the probably injured warning, managers never. */
+export const withoutExpectedInjury = (reasons: readonly Reason[]): Reason[] => reasons.filter((r) => r.code !== 'probably_injured');
+
+export const DEFAULT_PROVIDERS: readonly ReasonProvider[] = [statusProvider, certificateProvider, absenceProvider, suspensionProvider, expectedInjuryProvider];
 
 export function evaluate(candidate: Candidate, ctx: EventContext, providers: readonly ReasonProvider[] = DEFAULT_PROVIDERS): Reason[] {
   return providers.flatMap((p) => p(candidate, ctx));

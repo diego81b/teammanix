@@ -13,11 +13,13 @@ import { CallupResponse, EnrollmentStatus, EnrollmentType, EventStatus, EventTyp
 import { Event } from '../entities/event.entity';
 import { localDate } from '../events/event.rules';
 import { loadMatches, loadSuspensions, suspensionBlock } from '../suspensions/suspension.loader';
+import { expectedByPerson } from '../people/expected-injury.loader';
+import { expectedOn } from '../people/expected-injury.rules';
 import { toEventDto, type EventDto } from '../events/events.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AuthorizationsService } from '../permissions/authorizations.service';
 import type { CallUpDto, PlacementDto } from './dto';
-import { canCallUp, evaluate, partition, type Reason } from './callup.rules';
+import { canCallUp, evaluate, partition, withoutExpectedInjury, type Reason } from './callup.rules';
 import { loadEvent, openEvent, permissionDenied, viewFor } from './event-access';
 import { ResponsesService, type StaffRow } from './responses.service';
 
@@ -90,7 +92,7 @@ export class CallupsService {
     const { view, own } = await viewFor(this.em, this.authz, a, event, target);
     if (view === 'none') throw permissionDenied();
 
-    const rows = await this.rows(event);
+    const rows = await this.rows(event, undefined, !(a.isAdmin || own.some((e) => e.type === EnrollmentType.STAFF)));
     const dto = toEventDto(event, target.teamId as string);
     const staff = await this.responses.staffOf(event, own.filter((e) => e.type === EnrollmentType.STAFF).map((e) => e.id));
     if (view === 'player') return this.playerLists(dto, rows, own.filter((e) => e.type === EnrollmentType.PLAYER).map((e) => e.id), staff.rows);
@@ -117,7 +119,7 @@ export class CallupsService {
     await this.authz.request(a, 'callups.manage', { eventId });
     const event = await this.open(eventId);
     const enrollment = await this.enrollment(event, dto.enrollmentId);
-    const rows = await this.rows(event, [enrollment]);
+    const rows = await this.rows(event, [enrollment], await this.hidesInjury(a, event));
     const row = rows[0] as CallupRow & { calledUp: boolean };
     if (row.calledUp) throw new ConflictException({ message: 'The player is already called up', code: 'CALLUP_EXISTS' });
 
@@ -169,7 +171,7 @@ export class CallupsService {
     }
     callup.placement = dto.placement;
     await this.em.flush();
-    const [row] = await this.rows(event, [callup.enrollment]);
+    const [row] = await this.rows(event, [callup.enrollment], await this.hidesInjury(a, event));
     return row as CallupRow;
   }
 
@@ -201,8 +203,15 @@ export class CallupsService {
     return { notified: pending.map((c) => ({ enrollmentId: c.enrollment.id, personId: c.enrollment.person.id })) };
   }
 
+  /** Health data (#21): only staff of the season and the admin read the probably injured warning. */
+  private async hidesInjury(a: AuthContext, event: Event): Promise<boolean> {
+    if (a.isAdmin) return false;
+    if (!a.personId) return true;
+    return (await this.em.count(Enrollment, { person: a.personId, season: event.season.id, type: EnrollmentType.STAFF })) === 0;
+  }
+
   /** The people who can appear in the lists: players with an open enrollment in the season, not disabled. */
-  private async rows(event: Event, only?: Enrollment[]): Promise<(CallupRow & { calledUp: boolean })[]> {
+  private async rows(event: Event, only?: Enrollment[], hideInjury = false): Promise<(CallupRow & { calledUp: boolean })[]> {
     const enrollments =
       only ??
       (await this.em.find(
@@ -221,6 +230,8 @@ export class CallupsService {
     const suspensions = event.type === EventType.MATCH ? await loadSuspensions(this.em, enrollments.map((e) => e.id)) : new Map();
     const matches = suspensions.size > 0 ? await loadMatches(this.em, event.season.id) : [];
     const now = new Date();
+    // Expected injuries (#21) belong to the person: every team of the player reads them.
+    const expected = hideInjury ? new Map() : await expectedByPerson(this.em, personIds);
     const club = await this.em.findOneOrFail(Club, event.club.id, { fields: ['blockCertificateExpired'] });
     // The certificate counts on the day of the event, not today.
     const onDay = localDate(event.start);
@@ -230,7 +241,9 @@ export class CallupsService {
       const callup = callups.get(e.id);
       const absence = blockOn(absences.filter((x) => x.enrollment.id === e.id), onDay);
       const suspension = suspensionBlock(suspensions.get(e.id), matches, event.id, now);
-      const reasons = evaluate({ status: e.status, certificate: certificateStatus(expiries.get(e.person.id) ?? null, onDay), absence, suspension }, ctx);
+      const expectedInjury = expectedOn(expected.get(e.person.id) ?? [], onDay);
+      const all = evaluate({ status: e.status, certificate: certificateStatus(expiries.get(e.person.id) ?? null, onDay), absence, suspension, expectedInjury }, ctx);
+      const reasons = hideInjury ? withoutExpectedInjury(all) : all;
       if (busy.has(e.person.id)) reasons.push({ code: 'busy_elsewhere', severity: 'warning' });
       return {
         enrollmentId: e.id,

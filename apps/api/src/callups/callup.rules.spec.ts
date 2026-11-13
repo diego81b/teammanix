@@ -6,12 +6,14 @@ import {
   certificateProvider,
   checkAnswer,
   evaluate,
+  expectedInjuryProvider,
   isChange,
   noCoachAvailable,
   partition,
   statusProvider,
   suspensionProvider,
   viewOf,
+  withoutExpectedInjury,
   type Candidate,
   type Reason,
   type ReasonProvider,
@@ -269,6 +271,32 @@ describe('declared absence (rule 10)', () => {
   it('a player in absence stays in the not callable list', () => {
     const row = { enrollmentId: 'a', calledUp: false, reasons: evaluate({ ...fit, absence: { until: null } }, ctx) };
     expect(partition([row]).notCallable).toHaveLength(1);
+  });
+});
+
+describe('probably injured (#21)', () => {
+  it('an expected injury covering the day warns, and the player stays callable', () => {
+    const reasons = evaluate({ ...fit, expectedInjury: { until: '2026-11-24' } }, ctx);
+    expect(reasons).toEqual([{ code: 'probably_injured', severity: 'warning', until: '2026-11-24' }]);
+    expect(canCallUp(reasons, false)).toBe('ok');
+    expect(partition([{ enrollmentId: 'e', calledUp: false, reasons }]).callable).toHaveLength(1);
+  });
+
+  it('no period, no warning', () => {
+    expect(expectedInjuryProvider(fit, ctx)).toEqual([]);
+    expect(expectedInjuryProvider({ ...fit, expectedInjury: null }, ctx)).toEqual([]);
+  });
+
+  it('once the injury is confirmed only the hard reason shows', () => {
+    expect(evaluate({ ...fit, status: EnrollmentStatus.INJURED, expectedInjury: { until: '2026-11-24' } }, ctx)).toEqual([{ code: 'injured', severity: 'hard' }]);
+  });
+
+  it('hidden from who is not staff of the season or the admin', () => {
+    const reasons: Reason[] = [
+      { code: 'probably_injured', severity: 'warning', until: '2026-11-24' },
+      { code: 'certificate_expiring', severity: 'warning' },
+    ];
+    expect(withoutExpectedInjury(reasons)).toEqual([{ code: 'certificate_expiring', severity: 'warning' }]);
   });
 });
 

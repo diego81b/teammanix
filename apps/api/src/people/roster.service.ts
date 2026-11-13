@@ -12,6 +12,8 @@ import { Person } from '../entities/person.entity';
 import { Season } from '../entities/season.entity';
 import { canReadRoster, canReadSeasonEvents } from '../events/visibility';
 import { editable } from '../structure/season.rules';
+import { consumeExpected, currentByPerson } from './expected-injury.loader';
+import type { ExpectedPeriod } from './expected-injury.rules';
 import type { EnrollmentDto, EditEnrollmentDto, EnrollmentStatusDto } from './dto-admin';
 import { type EnrollmentData, type EnrollmentError, allowedPosition, validateEnrollment } from './enrollment.rules';
 
@@ -58,7 +60,8 @@ export interface TeamRoster {
   /** The person can set the injured state (`people.manage`, season not closed). For the UI only: the route checks again. */
   canSetStatus: boolean;
   canSeeCertificates: boolean;
-  rows: RosterRow[];
+  /** `expectedInjury` (#21) is filled only for who can set the status; null for everybody else, managers included. */
+  rows: (RosterRow & { expectedInjury: ExpectedPeriod | null })[];
 }
 
 export const ERRORS: Record<EnrollmentError, { message: string; code: string }> = {
@@ -139,7 +142,17 @@ export class RosterService {
     }
     const canSeeCertificates = await this.authz.can(a, 'certificates.status', { seasonId });
     const canSetStatus = season.status !== SeasonStatus.CLOSED && (await this.authz.can(a, 'people.manage', { seasonId }));
-    const rows = (await this.roster(seasonId)).map((r) => ({ ...r, certificate: canSeeCertificates ? r.certificate : null }));
+    const base = await this.roster(seasonId);
+    const expected = canSetStatus ? await currentByPerson(this.em, base.filter((r) => r.type === EnrollmentType.PLAYER).map((r) => r.personId)) : new Map<string, ExpectedPeriod | null>();
+    const rows = base.map((r) => ({
+      ...r,
+      certificate: canSeeCertificates ? r.certificate : null,
+      expectedInjury: r.type === EnrollmentType.PLAYER ? (expected.get(r.personId) ?? null) : null,
+    }));
+    // Dates of an expected injury are health data (art. 9): the read is audited, never the dates.
+    if (rows.some((r) => r.expectedInjury)) {
+      await this.audit.register({ action: AuditAction.EXPECTED_INJURY_READ, userId: a.userId, clubId: a.clubId, entity: 'Season', entityId: seasonId });
+    }
     return { teamName: season.team.name, seasonName: season.name, seasonStatus: season.status, canSetStatus, canSeeCertificates, rows };
   }
 
@@ -213,7 +226,12 @@ export class RosterService {
   /** Flushes the changes of `i` and, when the status moved, shares it with the person's other enrollments and audits each one. */
   private async saveStatus(a: AuthContext, i: Enrollment, statusBefore: EnrollmentStatus) {
     const touched = i.status !== statusBefore ? [i, ...(await this.shareStatus(i))] : [];
+    // Confirming the injury (#21) consumes the expected periods of the person.
+    const consumed = i.status === EnrollmentStatus.INJURED && statusBefore !== EnrollmentStatus.INJURED ? await consumeExpected(this.em, i.person.id) : [];
     await this.em.flush();
+    for (const id of consumed) {
+      await this.audit.register({ action: AuditAction.EXPECTED_INJURY_ENDED, userId: a.userId, clubId: a.clubId, entity: 'Enrollment', entityId: id, meta: { by: 'confirmed' } });
+    }
     for (const e of touched) {
       await this.audit.register({
         action: AuditAction.ENROLLMENT_STATUS_MODIFIED,

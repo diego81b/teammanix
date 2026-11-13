@@ -2726,6 +2726,192 @@
           "enumItems": [],
           "mappedType": "date"
         },
+        "return_date": {
+          "name": "return_date",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 0,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "date"
+        }
+      },
+      "name": "expected_injuries",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "club_id"
+          ],
+          "composite": false,
+          "keyName": "expected_injuries_club_id_index",
+          "constraint": false,
+          "primary": false,
+          "unique": false
+        },
+        {
+          "columnNames": [
+            "enrollment_id"
+          ],
+          "composite": false,
+          "keyName": "expected_injuries_enrollment_id_unique",
+          "constraint": true,
+          "primary": false,
+          "unique": true
+        },
+        {
+          "keyName": "expected_injuries_pkey",
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": true,
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [
+        {
+          "name": "expected_injuries_dates",
+          "expression": "return_date > start_date",
+          "definition": "check ((return_date > start_date))"
+        }
+      ],
+      "foreignKeys": {
+        "expected_injuries_club_id_foreign": {
+          "constraintName": "expected_injuries_club_id_foreign",
+          "columnNames": [
+            "club_id"
+          ],
+          "localTableName": "public.expected_injuries",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "public.clubs",
+          "deleteRule": "cascade",
+          "updateRule": "cascade"
+        },
+        "expected_injuries_enrollment_id_foreign": {
+          "constraintName": "expected_injuries_enrollment_id_foreign",
+          "columnNames": [
+            "enrollment_id"
+          ],
+          "localTableName": "public.expected_injuries",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "public.enrollments",
+          "deleteRule": "cascade",
+          "updateRule": "cascade"
+        }
+      },
+      "nativeEnums": {}
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "gen_random_uuid()",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "enrollment_id": {
+          "name": "enrollment_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 0,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "date"
+        },
         "end_date": {
           "name": "end_date",
           "type": "date",
@@ -4749,7 +4935,11 @@
             "attendance_recorded",
             "attendance_modified",
             "attendance_cleared",
-            "statistics_read"
+            "statistics_read",
+            "expected_injury_created",
+            "expected_injury_modified",
+            "expected_injury_ended",
+            "expected_injury_read"
           ],
           "mappedType": "enum"
         },

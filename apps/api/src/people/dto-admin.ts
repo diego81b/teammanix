@@ -127,3 +127,12 @@ export class PromoteEnrollmentDto {
   @IsInt()
   jerseyNumber?: number;
 }
+
+/** Expected injury (#21): two days and nothing else. That they are real days in order is decided by `validateExpected`. */
+export class ExpectedInjuryDto {
+  @IsString()
+  startDate!: string;
+
+  @IsString()
+  returnDate!: string;
+}
