@@ -47,11 +47,7 @@ describe('export and permanent deletion of people (art. 15, 17, 20)', () => {
     return { token: acc.body.accessToken as string, userId: u.user.id as string };
   }
 
-  /**
-   * A club with an active season around today, a coach, a mate and a player with an account who has a lot of history:
-   * a certificate with a file, a past training with attendance, a future call-up, an absence, a suspension, an expected
-   * injury, a consent and a guardian link.
-   */
+  /** A club with a coach, a mate and a player with an account and a full history. */
   async function club(email: string) {
     const s = await t.newUser(email);
     const c = await t.req('POST', '/club', { token: s.accessToken, body: { name: `Club ${email}`, acceptDpa: true } });
@@ -143,6 +139,11 @@ describe('export and permanent deletion of people (art. 15, 17, 20)', () => {
       expect(await files(s.clubId)).toHaveLength(1);
       const sent = await t.orm.em.fork().find(Notification, { club: s.clubId }, { filters: false });
       expect(JSON.stringify(sent.map((n) => n.params))).toContain('p1 Rossi');
+      const [traced] = await t.orm.em.fork().getConnection().execute(
+        `select count(*)::int as n from audit_log where club_id = ? and meta is not null and (entity_id = ? or meta->>'enrollmentId' = ?)`,
+        [s.clubId, s.player.enrollmentId, s.player.enrollmentId],
+      );
+      expect(traced.n).toBeGreaterThan(0);
 
       expect((await send(s.admin, 'DELETE', `/people/${s.player.personId}`)).status).toBe(204);
 
@@ -163,14 +164,21 @@ describe('export and permanent deletion of people (art. 15, 17, 20)', () => {
         const rows = await em.getConnection().execute(`select count(*)::int as n from ${table} where ${where}`);
         expect([table, rows[0].n]).toEqual([table, 0]);
       }
-      // Absences and suspensions hold only dates: they stay under the anonymized record for the team figures.
+      // Absences and suspensions stay for the team figures.
       for (const table of ['absences', 'suspensions']) {
         const rows = await em.getConnection().execute(`select count(*)::int as n from ${table} where enrollment_id = ?`, [s.player.enrollmentId]);
         expect([table, rows[0].n]).toEqual([table, 1]);
       }
-      // Notifications other people received about the person carry the name: they go too.
+      // Notifications naming the person go.
       const kept = await em.find(Notification, { club: s.clubId }, q);
       expect(JSON.stringify(kept.map((n) => n.params))).not.toContain('p1 Rossi');
+      // The audit keeps who and when, not the details.
+      const trail = `select count(*)::int as n from audit_log where club_id = ? and meta is not null
+        and (entity_id = any(?::uuid[]) or meta->>'enrollmentId' = ?)`;
+      const [absence] = await em.getConnection().execute('select id from absences where enrollment_id = ?', [s.player.enrollmentId]);
+      const [suspension] = await em.getConnection().execute('select id from suspensions where enrollment_id = ?', [s.player.enrollmentId]);
+      const ids = `{${[s.player.enrollmentId, absence.id, suspension.id].join(',')}}`;
+      expect((await em.getConnection().execute(trail, [s.clubId, ids, s.player.enrollmentId]))[0].n).toBe(0);
       // Gone for the club: not in the archive, no detail, no second export or deletion.
       expect((await send(s.admin, 'GET', '/people/disabled')).body.map((x: { id: string }) => x.id)).not.toContain(s.player.personId);
       expect(code(await send(s.admin, 'GET', `/people/${s.player.personId}`))).toEqual([404, 'PERSON_NOT_FOUND']);

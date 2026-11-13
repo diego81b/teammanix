@@ -4,6 +4,7 @@ import { AuditService } from '../audit/audit.service';
 import { detachAccount } from '../club/detach-account';
 import type { AuthContext } from '../common/auth-context';
 import { Absence } from '../entities/absence.entity';
+import { AuditLog } from '../entities/audit-log.entity';
 import { Attendance } from '../entities/attendance.entity';
 import { CallupResponseChange } from '../entities/callup-response-change.entity';
 import { Callup } from '../entities/callup.entity';
@@ -23,10 +24,6 @@ import { ANONYMIZED, archiveAction } from './erasure.rules';
 
 const day = (d: Date | null) => (d ? d.toISOString() : null);
 
-/**
- * Export (art. 15 and 20) and permanent deletion (art. 17) of a disabled person. Deletion is hybrid: sensitive records
- * and files go, the record is anonymized and stays under enrollments, call-ups and attendance for the team figures.
- */
 @Injectable()
 export class ErasureService {
   constructor(
@@ -35,7 +32,7 @@ export class ErasureService {
     private readonly storage: StorageService,
   ) {}
 
-  /** Everything the club keeps about the person, without storage keys, file content or other people's data. */
+  /** No storage keys, file content or other people's data. */
   async export(a: AuthContext, id: string) {
     const p = await this.archived(id);
     const enrollments = await this.em.find(Enrollment, { person: id }, { populate: ['season.team.activity'], orderBy: { season: { startDate: 'asc' } } });
@@ -131,10 +128,7 @@ export class ErasureService {
     };
   }
 
-  /**
-   * Files first, then one transaction for the database. Storage removal is idempotent and the `Document` rows stay
-   * until the transaction commits, so an interrupted deletion leaves no orphan file and a retry finishes the job.
-   */
+  /** Files first, then the database: an interrupted deletion leaves no orphan file and a retry completes it. */
   async delete(a: AuthContext, id: string): Promise<void> {
     const clubId = a.clubId as string;
     await this.archived(id);
@@ -144,10 +138,21 @@ export class ErasureService {
     await this.em.transactional(async (tem) => {
       const q = { filters: false } as const;
       const p = await tem.findOneOrFail(Person, { id, club: clubId }, q);
-      const enrollments = (await tem.find(Enrollment, { person: id, club: clubId }, { ...q, fields: ['id'] })).map((e) => e.id);
-      // Absences and suspensions hold only dates: they stay under the anonymized record, so the figures do not change.
-      await tem.nativeDelete(ExpectedInjury, { club: clubId, enrollment: { $in: enrollments } }, q);
-      await this.removeNotifications(tem, clubId, p, enrollments);
+      const only = { ...q, fields: ['id'] } as const;
+      const toIds = (rows: { id: string }[]) => rows.map((x) => x.id);
+      const enrollments = toIds(await tem.find(Enrollment, { club: clubId, person: id }, only));
+      const of = { club: clubId, enrollment: { $in: enrollments } };
+      const absences = toIds(await tem.find(Absence, of, only));
+      const suspensions = toIds(await tem.find(Suspension, of, only));
+      const certificates = toIds(await tem.find(MedicalCertificate, { club: clubId, person: id }, only));
+      // Absences and suspensions stay (dates only) so the team figures do not change.
+      await tem.nativeDelete(ExpectedInjury, of, q);
+      await this.removeNotifications(tem, clubId, p, enrollments, absences);
+      await tem.nativeUpdate(
+        AuditLog,
+        { club: clubId, $or: [{ entityId: { $in: [id, ...enrollments, ...absences, ...suspensions, ...certificates] } }, { meta: { enrollmentId: { $in: enrollments } } }] },
+        { meta: null },
+      );
       await tem.nativeDelete(MedicalCertificate, { club: clubId, person: id }, q);
       await tem.nativeDelete(Document, { club: clubId, person: id }, q);
       await tem.nativeDelete(Consent, { club: clubId, person: id }, q);
@@ -160,20 +165,16 @@ export class ErasureService {
     await this.audit.register({ action: AuditAction.PERSON_DELETED, userId: a.userId, clubId, entity: 'Person', entityId: id });
   }
 
-  /**
-   * The absence notifications the staff received carry the person's name. They go: by key (`absence:<id>`,
-   * `absence-freed:<enrollmentId>:...`) and, for rows written before the key held the enrollment, by name.
-   */
-  private async removeNotifications(tem: EntityManager, clubId: string, p: Person, enrollments: string[]): Promise<void> {
+  /** Absence notifications carry the name. Older keys lack the enrollment, so they are also matched by name. */
+  private async removeNotifications(tem: EntityManager, clubId: string, p: Person, enrollments: string[], absences: string[]): Promise<void> {
     const q = { filters: false } as const;
-    const absences = await tem.find(Absence, { club: clubId, enrollment: { $in: enrollments } }, { ...q, fields: ['id'] });
     const name = [p.name, p.surname].filter(Boolean).join(' ');
     await tem.nativeDelete(
       Notification,
       {
         club: clubId,
         $or: [
-          { dedupKey: { $in: absences.map((x) => `absence:${x.id}`) } },
+          { dedupKey: { $in: absences.map((x) => `absence:${x}`) } },
           ...enrollments.map((e) => ({ dedupKey: { $like: `absence-freed:${e}:%` } })),
           ...(name ? [{ type: { $in: [NotificationType.ABSENCE_DECLARED, NotificationType.ABSENCE_FREED] }, params: { person: name } }] : []),
         ],
