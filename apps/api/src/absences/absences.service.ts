@@ -211,7 +211,7 @@ export class AbsencesService {
 
     for (const t of touched) await this.audit.register({ action: t.action, ...this.trail(a, t.absence) });
     for (const g of gone) await this.audit.register({ action: g.action, ...g.trail });
-    await this.notifyStaff(a, enrollment, NotificationType.ABSENCE_FREED, { startDate: range.from, endDate: range.to }, `absence-freed:${randomUUID()}`);
+    await this.notifyStaff(a, enrollment, NotificationType.ABSENCE_FREED, { startDate: range.from, endDate: range.to }, `absence-freed:${enrollment.id}:${randomUUID()}`);
     const left = rows.filter((r) => !plan.removes.includes(r.id)).concat(touched.filter((t) => t.action === AuditAction.ABSENCE_CREATED).map((t) => t.absence));
     return { absences: left.map(out).sort(byStart) };
   }

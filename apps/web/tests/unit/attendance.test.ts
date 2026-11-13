@@ -91,6 +91,10 @@ describe('rowName', () => {
     expect(rowName({ name: null, surname: null, disabled: true }, t)).toBe('attendance.disabledPerson')
   })
 
+  it('a permanently deleted person, stored with an empty name, reads as disabled', () => {
+    expect(rowName({ name: '', surname: null, disabled: true }, t)).toBe('attendance.disabledPerson')
+  })
+
   it('the admin sees the name of a disabled person', () => {
     expect(rowName({ name: 'Mario', surname: 'Rossi', disabled: true }, t)).toBe('Mario Rossi')
   })

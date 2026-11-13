@@ -1,9 +1,11 @@
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
+import { Absence } from '../src/entities/absence.entity';
 import { AuditLog } from '../src/entities/audit-log.entity';
 import { Consent } from '../src/entities/consent.entity';
 import { ConsentStatus, ConsentType, GuardianRelation } from '../src/entities/enums';
 import { GuardianLink } from '../src/entities/guardian-link.entity';
+import { Notification } from '../src/entities/notification.entity';
 import { Person } from '../src/entities/person.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
 import { StorageService } from '../src/storage/storage.service';
@@ -139,6 +141,8 @@ describe('export and permanent deletion of people (art. 15, 17, 20)', () => {
       const s = await club('er-04@test.it');
       await s.disable(s.player.personId);
       expect(await files(s.clubId)).toHaveLength(1);
+      const sent = await t.orm.em.fork().find(Notification, { club: s.clubId }, { filters: false });
+      expect(JSON.stringify(sent.map((n) => n.params))).toContain('p1 Rossi');
 
       expect((await send(s.admin, 'DELETE', `/people/${s.player.personId}`)).status).toBe(204);
 
@@ -154,13 +158,19 @@ describe('export and permanent deletion of people (art. 15, 17, 20)', () => {
         ['consents', `person_id = '${s.player.personId}'`],
         ['guardian_links', `minor_id = '${s.player.personId}' or guardian_id = '${s.player.personId}'`],
         ['invitations', `person_id = '${s.player.personId}' or email = '${s.player.email}'`],
-        ['absences', `enrollment_id = '${s.player.enrollmentId}'`],
-        ['suspensions', `enrollment_id = '${s.player.enrollmentId}'`],
         ['expected_injuries', `enrollment_id = '${s.player.enrollmentId}'`],
       ]) {
         const rows = await em.getConnection().execute(`select count(*)::int as n from ${table} where ${where}`);
         expect([table, rows[0].n]).toEqual([table, 0]);
       }
+      // Absences and suspensions hold only dates: they stay under the anonymized record for the team figures.
+      for (const table of ['absences', 'suspensions']) {
+        const rows = await em.getConnection().execute(`select count(*)::int as n from ${table} where enrollment_id = ?`, [s.player.enrollmentId]);
+        expect([table, rows[0].n]).toEqual([table, 1]);
+      }
+      // Notifications other people received about the person carry the name: they go too.
+      const kept = await em.find(Notification, { club: s.clubId }, q);
+      expect(JSON.stringify(kept.map((n) => n.params))).not.toContain('p1 Rossi');
       // Gone for the club: not in the archive, no detail, no second export or deletion.
       expect((await send(s.admin, 'GET', '/people/disabled')).body.map((x: { id: string }) => x.id)).not.toContain(s.player.personId);
       expect(code(await send(s.admin, 'GET', `/people/${s.player.personId}`))).toEqual([404, 'PERSON_NOT_FOUND']);
@@ -171,18 +181,25 @@ describe('export and permanent deletion of people (art. 15, 17, 20)', () => {
 
     it('keeps the attendance figures of the team and shows the row without a name', async () => {
       const s = await club('er-05@test.it');
+      // A served suspension and a past absence: both counted in the figures before the deletion.
+      await post(s.admin, `/teams/${s.teamId}/events`, { type: 'match', ...slot(-2), opponent: 'Rivals', homeAway: 'home', competition: 'League' });
+      await post(s.coach.token, `/enrollments/${s.player.enrollmentId}/suspensions`, { form: 'period', startDate: day(-4), endDate: day(-1) });
+      const em = t.orm.em.fork();
+      em.create(Absence, { club: s.clubId, enrollment: s.player.enrollmentId, startDate: day(-12), endDate: day(-10) } as never);
+      await em.flush();
       await s.disable(s.player.personId);
       const before = (await send(s.coach.token, 'GET', `/seasons/${s.seasonId}/statistics`)).body;
+      expect(before.rows.find((x: { enrollmentId: string }) => x.enrollmentId === s.player.enrollmentId)).toMatchObject({ absenceDays: 3, suspendedMatches: 1 });
 
       expect((await send(s.admin, 'DELETE', `/people/${s.player.personId}`)).status).toBe(204);
 
       for (const token of [s.coach.token, s.admin]) {
         const after = (await send(token, 'GET', `/seasons/${s.seasonId}/statistics`)).body;
         const row = after.rows.find((x: { enrollmentId: string }) => x.enrollmentId === s.player.enrollmentId);
-        expect(row).toMatchObject({ present: 1, attended: 1, disabled: true });
+        expect(row).toMatchObject({ present: 1, attended: 1, absenceDays: 3, suspendedMatches: 1, disabled: true });
         expect(row.name || null).toBeNull();
         expect(row.surname).toBeNull();
-        expect(after.totals).toMatchObject({ present: before.totals.present, absent: before.totals.absent, attended: before.totals.attended, rate: before.totals.rate });
+        expect(after.totals).toMatchObject({ present: before.totals.present, absent: before.totals.absent, attended: before.totals.attended, rate: before.totals.rate, absenceDays: before.totals.absenceDays, suspendedMatches: before.totals.suspendedMatches });
       }
       const sheet = (await send(s.coach.token, 'GET', `/events/${s.past.id}/attendance`)).body;
       expect(sheet.rows.find((x: { enrollmentId: string }) => x.enrollmentId === s.player.enrollmentId)).toMatchObject({ outcome: 'present', disabled: true });

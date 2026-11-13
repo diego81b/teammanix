@@ -10,11 +10,12 @@ import { Callup } from '../entities/callup.entity';
 import { Consent } from '../entities/consent.entity';
 import { Document } from '../entities/document.entity';
 import { Enrollment } from '../entities/enrollment.entity';
-import { AuditAction } from '../entities/enums';
+import { AuditAction, NotificationType } from '../entities/enums';
 import { ExpectedInjury } from '../entities/expected-injury.entity';
 import { GuardianLink } from '../entities/guardian-link.entity';
 import { Invitation } from '../entities/invitation.entity';
 import { MedicalCertificate } from '../entities/medical-certificate.entity';
+import { Notification } from '../entities/notification.entity';
 import { Person } from '../entities/person.entity';
 import { Suspension } from '../entities/suspension.entity';
 import { StorageService } from '../storage/storage.service';
@@ -64,6 +65,7 @@ export class ErasureService {
         birthDate: p.birthDate,
         email: p.email,
         phone: p.phone,
+        photoUrl: p.photoUrl,
         createdAt: day(p.createdAt),
         completedAt: day(p.completedAt),
         disabledAt: day(p.disabledAt),
@@ -143,10 +145,9 @@ export class ErasureService {
       const q = { filters: false } as const;
       const p = await tem.findOneOrFail(Person, { id, club: clubId }, q);
       const enrollments = (await tem.find(Enrollment, { person: id, club: clubId }, { ...q, fields: ['id'] })).map((e) => e.id);
-      const of = { club: clubId, enrollment: { $in: enrollments } };
-      await tem.nativeDelete(Absence, of, q);
-      await tem.nativeDelete(Suspension, of, q);
-      await tem.nativeDelete(ExpectedInjury, of, q);
+      // Absences and suspensions hold only dates: they stay under the anonymized record, so the figures do not change.
+      await tem.nativeDelete(ExpectedInjury, { club: clubId, enrollment: { $in: enrollments } }, q);
+      await this.removeNotifications(tem, clubId, p, enrollments);
       await tem.nativeDelete(MedicalCertificate, { club: clubId, person: id }, q);
       await tem.nativeDelete(Document, { club: clubId, person: id }, q);
       await tem.nativeDelete(Consent, { club: clubId, person: id }, q);
@@ -157,6 +158,28 @@ export class ErasureService {
       Object.assign(p, ANONYMIZED, { anonymizedAt: new Date() });
     });
     await this.audit.register({ action: AuditAction.PERSON_DELETED, userId: a.userId, clubId, entity: 'Person', entityId: id });
+  }
+
+  /**
+   * The absence notifications the staff received carry the person's name. They go: by key (`absence:<id>`,
+   * `absence-freed:<enrollmentId>:...`) and, for rows written before the key held the enrollment, by name.
+   */
+  private async removeNotifications(tem: EntityManager, clubId: string, p: Person, enrollments: string[]): Promise<void> {
+    const q = { filters: false } as const;
+    const absences = await tem.find(Absence, { club: clubId, enrollment: { $in: enrollments } }, { ...q, fields: ['id'] });
+    const name = [p.name, p.surname].filter(Boolean).join(' ');
+    await tem.nativeDelete(
+      Notification,
+      {
+        club: clubId,
+        $or: [
+          { dedupKey: { $in: absences.map((x) => `absence:${x.id}`) } },
+          ...enrollments.map((e) => ({ dedupKey: { $like: `absence-freed:${e}:%` } })),
+          ...(name ? [{ type: { $in: [NotificationType.ABSENCE_DECLARED, NotificationType.ABSENCE_FREED] }, params: { person: name } }] : []),
+        ],
+      },
+      q,
+    );
   }
 
   private invitationsOf(p: Person) {
