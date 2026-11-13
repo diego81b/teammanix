@@ -5,7 +5,7 @@ import { AuditService } from '../audit/audit.service';
 import type { SummaryCertificate } from '../certificates/certificates.service';
 import { CertificatesService } from '../certificates/certificates.service';
 import type { AuthContext } from '../common/auth-context';
-import { AuditAction, StaffRole, EnrollmentStatus, EnrollmentType } from '../entities/enums';
+import { AuditAction, SeasonStatus, StaffRole, EnrollmentStatus, EnrollmentType } from '../entities/enums';
 import { Enrollment } from '../entities/enrollment.entity';
 import { Person } from '../entities/person.entity';
 import { Season } from '../entities/season.entity';
@@ -30,6 +30,22 @@ export interface RosterRow {
 export interface EnrollmentOut extends Omit<RosterRow, 'name' | 'surname' | 'certificate'> {
   seasonId: string;
   endedAt: string | null;
+}
+
+/**
+ * The injured state belongs to the person, not to the team (#27): a new player enrollment starts injured when
+ * the person is injured in another open enrollment of a season that is not closed.
+ */
+export async function startingStatus(em: EntityManager, personId: string, type: EnrollmentType): Promise<EnrollmentStatus> {
+  if (type !== EnrollmentType.PLAYER) return EnrollmentStatus.AVAILABLE;
+  const injured = await em.count(Enrollment, {
+    person: personId,
+    type: EnrollmentType.PLAYER,
+    endedAt: null,
+    status: EnrollmentStatus.INJURED,
+    season: { status: { $ne: SeasonStatus.CLOSED } },
+  });
+  return injured > 0 ? EnrollmentStatus.INJURED : EnrollmentStatus.AVAILABLE;
 }
 
 export const ERRORS: Record<EnrollmentError, { message: string; code: string }> = {
@@ -110,7 +126,7 @@ export class RosterService {
       staffRole: dto.staffRole ?? null,
       position: dto.position ?? null,
       jerseyNumber: dto.jerseyNumber ?? null,
-      status: EnrollmentStatus.AVAILABLE,
+      status: await startingStatus(this.em, person.id, dto.type),
     });
     try {
       await this.em.flush();
@@ -138,18 +154,34 @@ export class RosterService {
     if (dto.position !== undefined) i.position = dto.position;
     if (dto.jerseyNumber !== undefined) i.jerseyNumber = dto.jerseyNumber;
     if (dto.status !== undefined) i.status = dto.status;
+    const touched = i.status !== statusBefore ? [i, ...(await this.shareStatus(i))] : [];
     await this.em.flush();
-    if (i.status !== statusBefore) {
+    for (const e of touched) {
       await this.audit.register({
         action: AuditAction.ENROLLMENT_STATUS_MODIFIED,
         userId: a.userId,
         clubId: a.clubId,
         entity: 'Enrollment',
-        entityId: i.id,
-        meta: { from: statusBefore, a: i.status },
+        entityId: e.id,
+        meta: { from: statusBefore, a: i.status, origin: i.id },
       });
     }
     return this.outComplete(i);
+  }
+
+  /** Copies the status of a player enrollment to the other open player enrollments of the person (#27). Status only, no cause. */
+  private async shareStatus(origin: Enrollment): Promise<Enrollment[]> {
+    if (origin.type !== EnrollmentType.PLAYER) return [];
+    const others = await this.em.find(Enrollment, {
+      person: origin.person.id,
+      type: EnrollmentType.PLAYER,
+      endedAt: null,
+      id: { $ne: origin.id },
+      status: { $ne: origin.status },
+      season: { status: { $ne: SeasonStatus.CLOSED } },
+    });
+    for (const e of others) e.status = origin.status;
+    return others;
   }
 
   /** Closes the enrollment from today: the person leaves the roster, the history stays. */

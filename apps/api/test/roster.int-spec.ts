@@ -1,4 +1,5 @@
 import { AuditLog } from '../src/entities/audit-log.entity';
+import { Enrollment } from '../src/entities/enrollment.entity';
 import { Person } from '../src/entities/person.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
 import { Season } from '../src/entities/season.entity';
@@ -225,6 +226,98 @@ describe('people, roster and disabling', () => {
       expect([still.status, still.body.code]).toEqual([409, 'ENROLLMENT_CLOSED']);
       const mod = await t.req('PATCH', `/enrollments/${i.id}`, { token: c.token, body: { jerseyNumber: 2 } });
       expect([mod.status, mod.body.code]).toEqual([409, 'ENROLLMENT_CLOSED']);
+    });
+  });
+
+  describe('injured state shared across the teams of a person (#27)', () => {
+    /** Second team with its own draft season in the same club. */
+    async function secondSeason(token: string, name = 'Under 17') {
+      const act = (await t.req('POST', '/activities', { token, body: { name: `Football ${name}`, sportProfile: 'football' } })).body;
+      const sq = (await t.req('POST', `/activities/${act.id}/teams`, { token, body: { name } })).body;
+      const st = (await t.req('POST', `/teams/${sq.id}/seasons`, { token, body: { name: '2026/27', startDate: '2026-09-01', endDate: '2027-06-30' } })).body;
+      return st.id as string;
+    }
+    const setStatus = (token: string, id: string, status: string) => t.req('PATCH', `/enrollments/${id}`, { token, body: { status } });
+    const statusOf = async (id: string) => (await t.orm.em.fork().findOneOrFail(Enrollment, id, { filters: false })).status;
+
+    it('marking injured in one team marks every open player enrollment, and clearing clears them all', async () => {
+      const c = await context('sh-1@test.it');
+      const second = await secondSeason(c.token);
+      const p = (await person(c.token)).body;
+      const a = (await enroll(c.token, c.seasonId, p.id)).body;
+      const b = (await enroll(c.token, second, p.id)).body;
+      expect((await setStatus(c.token, a.id, 'injured')).status).toBe(200);
+      expect(await statusOf(b.id)).toBe('injured');
+      expect((await roster(c.token, second)).body[0].status).toBe('injured');
+      expect((await setStatus(c.token, b.id, 'available')).status).toBe(200);
+      expect(await statusOf(a.id)).toBe('available');
+    });
+
+    it('a new enrollment of an injured person starts injured, in a new team and in a promotion', async () => {
+      const c = await context('sh-2@test.it');
+      const second = await secondSeason(c.token);
+      const third = await secondSeason(c.token, 'Under 19');
+      const p = (await person(c.token)).body;
+      const a = (await enroll(c.token, c.seasonId, p.id)).body;
+      await setStatus(c.token, a.id, 'injured');
+      const b = await enroll(c.token, second, p.id);
+      expect(b.body.status).toBe('injured');
+      const promoted = await t.req('POST', `/enrollments/${a.id}/promote`, { token: c.token, body: { seasonId: third } });
+      expect(promoted.status).toBe(201);
+      expect(promoted.body.status).toBe('injured');
+    });
+
+    it('leaves alone closed enrollments, closed seasons and staff enrollments', async () => {
+      const c = await context('sh-3@test.it');
+      const closedEnrollmentSeason = await secondSeason(c.token, 'Under 13');
+      const closedSeason = await secondSeason(c.token, 'Under 11');
+      const staffSeason = await secondSeason(c.token, 'Under 9');
+      const p = (await person(c.token)).body;
+      const a = (await enroll(c.token, c.seasonId, p.id)).body;
+      const ended = (await enroll(c.token, closedEnrollmentSeason, p.id)).body;
+      await t.req('POST', `/enrollments/${ended.id}/close`, { token: c.token });
+      const inClosed = (await enroll(c.token, closedSeason, p.id)).body;
+      await t.orm.em.fork().nativeUpdate(Season, { id: closedSeason }, { status: 'closed' } as never, { filters: false });
+      const staff = (await enroll(c.token, staffSeason, p.id, { type: 'staff', staffRole: 'other' })).body;
+      expect((await setStatus(c.token, a.id, 'injured')).status).toBe(200);
+      expect(await statusOf(ended.id)).toBe('available');
+      expect(await statusOf(inClosed.id)).toBe('available');
+      expect(await statusOf(staff.id)).toBe('available');
+    });
+
+    it('does not touch the enrollments of other people', async () => {
+      const c = await context('sh-4@test.it');
+      const second = await secondSeason(c.token);
+      const p = (await person(c.token)).body;
+      const q = (await person(c.token, { name: 'Marco', email: 'marco@test.it' })).body;
+      const a = (await enroll(c.token, c.seasonId, p.id)).body;
+      const other = (await enroll(c.token, second, q.id)).body;
+      await setStatus(c.token, a.id, 'injured');
+      expect(await statusOf(other.id)).toBe('available');
+    });
+
+    it('audits one entry per touched enrollment, naming where it started, with the status only', async () => {
+      const c = await context('sh-5@test.it');
+      const second = await secondSeason(c.token);
+      const p = (await person(c.token)).body;
+      const a = (await enroll(c.token, c.seasonId, p.id)).body;
+      const b = (await enroll(c.token, second, p.id)).body;
+      await setStatus(c.token, a.id, 'injured');
+      const first = await audit('enrollment_status_modified', a.id);
+      const propagated = await audit('enrollment_status_modified', b.id);
+      expect([first, propagated].map((e) => e.length)).toEqual([1, 1]);
+      expect(propagated[0].meta).toEqual({ from: 'available', a: 'injured', origin: a.id });
+      expect(first[0].meta).toEqual({ from: 'available', a: 'injured', origin: a.id });
+    });
+
+    it('an unchanged status writes no audit and touches nothing', async () => {
+      const c = await context('sh-6@test.it');
+      const second = await secondSeason(c.token);
+      const p = (await person(c.token)).body;
+      const a = (await enroll(c.token, c.seasonId, p.id)).body;
+      const b = (await enroll(c.token, second, p.id)).body;
+      await setStatus(c.token, a.id, 'available');
+      expect(await audit('enrollment_status_modified', b.id)).toHaveLength(0);
     });
   });
 

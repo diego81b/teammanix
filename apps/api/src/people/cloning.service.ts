@@ -13,7 +13,7 @@ import { type SeasonDto, draftExists, toSeasonDto } from '../structure/structure
 import { editable, periodValid } from '../structure/season.rules';
 import type { CloneSeasonDto, PromoteEnrollmentDto } from './dto-admin';
 import { allowedPosition, positionInherited, validateEnrollment } from './enrollment.rules';
-import { ERRORS as ENROLLMENT_ERRORS, type EnrollmentOut, enrollmentOut, allowedPositions } from './roster.service';
+import { ERRORS as ENROLLMENT_ERRORS, type EnrollmentOut, enrollmentOut, allowedPositions, startingStatus } from './roster.service';
 
 const seasonNotFound = () => new NotFoundException({ message: 'Season not found', code: 'SEASON_NOT_FOUND' });
 const closedSeason = () => new ConflictException({ message: 'The season is closed', code: 'SEASON_CLOSED' });
@@ -165,7 +165,7 @@ export class CloningService {
       season: destination,
       person: source.person,
       ...data,
-      status: EnrollmentStatus.AVAILABLE,
+      status: await startingStatus(this.em, source.person.id, source.type),
     });
     if (dto.closeSource) source.endedAt = new Date().toISOString().slice(0, 10);
     try {
