@@ -1,4 +1,4 @@
-import type { AnswerChange, CallupReason, CallupResponse, CallupRow, Placement, ReasonDecline, StaffAnswerRow } from '../types/api'
+import type { AnswerChange, CallupReason, CallupResponse, CallupRow, CallupsDto, Placement, ReasonDecline, StaffAnswerRow } from '../types/api'
 
 export type CallupList = 'calledUp' | 'callable' | 'notCallable'
 
@@ -72,6 +72,10 @@ export const DECLINE_REASONS: ReasonDecline[] = ['commitment_personal', 'work', 
 /** The answer of the logged-in player to the call-up, or null when they are not called up. */
 export const myAnswer = (calledUp: readonly { response: CallupResponse, mine: boolean }[]): CallupResponse | null =>
   calledUp.find(r => r.mine)?.response ?? null
+
+/** The answer as player of whoever is called up, in the player view or, for a person who is also staff, in the staff view (#15). */
+export const ownPlayerAnswer = (dto: CallupsDto): CallupResponse | null =>
+  dto.view === 'player' ? myAnswer(dto.calledUp) : dto.ownCallup?.response ?? null
 
 /** Declining asks for a reason, confirming does not. The API checks again. */
 export const canSend = (response: Exclude<CallupResponse, 'pending'>, reason: ReasonDecline | null): boolean =>

@@ -182,6 +182,34 @@
         <!-- Staff availability: staff, managers and the admin see every answer. -->
         <section class="space-y-3 pt-2" :class="data.view === 'manage' ? 'pb-24' : ''" :aria-label="$t('callup.staffTitle')">
           <h2 class="font-semibold">{{ $t('callup.staffTitle') }}</h2>
+          <!-- A person who is also called up as a player answers that role here, apart from the availability below (#15). -->
+          <div v-if="staff?.ownCallup" class="space-y-2 rounded-lg border border-default bg-elevated p-3" role="group" :aria-label="$t('callup.answerAsPlayerTitle')">
+            <p class="flex items-center gap-2 text-sm font-semibold">
+              {{ $t('callup.answerAsPlayerTitle') }}
+              <UBadge v-if="mine" :color="RESPONSE_COLOR[mine]" variant="subtle" :label="$t(`callup.response.${mine}`)" />
+            </p>
+            <div class="flex gap-2">
+              <UButton
+                class="min-h-11 flex-1 justify-center"
+                size="lg"
+                :variant="mine === 'confirmed' ? 'solid' : 'outline'"
+                :color="mine === 'confirmed' ? 'success' : 'neutral'"
+                :aria-pressed="mine === 'confirmed'"
+                :loading="answering === 'confirmed'"
+                :label="$t('callup.iCome')"
+                @click="respond('confirmed')"
+              />
+              <UButton
+                class="min-h-11 flex-1 justify-center"
+                size="lg"
+                :variant="mine === 'declined' ? 'solid' : 'outline'"
+                :color="mine === 'declined' ? 'error' : 'neutral'"
+                :aria-pressed="mine === 'declined'"
+                :label="$t('callup.iDontCome')"
+                @click="open.decline = true"
+              />
+            </div>
+          </div>
           <div v-if="ownStaff" class="space-y-2 rounded-lg border border-default bg-elevated p-3" role="group" :aria-label="$t('callup.myAvailability')">
             <p class="text-sm font-semibold">{{ $t('callup.myAvailability') }}</p>
             <UAlert
@@ -319,7 +347,7 @@
 <script setup lang="ts">
 import type { AnswerChange, CallupReason, CallupResponse, CallupRow, Placement, ReasonDecline, StaffAnswerRow, StaffCallups } from '~/types/api'
 import {
-  DECLINE_REASONS, blockers, callupCounts, canSend, confirmMessage, formatChangeTime, groupStaff, historyParts, myAnswer, ownStaffRow, reasonLabel, absenceNotice, suspensionNotice, rowAction, togglePlacement, unsentCount, warnings,
+  DECLINE_REASONS, blockers, callupCounts, canSend, confirmMessage, formatChangeTime, groupStaff, historyParts, ownPlayerAnswer, ownStaffRow, reasonLabel, absenceNotice, suspensionNotice, rowAction, togglePlacement, unsentCount, warnings,
   type CallupList,
 } from '~/utils/callup'
 import { eventHeading } from '~/utils/calendar'
@@ -401,8 +429,7 @@ async function send() {
   }
 }
 
-const playerView = computed(() => (data.value?.view === 'player' ? data.value : null))
-const mine = computed(() => (playerView.value ? myAnswer(playerView.value.calledUp) : null))
+const mine = computed(() => (data.value ? ownPlayerAnswer(data.value) : null))
 const staffRows = computed<StaffAnswerRow[]>(() => {
   const g = staff.value ? groupStaff(staff.value.staff) : { available: [], notAvailable: [], noAnswer: [] }
   return [...g.available, ...g.notAvailable, ...g.noAnswer]

@@ -10,6 +10,7 @@ import {
   historyParts,
   myAnswer,
   needsConfirmation,
+  ownPlayerAnswer,
   ownStaffRow,
   reasonKey,
   reasonLabel,
@@ -20,7 +21,7 @@ import {
   unsentCount,
   warnings,
 } from '../../app/utils/callup'
-import type { AnswerChange, CallupReason, CallupRow, StaffAnswerRow } from '../../app/types/api'
+import type { AnswerChange, CallupReason, CallupRow, CallupsDto, StaffAnswerRow } from '../../app/types/api'
 
 const row = (over: Partial<CallupRow> = {}): CallupRow => ({
   enrollmentId: 'i1', personId: 'p1', name: 'Anna', surname: 'Rossi', jerseyNumber: null, position: null,
@@ -101,6 +102,15 @@ describe('answering', () => {
     expect(myAnswer(rows)).toBe('declined')
     expect(myAnswer([rows[0]!])).toBeNull()
     expect(myAnswer([])).toBeNull()
+  })
+
+  it('the answer as player is found in the player view and in the staff view of a person who is both (#15)', () => {
+    const player = { event: {}, view: 'player', iAmCalledUp: true, calledUp: [{ enrollmentId: 'b', name: 'B', surname: null, jerseyNumber: null, response: 'confirmed', mine: true }], staff: [] } as unknown as CallupsDto
+    const dual = { event: {}, view: 'read', ownCallup: { enrollmentId: 'p', response: 'declined' } } as unknown as CallupsDto
+    const staffOnly = { event: {}, view: 'manage', ownCallup: null } as unknown as CallupsDto
+    expect(ownPlayerAnswer(player)).toBe('confirmed')
+    expect(ownPlayerAnswer(dual)).toBe('declined')
+    expect(ownPlayerAnswer(staffOnly)).toBeNull()
   })
 
   it('declining needs a reason, confirming does not', () => {

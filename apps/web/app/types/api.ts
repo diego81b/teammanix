@@ -397,6 +397,8 @@ export interface StaffCallups {
   notCallable: CallupRow[]
   /** Every staff member of the season with their answer. */
   staff: StaffAnswerRow[]
+  /** The viewer's own call-up as a player, when they are also a player of the season and called up. */
+  ownCallup: { enrollmentId: string, response: CallupResponse } | null
   /** The club asks for it and no coach declared available. */
   noCoachWarning: boolean
 }
