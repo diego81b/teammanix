@@ -12,6 +12,7 @@ Ogni funzionalità e ogni bug parte da un test che fallisce (rosso, codice minim
 - Logica in funzioni pure testate per prime; guard, componenti e middleware restano gusci sottili (esempi: `decideAccess` in `apps/web/app/utils/access.ts`, `outboxEnabled`).
 - Un bug si riproduce prima con un test, nel livello più basso che lo cattura. Un e2e solo per un percorso critico nuovo.
 - Chiusura lavoro: lanciare solo i test necessari alla modifica, cioè quelli che la coprono più le suite dove una regressione è plausibile (moduli che usano il codice toccato, stessi tipi, codici errore o chiavi i18n: un codice nuovo o un testo nuovo richiede `tests/unit/i18n.test.ts`). La suite completa (`npm test`) solo su richiesta esplicita. Sempre puliti `npm run typecheck` (api) e `npx nuxt typecheck` (web); `npm run test:e2e` solo se toccati i percorsi coperti. Riportare i fallimenti con l'output.
+- Ogni modifica alla UI si verifica nel browser reale prima di chiudere l'issue: dev server web e API accesi, pagina aperta con Chrome DevTools MCP, flusso provato con utenti veri (anche ruoli diversi), console senza errori, screenshot a larghezza mobile. Un e2e Playwright si aggiunge per ogni percorso critico nuovo. Nel messaggio di chiusura dire cosa si è provato nel browser; se non è stato possibile, dirlo e non chiudere la card.
 
 ## Comandi
 
