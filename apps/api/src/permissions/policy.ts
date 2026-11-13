@@ -65,7 +65,7 @@ export function ePolicyKey(value: unknown): value is PolicyKey {
   return typeof value === 'string' && (POLICY as readonly string[]).includes(value);
 }
 
-function covers(scope: PolicyScope, target: Target): boolean {
+export function covers(scope: PolicyScope, target: Target): boolean {
   switch (scope.type) {
     case 'club':
       return true;
@@ -74,6 +74,11 @@ function covers(scope: PolicyScope, target: Target): boolean {
     case 'team':
       return target.teamId === scope.teamId;
   }
+}
+
+/** True if any role of the person has the target in its scope, whatever the policy. The admin sees the whole club. */
+export function sees(sources: readonly Source[], target: Target): boolean {
+  return sources.some((f) => covers(f.scope, target));
 }
 
 export function can(sources: readonly Source[], diff: DiffPolicy, policy: PolicyKey, target: Target): boolean {

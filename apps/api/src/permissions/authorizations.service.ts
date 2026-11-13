@@ -10,7 +10,7 @@ import { EventSeries } from '../entities/event-series.entity';
 import { Team } from '../entities/team.entity';
 import { Season } from '../entities/season.entity';
 import { targetFromActivity, targetFromClub, targetFromTeam, sourcesFrom } from './sources';
-import { can, type Target, type PolicyKey } from './policy';
+import { can, sees as seesTarget, type Target, type PolicyKey } from './policy';
 
 /** Where the action falls, as the route states it: the club, an activity, a team, a season or an enrollment. */
 export type Goal =
@@ -49,6 +49,16 @@ export class AuthorizationsService {
 
     const [staff, row] = await Promise.all([this.enrollmentsStaff(a), this.em.findOne(Membership, { user: a.userId, club: clubId }, { filters: false })]);
     return can(sourcesFrom(a.roles, staff), row?.diff ?? {}, policy, target);
+  }
+
+  /**
+   * Whether the target is inside the scope of some role of the person. Who does not see it must get 404, never 403:
+   * players of other teams are not even visible to staff.
+   */
+  async sees(a: AuthContext, on: Goal): Promise<boolean> {
+    const target = await this.target(a.clubId as string, on);
+    const staff = await this.enrollmentsStaff(a);
+    return seesTarget(sourcesFrom(a.roles, staff), target);
   }
 
   /** Activity and team the target belongs to, only inside the club. */

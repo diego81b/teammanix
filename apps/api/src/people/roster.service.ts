@@ -165,6 +165,9 @@ export class RosterService {
    * enrollments in other teams too, for this one field.
    */
   async setStatus(a: AuthContext, id: string, dto: EnrollmentStatusDto): Promise<EnrollmentOut> {
+    if (!(await this.authz.sees(a, { enrollmentId: id }))) {
+      throw new NotFoundException({ message: 'Enrollment not found', code: 'ENROLLMENT_NOT_FOUND' });
+    }
     await this.authz.request(a, 'people.manage', { enrollmentId: id });
     const i = await this.open(id);
     const statusBefore = i.status;

@@ -73,10 +73,10 @@ describe('injured state set by staff (#27)', () => {
     expect(await statusOf(c.inT1)).toBe('available');
   });
 
-  it('the coach of a team can set the state of a player of their own team only', async () => {
+  it('staff of another team does not even see the player: 404, as for an unknown enrollment', async () => {
     const c = await club('st-2@test.it');
     const r = await setStatus(c.coach2, c.onlyT1, 'injured');
-    expect([r.status, r.body.code]).toEqual([403, 'PERMISSION_DENIED']);
+    expect([r.status, r.body.code]).toEqual([404, 'ENROLLMENT_NOT_FOUND']);
     expect(await statusOf(c.onlyT1)).toBe('available');
   });
 
