@@ -3,16 +3,15 @@ import { EntityManager } from '@mikro-orm/postgresql';
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { DOCUMENTS_VERSION } from '../config/app.config';
-import { Membership } from '../entities/membership.entity';
 import { TermsAcceptance } from '../entities/terms-acceptance.entity';
 import { AuditAction, AccessRoleType, ScopeType, TypeLegalDocument } from '../entities/enums';
 import { Person } from '../entities/person.entity';
-import { NotificationPreference } from '../entities/notification-preference.entity';
 import { AccessRole } from '../entities/access-role.entity';
 import { Club } from '../entities/club.entity';
 import { User } from '../entities/user.entity';
 import { AuthService, SessionDto } from '../auth/auth.service';
 import type { CreateClubDto } from './dto';
+import { detachAccount } from './detach-account';
 
 @Injectable()
 export class ClubService {
@@ -56,13 +55,8 @@ export class ClubService {
       }
 
       const person = await tem.findOne(Person, { club: clubId, user: userId }, { filters: false });
-      const roles = await tem.find(AccessRole, { club: clubId, user: userId }, { filters: false });
-      if (!person && roles.length === 0) throw new NotFoundException({ message: 'You do not belong to this club', code: 'NOT_CLUB_MEMBER' });
-
-      if (person) person.user = null;
-      for (const r of roles) tem.remove(r);
-      await tem.nativeDelete(NotificationPreference, { user: userId, club: clubId });
-      await tem.nativeDelete(Membership, { user: userId, club: clubId }, { filters: false });
+      const roles = await detachAccount(tem, userId, clubId, person);
+      if (!person && roles === 0) throw new NotFoundException({ message: 'You do not belong to this club', code: 'NOT_CLUB_MEMBER' });
       return tem.findOneOrFail(User, userId);
     });
 

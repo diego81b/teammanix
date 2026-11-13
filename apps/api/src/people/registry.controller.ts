@@ -1,10 +1,13 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query, Res } from '@nestjs/common';
+import type { FastifyReply } from 'fastify';
 import type { AuthContext } from '../common/auth-context';
 import { CurrentAuth, AdminOnly } from '../common/decorators';
 import { RegistryService } from './registry.service';
 import { CloneSeasonDto, CreatePersonDto, EnrollmentDto, EditEnrollmentDto, PromoteEnrollmentDto, SearchPeopleDto } from './dto-admin';
 import { CloningService } from './cloning.service';
 import { RosterService } from './roster.service';
+import { ErasureService } from './erasure.service';
+import { exportFileName } from './erasure.rules';
 
 /**
  * Registry, roster and disabling: admin only for now. Extension to staff and managers goes through policies
@@ -17,6 +20,7 @@ export class RegistryController {
     private readonly registry: RegistryService,
     private readonly roster: RosterService,
     private readonly cloning: CloningService,
+    private readonly erasure: ErasureService,
   ) {}
 
   @Post('people')
@@ -49,6 +53,22 @@ export class RegistryController {
   @HttpCode(200)
   reenable(@CurrentAuth() a: AuthContext, @Param('id', ParseUUIDPipe) id: string) {
     return this.registry.reenable(a, id);
+  }
+
+  /** Art. 15 and 20: a JSON file, only for a disabled person. */
+  @Get('people/:id/export')
+  async export(@CurrentAuth() a: AuthContext, @Param('id', ParseUUIDPipe) id: string, @Res({ passthrough: true }) res: FastifyReply) {
+    const data = await this.erasure.export(a, id);
+    res.header('Content-Disposition', `attachment; filename="${exportFileName(id)}"`);
+    res.header('Cache-Control', 'no-store');
+    return data;
+  }
+
+  /** Art. 17: permanent deletion of a disabled person (sensitive data deleted, record anonymized). */
+  @Delete('people/:id')
+  @HttpCode(204)
+  remove(@CurrentAuth() a: AuthContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.erasure.delete(a, id);
   }
 
   @Get('seasons/:id/roster')

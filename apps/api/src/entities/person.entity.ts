@@ -19,12 +19,12 @@ import { User } from './user.entity';
 @Entity({ tableName: 'people' })
 @Index({ properties: ['club', 'surname', 'name'] })
 @Unique({ properties: ['club', 'user'] })
-@Check({ expression: '(email is not null or phone is not null)' })
+@Check({ name: 'people_contact', expression: '(email is not null or phone is not null or anonymized_at is not null)' })
 @Check({
   name: 'people_complete_consistent',
   expression: '(completed_at is null or (surname is not null and birth_date is not null))',
 })
-export class Person extends TenantEntity<'surname' | 'birthDate' | 'completedAt' | 'disabledAt'> {
+export class Person extends TenantEntity<'surname' | 'birthDate' | 'completedAt' | 'disabledAt' | 'anonymizedAt'> {
   @Property({ length: 100 })
   name!: string;
 
@@ -55,6 +55,13 @@ export class Person extends TenantEntity<'surname' | 'birthDate' | 'completedAt'
    */
   @Property({ type: 'timestamptz', nullable: true })
   disabledAt: Date | null = null;
+
+  /**
+   * Permanent deletion (art. 17): personal fields cleared, sensitive records deleted. The row stays, always disabled, so
+   * enrollments, call-ups and attendance keep the team figures. Null = never deleted.
+   */
+  @Property({ type: 'timestamptz', nullable: true })
+  anonymizedAt: Date | null = null;
 
   /** Account that signs in as this person. null = no app access. Unique per club, not global. */
   @ManyToOne(() => User, { nullable: true, index: true, deleteRule: 'set null' })

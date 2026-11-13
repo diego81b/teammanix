@@ -1985,6 +1985,22 @@
           "enumItems": [],
           "mappedType": "datetime"
         },
+        "anonymized_at": {
+          "name": "anonymized_at",
+          "type": "timestamptz",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
         "user_id": {
           "name": "user_id",
           "type": "uuid",
@@ -2066,9 +2082,9 @@
           "definition": "check (((completed_at is null or (surname is not null and birth_date is not null))))"
         },
         {
-          "name": "people_check",
-          "expression": "(email is not null or phone is not null)",
-          "definition": "check (((email is not null or phone is not null)))"
+          "name": "people_contact",
+          "expression": "(email is not null or phone is not null or anonymized_at is not null)",
+          "definition": "check (((email is not null or phone is not null or anonymized_at is not null)))"
         }
       ],
       "foreignKeys": {

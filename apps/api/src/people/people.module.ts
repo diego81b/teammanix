@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { CertificatesModule } from '../certificates/certificates.module';
 import { PermissionsModule } from '../permissions/permissions.module';
+import { StorageModule } from '../storage/storage.module';
+import { ErasureService } from './erasure.service';
 import { RegistryController } from './registry.controller';
 import { RegistryService } from './registry.service';
 import { CloningService } from './cloning.service';
@@ -11,8 +13,8 @@ import { RosterService } from './roster.service';
 import { ExpectedInjuryService } from './expected-injury.service';
 
 @Module({
-  imports: [CertificatesModule, PermissionsModule],
+  imports: [CertificatesModule, PermissionsModule, StorageModule],
   controllers: [PeopleController, RegistryController, EnrollmentStatusController],
-  providers: [PeopleService, RegistryService, RosterService, CloningService, ExpectedInjuryService],
+  providers: [PeopleService, RegistryService, RosterService, CloningService, ExpectedInjuryService, ErasureService],
 })
 export class PeopleModule {}

@@ -87,13 +87,14 @@ export class RegistryService {
     return people.map((p) => this.dto(p));
   }
 
+  /** The archive: disabled people not deleted for good (a deleted record has nothing left to act on). */
   async disabled(): Promise<PersonDto[]> {
-    const people = await this.em.find(Person, { disabledAt: { $ne: null } }, { orderBy: { disabledAt: 'desc' }, limit: 200 });
+    const people = await this.em.find(Person, { disabledAt: { $ne: null }, anonymizedAt: null }, { orderBy: { disabledAt: 'desc' }, limit: 200 });
     return people.map((p) => this.dto(p));
   }
 
   async detail(id: string): Promise<PersonDto & { certificate: SummaryCertificate | null; enrollments: EnrollmentPersonDto[] }> {
-    const p = await this.em.findOne(Person, id);
+    const p = await this.em.findOne(Person, { id, anonymizedAt: null });
     if (!p) throw notFound();
     const enrollments = await this.em.find(
       Enrollment,
@@ -161,7 +162,7 @@ export class RegistryService {
   }
 
   async reenable(a: AuthContext, id: string): Promise<PersonDto> {
-    const p = await this.em.findOne(Person, id);
+    const p = await this.em.findOne(Person, { id, anonymizedAt: null });
     if (!p) throw notFound();
     if (!p.disabledAt) throw new ConflictException({ message: 'The person is not disabled', code: 'PERSON_NOT_DISABLED' });
     p.disabledAt = null;
