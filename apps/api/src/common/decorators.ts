@@ -1,6 +1,7 @@
 import { createParamDecorator, ExecutionContext, SetMetadata } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { AuthContext, AuthRequest } from './auth-context';
+import { authLimit } from './auth-limit';
 
 export const IS_PUBLIC = 'isPublic';
 export const WITHOUT_CLUB = 'withoutClub';
@@ -24,6 +25,5 @@ export const CurrentAuth = createParamDecorator((_: unknown, ctx: ExecutionConte
   return req.auth;
 });
 
-/** Strict limit for sensitive routes (login, registration, reset). Raised under test. */
-export const AuthLimit = () =>
-  Throttle({ default: { limit: process.env.NODE_ENV === 'test' ? 10_000 : 10, ttl: 60_000 } });
+/** Strict limit for sensitive routes (login, registration, reset). Raised under test and for the e2e outbox (`authLimit`). */
+export const AuthLimit = () => Throttle({ default: { limit: authLimit(process.env), ttl: 60_000 } });
