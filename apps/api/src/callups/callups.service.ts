@@ -50,6 +50,8 @@ export interface StaffLists {
   staff: StaffRow[];
   /** The club asks for it and no coach declared available. */
   noCoachWarning: boolean;
+  /** The viewer's own call-up as a player, when they are also a player of the season and called up (#15). Null otherwise. */
+  ownCallup: { enrollmentId: string; response: CallupResponse } | null;
 }
 
 /**
@@ -94,6 +96,8 @@ export class CallupsService {
     if (view === 'player') return this.playerLists(dto, rows, own.filter((e) => e.type === EnrollmentType.PLAYER).map((e) => e.id), staff.rows);
 
     const { calledUp, callable, notCallable } = partition(rows);
+    const ownPlayerIds = own.filter((e) => e.type === EnrollmentType.PLAYER).map((e) => e.id);
+    const mine = calledUp.find((r) => ownPlayerIds.includes(r.enrollmentId));
     const club = await this.em.findOneOrFail(Club, a.clubId as string, { fields: ['blockCertificateExpired'] });
     return {
       event: dto,
@@ -105,6 +109,7 @@ export class CallupsService {
       notCallable,
       staff: staff.rows,
       noCoachWarning: staff.noCoachWarning,
+      ownCallup: mine ? { enrollmentId: mine.enrollmentId, response: mine.response as CallupResponse } : null,
     };
   }
 

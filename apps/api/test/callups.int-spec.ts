@@ -448,6 +448,40 @@ describe('call-ups: three lists per event', () => {
       expect(ids(r.body.calledUp)).toEqual([a.enrollmentId]);
     });
 
+    it('a person who is staff and player of the season gets their own call-up in the staff view, separate from the availability (#15)', async () => {
+      const s = await club('cu-86@test.it');
+      const ev = await s.event(s.t1.teamId);
+      const dual = await s.person('dual');
+      const staffEnrollment = await s.enroll(s.t1.seasonId, dual.id, 'staff', 'trainer');
+      const playerEnrollment = await s.enroll(s.t1.seasonId, dual.id, 'player');
+      await s.certify(dual.id);
+      await post(s.admin, '/invitations', { email: `dual-${s.email}`, role: 'staff', personId: dual.id });
+      const me = await accept(`dual-${s.email}`);
+
+      const before = await lists(me.token, ev.id);
+      expect(before.view).toBe('read');
+      expect(before.ownCallup).toBeNull();
+
+      expect((await callUp(s.coach1.token, ev.id, playerEnrollment.id)).status).toBe(201);
+      expect((await lists(me.token, ev.id)).ownCallup).toEqual({ enrollmentId: playerEnrollment.id, response: 'pending' });
+
+      expect((await send(me.token, 'PUT', `/events/${ev.id}/callups/me`, { response: 'confirmed' })).status).toBe(200);
+      const after = await lists(me.token, ev.id);
+      expect(after.ownCallup).toEqual({ enrollmentId: playerEnrollment.id, response: 'confirmed' });
+      const own = after.staff.find((x: { enrollmentId: string }) => x.enrollmentId === staffEnrollment.id);
+      expect(own.response).toBeNull();
+
+      expect((await send(me.token, 'PUT', `/events/${ev.id}/availability/me`, { response: 'declined' })).status).toBe(200);
+      expect((await lists(me.token, ev.id)).ownCallup).toEqual({ enrollmentId: playerEnrollment.id, response: 'confirmed' });
+    });
+
+    it('someone who is only staff has no own call-up, and a player-only view is unchanged', async () => {
+      const s = await club('cu-87@test.it');
+      const ev = await s.event(s.t1.teamId);
+      expect((await lists(s.coach1.token, ev.id)).ownCallup).toBeNull();
+      expect(Object.keys((await send(s.player.token, 'GET', `/events/${ev.id}/callups`)).body)).not.toContain('ownCallup');
+    });
+
     it('staff of the team reads all the lists, the coach of another team and the player of another team do not', async () => {
       const s = await club('cu-62@test.it');
       const ev = await s.event(s.t1.teamId);
