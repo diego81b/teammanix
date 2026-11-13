@@ -24,38 +24,57 @@
 
       <p v-if="data.rows.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">{{ $t('teamRoster.none') }}</p>
       <ul v-else class="space-y-2">
-        <li v-for="r in data.rows" :key="r.id" class="flex items-start justify-between gap-3 rounded-lg border border-default bg-elevated p-3">
-          <div class="min-w-0">
-            <p class="font-semibold">{{ fullName(r) }}<span v-if="r.jerseyNumber !== null" class="ml-2 text-sm font-normal text-muted">#{{ r.jerseyNumber }}</span></p>
-            <p class="text-sm text-muted">{{ roleRow(r) }}</p>
-            <div v-if="r.type === 'player'" class="mt-2 flex flex-wrap gap-2">
-              <UBadge :color="r.status === 'available' ? 'success' : 'warning'" variant="subtle" :label="$t(`status.enrollment.${r.status}`)" />
-              <UBadge v-if="r.certificate" :color="variantCertificate(r.certificate.status)" variant="subtle" :label="$t(`status.certificate.${r.certificate.status}`)" />
+        <li v-for="r in data.rows" :key="r.id" class="rounded-lg border border-default bg-elevated p-3">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="font-semibold">{{ fullName(r) }}<span v-if="r.jerseyNumber !== null" class="ml-2 text-sm font-normal text-muted">#{{ r.jerseyNumber }}</span></p>
+              <p class="text-sm text-muted">{{ roleRow(r) }}</p>
+              <div v-if="r.type === 'player'" class="mt-2 flex flex-wrap gap-2">
+                <UBadge :color="r.status === 'available' ? 'success' : 'warning'" variant="subtle" :label="$t(`status.enrollment.${r.status}`)" />
+                <UBadge v-if="r.certificate" :color="variantCertificate(r.certificate.status)" variant="subtle" :label="$t(`status.certificate.${r.certificate.status}`)" />
+              </div>
+            </div>
+            <div v-if="statusAction(r, data.canSetStatus)" class="flex shrink-0 flex-col items-end gap-2 sm:flex-row">
+              <UButton
+                v-if="r.status !== 'injured'"
+                color="neutral"
+                variant="ghost"
+                size="lg"
+                class="min-h-11"
+                icon="i-tm-calendar"
+                :label="$t('teamRoster.expectedAction')"
+                @click="openExpected(r)"
+              />
+              <UButton
+                color="neutral"
+                variant="outline"
+                size="lg"
+                class="min-h-11"
+                :loading="busy === r.id"
+                :label="$t(statusLabel(r))"
+                @click="change(r)"
+              />
             </div>
           </div>
-          <UButton
-            v-if="statusAction(r, data.canSetStatus)"
-            color="neutral"
-            variant="outline"
-            size="lg"
-            class="min-h-11"
-            :loading="busy === r.id"
-            :label="$t(statusAction(r, data.canSetStatus) === 'injured' ? 'teamRoster.markInjured' : 'teamRoster.markAvailable')"
-            @click="change(r)"
-          />
+          <p v-if="probablyInjured(r)" class="mt-2 flex items-start gap-1 text-sm text-warning">
+            <UIcon name="i-tm-warning" class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            <span>{{ $t('teamRoster.probablyInjured', { date: formatDate(probablyInjured(r)!.returnDate, locale) }) }}</span>
+          </p>
         </li>
       </ul>
     </template>
+    <ExpectedInjury v-model:open="expectedOpen" :row="expectedRow" @saved="load" />
   </div>
 </template>
 
 <script setup lang="ts">
-import type { RosterRow } from '~/types/api'
+import type { ExpectedPeriod, RosterRow } from '~/types/api'
 import { variantCertificate } from '~/utils/certificate'
-import { countRoster, fullName, statusAction } from '~/utils/roster'
+import { formatDate } from '~/utils/date'
+import { countRoster, fullName, probablyInjured, statusAction } from '~/utils/roster'
 import { labelPosition } from '~/utils/sport'
 
-const { t, te } = useI18n()
+const { t, te, locale } = useI18n()
 const route = useRoute()
 const seasonId = computed(() => String(route.params.seasonId))
 const people = usePeople()
@@ -65,6 +84,19 @@ useHead({ title: () => `${t('teamRoster.title')} · TeamManix` })
 
 const count = computed(() => countRoster(data.value?.rows ?? []))
 const roleRow = (r: RosterRow) => (r.type === 'staff' ? t(`staffRole.${r.staffRole ?? 'other'}`) : (labelPosition(r.position, te, t) ?? t('enrollmentType.player')))
+
+type Row = RosterRow & { expectedInjury: ExpectedPeriod | null }
+
+/** Marking injured a probably injured player is confirming the injury (#21): same action, clearer words. */
+const statusLabel = (r: Row) =>
+  statusAction(r, true) === 'available' ? 'teamRoster.markAvailable' : probablyInjured(r) ? 'teamRoster.confirmInjury' : 'teamRoster.markInjured'
+
+const expectedOpen = ref(false)
+const expectedRow = ref<Row | null>(null)
+function openExpected(r: Row) {
+  expectedRow.value = r
+  expectedOpen.value = true
+}
 
 const busy = ref('')
 const errorAction = ref('')

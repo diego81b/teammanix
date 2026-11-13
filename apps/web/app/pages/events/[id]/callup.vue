@@ -97,8 +97,8 @@
                 <p class="flex flex-wrap items-center gap-1.5 pt-1">
                   <UBadge v-if="tab === 'calledUp' && r.response" :color="RESPONSE_COLOR[r.response]" variant="subtle" :label="$t(`callup.response.${r.response}`)" />
                   <UBadge v-if="tab === 'calledUp' && !r.notified" color="neutral" variant="outline" :label="$t('callup.toSend')" />
-                  <UBadge v-for="x in blockers(r)" :key="x.code" color="error" variant="subtle" icon="i-tm-ban" :label="reasonText(x)" />
-                  <UBadge v-for="x in warnings(r)" :key="x.code" color="warning" variant="subtle" icon="i-tm-warning" :label="reasonText(x)" />
+                  <UBadge v-for="x in blockers(r)" :key="x.code" color="error" variant="subtle" icon="i-tm-ban" class="max-w-full" :ui="{ label: 'whitespace-normal text-left' }" :label="reasonText(x)" />
+                  <UBadge v-for="x in warnings(r)" :key="x.code" color="warning" variant="subtle" icon="i-tm-warning" class="max-w-full" :ui="{ label: 'whitespace-normal text-left' }" :label="reasonText(x)" />
                 </p>
               </div>
               <template v-if="data.view === 'manage'">

@@ -19,6 +19,7 @@ export function reasonLabel(r: CallupReason, t: (key: string, params?: Record<st
     const base = t(`${reasonKey('suspended')}Match`, { match: String(r.match), total: String(r.total) })
     return r.until ? `${base} · ${fmt(r.until)}` : base
   }
+  if (r.code === 'probably_injured' && r.until) return t(`${reasonKey('probably_injured')}Until`, { date: fmt(r.until) })
   if (r.code === 'absence') return r.until ? t(`${reasonKey('absence')}Until`, { date: fmt(r.until) }) : t(reasonKey('absence'))
   return r.until ? `${t(reasonKey(r.code))} · ${fmt(r.until)}` : t(reasonKey(r.code))
 }

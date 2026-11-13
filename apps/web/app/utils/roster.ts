@@ -1,4 +1,4 @@
-import type { RosterRow, CertificateStatus, EnrollmentStatus, EnrollmentType } from '../types/api'
+import type { RosterRow, CertificateStatus, EnrollmentStatus, EnrollmentType, ExpectedPeriod } from '../types/api'
 
 export interface RosterFilters {
   q?: string
@@ -30,4 +30,19 @@ export function countRoster(rows: readonly RosterRow[]): { players: number, staf
 export function statusAction(r: Pick<RosterRow, 'type' | 'status'>, canSet: boolean): EnrollmentStatus | null {
   if (!canSet || r.type !== 'player') return null
   return r.status === 'injured' ? 'available' : 'injured'
+}
+
+/**
+ * The expected injury to show on a row (#21): players only, and not once the injury is confirmed (the injured badge says
+ * it). The API sends the dates only to who can set the status; everybody else gets null.
+ */
+export function probablyInjured(r: Pick<RosterRow, 'type' | 'status'> & { expectedInjury?: ExpectedPeriod | null }): ExpectedPeriod | null {
+  if (r.type !== 'player' || r.status === 'injured') return null
+  return r.expectedInjury ?? null
+}
+
+/** The expected period form: both days, the return (first day available again) after the start. The API checks again. */
+export function checkExpected(p: ExpectedPeriod): 'ok' | 'required' | 'returnAfterStart' {
+  if (!p.startDate || !p.returnDate) return 'required'
+  return p.returnDate > p.startDate ? 'ok' : 'returnAfterStart'
 }

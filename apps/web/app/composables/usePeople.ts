@@ -1,5 +1,5 @@
 import type {
-  EnrollmentOut, PersonDetail, PersonDto, RosterRow, StaffRole, EnrollmentStatus, EnrollmentType, TeamRoster,
+  EnrollmentOut, ExpectedPeriod, PersonDetail, PersonDto, RosterRow, StaffRole, EnrollmentStatus, EnrollmentType, TeamRoster,
 } from '../types/api'
 
 export interface PersonData {
@@ -37,6 +37,10 @@ export function usePeople() {
     /** Status only, for staff with `people.manage` in the team (#27). The API shares it across the person's teams. */
     setStatus: (id: string, status: EnrollmentStatus) =>
       api<EnrollmentOut>(`/enrollments/${id}/status`, { method: 'PUT', body: { status } }),
+    /** Probably injured (#21): records or moves the expected period. Confirming is `setStatus(id, 'injured')`. */
+    setExpectedInjury: (id: string, period: ExpectedPeriod) =>
+      api<ExpectedPeriod & { enrollmentId: string }>(`/enrollments/${id}/expected-injury`, { method: 'PUT', body: { ...period } }),
+    endExpectedInjury: (id: string) => api<void>(`/enrollments/${id}/expected-injury`, { method: 'DELETE' }),
     closeEnrollment: (id: string) => api<EnrollmentOut>(`/enrollments/${id}/close`, { method: 'POST', body: {} }),
     promote: (id: string, data: { seasonId: string, closeSource?: boolean, staffRole?: StaffRole, position?: string, jerseyNumber?: number }) =>
       api<EnrollmentOut>(`/enrollments/${id}/promote`, { method: 'POST', body: { ...data } }),

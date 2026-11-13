@@ -75,3 +75,28 @@ describe('absences page', () => {
     expect(wrapper.text()).toContain('Under 12')
   })
 })
+
+describe('absences page: own injury state (#21)', () => {
+  it('shows the expected injury staff recorded, with its dates', async () => {
+    registerEndpoint('/api/absences/me', () => [{ ...enrollment([])[0], status: 'available', expectedInjury: { startDate: '2026-11-10', returnDate: '2026-11-24' } }])
+    const wrapper = await mountSuspended(AbsencesPage)
+    await flushPromises()
+    expect(wrapper.text()).toContain('Staff expect you to be out from')
+  })
+
+  it('shows a confirmed injury instead of the period', async () => {
+    registerEndpoint('/api/absences/me', () => [{ ...enrollment([])[0], status: 'injured', expectedInjury: null }])
+    const wrapper = await mountSuspended(AbsencesPage)
+    await flushPromises()
+    expect(wrapper.text()).toContain('Staff marked you injured')
+    expect(wrapper.text()).not.toContain('Staff expect you')
+  })
+
+  it('says nothing to a fit player', async () => {
+    registerEndpoint('/api/absences/me', () => [{ ...enrollment([])[0], status: 'available', expectedInjury: null }])
+    const wrapper = await mountSuspended(AbsencesPage)
+    await flushPromises()
+    expect(wrapper.text()).not.toContain('Staff expect you')
+    expect(wrapper.text()).not.toContain('Staff marked you injured')
+  })
+})

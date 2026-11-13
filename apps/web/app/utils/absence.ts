@@ -1,4 +1,4 @@
-import type { AbsenceOut, SeasonAbsences } from '../types/api'
+import type { AbsenceOut, ExpectedPeriod, MyEnrollmentAbsences, SeasonAbsences } from '../types/api'
 
 export interface AbsenceForm {
   startDate: string
@@ -124,4 +124,15 @@ export function splitTeamAbsences(rows: readonly SeasonAbsences[], today: string
     current: current.sort((a, b) => first(a).localeCompare(first(b))),
     past: past.sort((a, b) => lastEnd(b).localeCompare(lastEnd(a))),
   }
+}
+
+/**
+ * The player's own injury state (#21), the same in every team: confirmed injured, or expected out with the dates staff
+ * recorded, or nothing. Staff enrollments never carry it.
+ */
+export function ownInjury(rows: readonly Pick<MyEnrollmentAbsences, 'type' | 'status' | 'expectedInjury'>[]): { kind: 'injured' } | { kind: 'expected', period: ExpectedPeriod } | null {
+  const players = rows.filter(r => r.type === 'player')
+  if (players.some(r => r.status === 'injured')) return { kind: 'injured' }
+  const period = players.find(r => r.expectedInjury)?.expectedInjury
+  return period ? { kind: 'expected', period } : null
 }

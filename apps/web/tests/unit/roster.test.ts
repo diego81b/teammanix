@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { countRoster, filterRoster, fullName, statusAction } from '../../app/utils/roster'
+import { checkExpected, countRoster, filterRoster, fullName, probablyInjured, statusAction } from '../../app/utils/roster'
 import type { RosterRow } from '../../app/types/api'
 
 const row = (o: Partial<RosterRow>): RosterRow => ({
@@ -48,5 +48,32 @@ describe('statusAction', () => {
     expect(statusAction(row({ status: 'injured' }), true)).toBe('available')
     expect(statusAction(row({ status: 'available' }), false)).toBeNull()
     expect(statusAction(row({ type: 'staff', staffRole: 'coach' }), true)).toBeNull()
+  })
+})
+
+describe('probablyInjured (#21)', () => {
+  const p = { startDate: '2026-11-10', returnDate: '2026-11-24' }
+  it('a player with a period still running and not injured', () => {
+    expect(probablyInjured({ type: 'player', status: 'available', expectedInjury: p })).toEqual(p)
+  })
+  it('nothing once confirmed, for staff, or without a period', () => {
+    expect(probablyInjured({ type: 'player', status: 'injured', expectedInjury: p })).toBeNull()
+    expect(probablyInjured({ type: 'staff', status: 'available', expectedInjury: p })).toBeNull()
+    expect(probablyInjured({ type: 'player', status: 'available', expectedInjury: null })).toBeNull()
+    expect(probablyInjured({ type: 'player', status: 'available' })).toBeNull()
+  })
+})
+
+describe('checkExpected: the form of the expected period', () => {
+  it('both days, the return after the start', () => {
+    expect(checkExpected({ startDate: '2026-11-10', returnDate: '2026-11-24' })).toBe('ok')
+  })
+  it('a missing day', () => {
+    expect(checkExpected({ startDate: '', returnDate: '2026-11-24' })).toBe('required')
+    expect(checkExpected({ startDate: '2026-11-10', returnDate: '' })).toBe('required')
+  })
+  it('a return on the start day or before', () => {
+    expect(checkExpected({ startDate: '2026-11-10', returnDate: '2026-11-10' })).toBe('returnAfterStart')
+    expect(checkExpected({ startDate: '2026-11-10', returnDate: '2026-11-01' })).toBe('returnAfterStart')
   })
 })

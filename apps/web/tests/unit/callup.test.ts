@@ -164,6 +164,9 @@ describe('reasonLabel: the text of a reason', () => {
   it('a declared absence with an end says "not available until"', () => {
     expect(reasonLabel({ code: 'absence', severity: 'confirm', until: '2026-11-15' }, t, fmt)).toBe('callup.reason.absenceUntil:{"date":"<2026-11-15>"}')
   })
+  it('probably injured names the expected return', () => {
+    expect(reasonLabel({ code: 'probably_injured', severity: 'warning', until: '2026-11-24' }, t, fmt)).toBe('callup.reason.probably_injuredUntil:{"date":"<2026-11-24>"}')
+  })
   it('a suspension says which match of how many', () => {
     expect(reasonLabel({ code: 'suspended', severity: 'hard', match: 2, total: 3 }, t, fmt)).toBe('callup.reason.suspendedMatch:{"match":"2","total":"3"}')
   })

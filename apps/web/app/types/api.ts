@@ -138,6 +138,12 @@ export interface RosterRow {
   certificate: SummaryCertificate | null
 }
 
+/** Expected injury (#21): `returnDate` is the first day available again. Dates only. */
+export interface ExpectedPeriod {
+  startDate: string
+  returnDate: string
+}
+
 /** Roster of the team as staff reads it (#29). */
 export interface TeamRoster {
   teamName: string
@@ -145,7 +151,8 @@ export interface TeamRoster {
   seasonStatus: SeasonStatus
   canSetStatus: boolean
   canSeeCertificates: boolean
-  rows: RosterRow[]
+  /** `expectedInjury` is filled only for who can set the status (#21). */
+  rows: (RosterRow & { expectedInjury: ExpectedPeriod | null })[]
 }
 
 export interface EnrollmentOut {
@@ -483,6 +490,9 @@ export interface MyEnrollmentAbsences {
   seasonStatus: SeasonStatus
   seasonStart: string
   seasonEnd: string
+  /** Players: own state and the expected injury still running (#21). */
+  status: EnrollmentStatus
+  expectedInjury: ExpectedPeriod | null
   absences: AbsenceOut[]
 }
 

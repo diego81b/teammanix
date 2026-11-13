@@ -15,6 +15,14 @@
 
     <template v-if="data">
       <p v-if="data.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">{{ $t('absences.noEnrollment') }}</p>
+      <UAlert v-if="injury?.kind === 'injured'" color="error" variant="subtle" icon="i-tm-ban" :title="$t('absences.injured')" />
+      <UAlert
+        v-else-if="injury?.kind === 'expected'"
+        color="warning"
+        variant="subtle"
+        icon="i-tm-warning"
+        :title="$t('absences.expected', { from: formatDate(injury.period.startDate, locale), to: formatDate(injury.period.returnDate, locale) })"
+      />
 
       <section v-for="e in data" :key="e.enrollmentId" class="space-y-3" :aria-label="`${e.teamName} · ${e.seasonName}`">
         <div class="flex flex-wrap items-center gap-3">
@@ -156,7 +164,7 @@
 <script setup lang="ts">
 import type { FormError } from '@nuxt/ui'
 import type { AbsenceOut, AffectedEvent, MyEnrollmentAbsences } from '~/types/api'
-import { canFree, formPayload, freedPeriods, freeError, freePayload, periodError, splitAbsences, toggleEvent, pickAll, type AbsenceForm, type FreeForm } from '~/utils/absence'
+import { canFree, formPayload, freedPeriods, freeError, freePayload, ownInjury, periodError, splitAbsences, toggleEvent, pickAll, type AbsenceForm, type FreeForm } from '~/utils/absence'
 import { eventHeading, todayDay } from '~/utils/calendar'
 import { formatDate } from '~/utils/date'
 import { splitInstant } from '~/utils/event'
@@ -167,6 +175,8 @@ const absences = useAbsences()
 const toast = useToast()
 
 const { data, loading, error, reload: load } = useLoad(() => absences.mine())
+/** Own injury state (#21): the same in every team, so shown once above the teams. */
+const injury = computed(() => ownInjury(data.value ?? []))
 onMounted(load)
 
 const open = reactive({ form: false, free: false, decline: false, remove: false })

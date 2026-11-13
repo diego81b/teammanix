@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canFree, formPayload, freedPeriods, freeError, freePayload, isPast, periodError, pickAll, splitAbsences, splitTeamAbsences, toggleEvent } from '../../app/utils/absence'
+import { canFree, formPayload, freedPeriods, freeError, freePayload, isPast, ownInjury, periodError, pickAll, splitAbsences, splitTeamAbsences, toggleEvent } from '../../app/utils/absence'
 
 const season = { seasonStart: '2026-09-01', seasonEnd: '2027-06-30' }
 const form = (over: Partial<{ startDate: string, endDate: string, untilFurtherNotice: boolean }> = {}) => ({ startDate: '2026-11-10', endDate: '2026-11-15', untilFurtherNotice: false, ...over })
@@ -203,5 +203,22 @@ describe('canFree', () => {
     expect(canFree([{ id: 'a', startDate: '2026-11-01', endDate: '2026-12-01' }], today)).toBe(true)
     expect(canFree([{ id: 'a', startDate: '2026-11-01', endDate: null }], today)).toBe(true)
     expect(canFree([], today)).toBe(false)
+  })
+})
+
+describe('ownInjury: what the player reads of their own state (#21)', () => {
+  const p = { startDate: '2026-11-10', returnDate: '2026-11-24' }
+  const e = (o: object) => ({ type: 'player' as const, status: 'available' as const, expectedInjury: null, ...o })
+
+  it('nothing for a fit player or for staff', () => {
+    expect(ownInjury([e({})])).toBeNull()
+    expect(ownInjury([e({ type: 'staff', expectedInjury: p })])).toBeNull()
+    expect(ownInjury([])).toBeNull()
+  })
+  it('the expected period, with its dates', () => {
+    expect(ownInjury([e({ type: 'staff' }), e({ expectedInjury: p })])).toEqual({ kind: 'expected', period: p })
+  })
+  it('a confirmed injury wins over the period', () => {
+    expect(ownInjury([e({ expectedInjury: p }), e({ status: 'injured' })])).toEqual({ kind: 'injured' })
   })
 })
