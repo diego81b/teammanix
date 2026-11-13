@@ -39,13 +39,28 @@
             :aria-label="$t('person.reenableName', { name: fullName(p) })"
             @click="reenable(p.id)"
           />
+          <UDropdownMenu :items="menu(p)" :content="{ align: 'end' }">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              icon="i-tm-dots-v"
+              class="min-h-11 min-w-11"
+              :loading="ongoing === `export-${p.id}`"
+              :aria-label="$t('archive.actions', { name: fullName(p) })"
+            />
+          </UDropdownMenu>
         </li>
       </ul>
     </template>
+
+    <DeletePerson v-model:open="deleteOpen" :person="toDelete" @done="load" />
   </div>
 </template>
 
 <script setup lang="ts">
+import type { DropdownMenuItem } from '@nuxt/ui'
+import type { PersonDto } from '~/types/api'
+import { exportFile } from '~/utils/person'
 import { fullName } from '~/utils/roster'
 
 const { t } = useI18n()
@@ -70,6 +85,46 @@ async function reenable(id: string) {
     await people.reenable(id)
     toast.add({ title: t('person.reenabled'), color: 'success' })
     await load()
+  }
+  catch (e) {
+    errorAction.value = errorText(e)
+  }
+  finally {
+    ongoing.value = ''
+  }
+}
+
+const deleteOpen = ref(false)
+const toDelete = ref<{ id: string, name: string } | null>(null)
+
+function menu(p: PersonDto): DropdownMenuItem[] {
+  return [
+    { label: t('archive.exportData'), icon: 'i-tm-download', onSelect: () => exportData(p) },
+    {
+      label: t('archive.deleteForGood'),
+      icon: 'i-tm-trash',
+      color: 'error',
+      onSelect: () => {
+        toDelete.value = { id: p.id, name: fullName(p) }
+        deleteOpen.value = true
+      },
+    },
+  ]
+}
+
+/** The API answers with JSON: the page turns it into a file the browser saves. */
+async function exportData(p: PersonDto) {
+  ongoing.value = `export-${p.id}`
+  errorAction.value = ''
+  try {
+    const file = exportFile(p.id, await people.exportData(p.id))
+    const url = URL.createObjectURL(new Blob([file.text], { type: file.type }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = file.name
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    toast.add({ title: t('archive.exported'), color: 'success' })
   }
   catch (e) {
     errorAction.value = errorText(e)

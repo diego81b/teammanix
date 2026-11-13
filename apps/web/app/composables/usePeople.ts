@@ -28,6 +28,10 @@ export function usePeople() {
     create: (data: PersonData) => api<PersonDto>('/people', { method: 'POST', body: { ...data } }),
     disable: (id: string) => api<PersonDto>(`/people/${id}/disable`, { method: 'POST', body: {} }),
     reenable: (id: string) => api<PersonDto>(`/people/${id}/reenable`, { method: 'POST', body: {} }),
+    /** Disabled people only (#10): all the data the club keeps, as the API returns it. */
+    exportData: (id: string) => api<Record<string, unknown>>(`/people/${id}/export`),
+    /** Disabled people only (#10): sensitive data deleted, record anonymized. Cannot be undone. */
+    remove: (id: string) => api<void>(`/people/${id}`, { method: 'DELETE' }),
     roster: (seasonId: string) => api<RosterRow[]>(`/seasons/${seasonId}/roster`),
     teamRoster: (seasonId: string) => api<TeamRoster>(`/seasons/${seasonId}/team-roster`),
     enroll: (seasonId: string, data: EnrollmentData) =>

@@ -40,3 +40,8 @@ export function personData(c: PersonFields): { name: string, surname?: string, b
     ...(clean(c.phone) ? { phone: clean(c.phone) } : {}),
   }
 }
+
+/** The export of a disabled person (art. 15 and 20): named by id, so no name ends up in downloads or history. */
+export function exportFile(personId: string, data: unknown): { name: string, type: string, text: string } {
+  return { name: `person-${personId}.json`, type: 'application/json', text: JSON.stringify(data, null, 2) }
+}

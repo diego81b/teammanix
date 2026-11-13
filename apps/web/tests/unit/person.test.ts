@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { personData, validatePerson, type PersonFields } from '../../app/utils/person'
+import { exportFile, personData, validatePerson, type PersonFields } from '../../app/utils/person'
 
 const empty = (o: Partial<PersonFields> = {}): PersonFields => ({ name: '', surname: '', birthDate: '', email: '', phone: '', ...o })
 
@@ -35,5 +35,15 @@ describe('personData', () => {
     expect(personData({ name: 'A', surname: 'B', birthDate: '2010-05-01', email: 'a@b.it', phone: '3331234567' })).toEqual({
       name: 'A', surname: 'B', birthDate: '2010-05-01', email: 'a@b.it', phone: '3331234567',
     })
+  })
+})
+
+describe('exportFile', () => {
+  it('names the file by id, never by name, and keeps the JSON readable', () => {
+    const f = exportFile('0b5c3d1e-1111-4222-8333-444455556666', { person: { name: 'Mario' } })
+    expect(f.name).toBe('person-0b5c3d1e-1111-4222-8333-444455556666.json')
+    expect(f.type).toBe('application/json')
+    expect(JSON.parse(f.text)).toEqual({ person: { name: 'Mario' } })
+    expect(f.text).toBe(JSON.stringify({ person: { name: 'Mario' } }, null, 2))
   })
 })
