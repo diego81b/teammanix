@@ -2,6 +2,7 @@ import { UniqueConstraintViolationException } from '@mikro-orm/core';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
+import { AuthorizationsService } from '../permissions/authorizations.service';
 import type { SummaryCertificate } from '../certificates/certificates.service';
 import { CertificatesService } from '../certificates/certificates.service';
 import type { AuthContext } from '../common/auth-context';
@@ -10,7 +11,7 @@ import { Enrollment } from '../entities/enrollment.entity';
 import { Person } from '../entities/person.entity';
 import { Season } from '../entities/season.entity';
 import { editable } from '../structure/season.rules';
-import type { EnrollmentDto, EditEnrollmentDto } from './dto-admin';
+import type { EnrollmentDto, EditEnrollmentDto, EnrollmentStatusDto } from './dto-admin';
 import { type EnrollmentData, type EnrollmentError, allowedPosition, validateEnrollment } from './enrollment.rules';
 
 export interface RosterRow {
@@ -86,6 +87,7 @@ export class RosterService {
     private readonly em: EntityManager,
     private readonly audit: AuditService,
     private readonly certificates: CertificatesService,
+    private readonly authz: AuthorizationsService,
   ) {}
 
   /** Only open enrollments and non-disabled people. */
@@ -154,6 +156,25 @@ export class RosterService {
     if (dto.position !== undefined) i.position = dto.position;
     if (dto.jerseyNumber !== undefined) i.jerseyNumber = dto.jerseyNumber;
     if (dto.status !== undefined) i.status = dto.status;
+    await this.saveStatus(a, i, statusBefore);
+    return this.outComplete(i);
+  }
+
+  /**
+   * Status only, for staff with `people.manage` in the team of the enrollment (#27). The write reaches the person's
+   * enrollments in other teams too, for this one field.
+   */
+  async setStatus(a: AuthContext, id: string, dto: EnrollmentStatusDto): Promise<EnrollmentOut> {
+    await this.authz.request(a, 'people.manage', { enrollmentId: id });
+    const i = await this.open(id);
+    const statusBefore = i.status;
+    i.status = dto.status;
+    await this.saveStatus(a, i, statusBefore);
+    return this.outComplete(i);
+  }
+
+  /** Flushes the changes of `i` and, when the status moved, shares it with the person's other enrollments and audits each one. */
+  private async saveStatus(a: AuthContext, i: Enrollment, statusBefore: EnrollmentStatus) {
     const touched = i.status !== statusBefore ? [i, ...(await this.shareStatus(i))] : [];
     await this.em.flush();
     for (const e of touched) {
@@ -166,7 +187,6 @@ export class RosterService {
         meta: { from: statusBefore, a: i.status, origin: i.id },
       });
     }
-    return this.outComplete(i);
   }
 
   /** Copies the status of a player enrollment to the other open player enrollments of the person (#27). Status only, no cause. */

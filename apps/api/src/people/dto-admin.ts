@@ -84,6 +84,12 @@ export class EditEnrollmentDto {
   status?: EnrollmentStatus;
 }
 
+/** Status of a player enrollment, set by staff with `people.manage` (#27). Nothing else can travel on this route. */
+export class EnrollmentStatusDto {
+  @IsEnum(EnrollmentStatus)
+  status!: EnrollmentStatus;
+}
+
 /** New season (draft) for the same team, plus the enrollments chosen from the origin's roster. */
 export class CloneSeasonDto extends CreateSeasonDto {
   @IsArray()
