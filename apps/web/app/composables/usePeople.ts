@@ -33,6 +33,9 @@ export function usePeople() {
       api<EnrollmentOut>(`/seasons/${seasonId}/enrollments`, { method: 'POST', body: { ...data } }),
     editEnrollment: (id: string, data: { staffRole?: StaffRole, position?: string, jerseyNumber?: number, status?: EnrollmentStatus }) =>
       api<EnrollmentOut>(`/enrollments/${id}`, { method: 'PATCH', body: { ...data } }),
+    /** Status only, for staff with `people.manage` in the team (#27). The API shares it across the person's teams. */
+    setStatus: (id: string, status: EnrollmentStatus) =>
+      api<EnrollmentOut>(`/enrollments/${id}/status`, { method: 'PUT', body: { status } }),
     closeEnrollment: (id: string) => api<EnrollmentOut>(`/enrollments/${id}/close`, { method: 'POST', body: {} }),
     promote: (id: string, data: { seasonId: string, closeSource?: boolean, staffRole?: StaffRole, position?: string, jerseyNumber?: number }) =>
       api<EnrollmentOut>(`/enrollments/${id}/promote`, { method: 'POST', body: { ...data } }),
