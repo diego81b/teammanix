@@ -40,5 +40,9 @@ export default defineAppConfig({
     button: {
       slots: { base: 'font-semibold min-h-11 px-4' },
     },
+    // The close button is absolute: the header leaves it room, so a long title wraps instead of running under it.
+    modal: {
+      slots: { header: 'pe-14 sm:pe-14', title: 'break-words' },
+    },
   },
 })
