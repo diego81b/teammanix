@@ -907,6 +907,15 @@ const it = {
     noneCurrent: 'Nessuna assenza in corso o in arrivo.',
     past: 'Assenze concluse ({count})',
   },
+  teamRoster: {
+    title: 'Rosa della squadra',
+    intro: 'Giocatori e staff della stagione, senza contatti. Lo stato Infortunato vale per tutte le squadre della persona e lo vedono gli staff di ciascuna.',
+    toCalendar: 'Calendario',
+    none: 'Nessuna persona in rosa.',
+    markInjured: 'Segna infortunato',
+    markAvailable: 'Segna disponibile',
+    statusChanged: 'Stato aggiornato.',
+  },
   settings: {
     title: 'Impostazioni della società',
     text: 'Regole che valgono per tutta la società. Ogni modifica viene salvata subito.',

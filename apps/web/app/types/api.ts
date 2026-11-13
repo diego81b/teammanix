@@ -138,6 +138,16 @@ export interface RosterRow {
   certificate: SummaryCertificate | null
 }
 
+/** Roster of the team as staff reads it (#29). */
+export interface TeamRoster {
+  teamName: string
+  seasonName: string
+  seasonStatus: SeasonStatus
+  canSetStatus: boolean
+  canSeeCertificates: boolean
+  rows: RosterRow[]
+}
+
 export interface EnrollmentOut {
   id: string
   personId: string

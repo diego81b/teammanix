@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { countRoster, filterRoster, fullName } from '../../app/utils/roster'
+import { countRoster, filterRoster, fullName, statusAction } from '../../app/utils/roster'
 import type { RosterRow } from '../../app/types/api'
 
 const row = (o: Partial<RosterRow>): RosterRow => ({
@@ -40,4 +40,13 @@ describe('filterRoster', () => {
 describe('countRoster', () => {
   it('counts players and staff', () => expect(countRoster(roster)).toEqual({ players: 3, staff: 1 }))
   it('empty roster', () => expect(countRoster([])).toEqual({ players: 0, staff: 0 }))
+})
+
+describe('statusAction', () => {
+  it('offers the opposite state, for players only and only with the permission', () => {
+    expect(statusAction(row({ status: 'available' }), true)).toBe('injured')
+    expect(statusAction(row({ status: 'injured' }), true)).toBe('available')
+    expect(statusAction(row({ status: 'available' }), false)).toBeNull()
+    expect(statusAction(row({ type: 'staff', staffRole: 'coach' }), true)).toBeNull()
+  })
 })

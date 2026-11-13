@@ -25,3 +25,9 @@ export function countRoster(rows: readonly RosterRow[]): { players: number, staf
   const players = rows.filter((r) => r.type === 'player').length
   return { players, staff: rows.length - players }
 }
+
+/** State a staff member can set on a row (#29): the opposite one, for players only and with `people.manage`. Otherwise no action. */
+export function statusAction(r: Pick<RosterRow, 'type' | 'status'>, canSet: boolean): EnrollmentStatus | null {
+  if (!canSet || r.type !== 'player') return null
+  return r.status === 'injured' ? 'available' : 'injured'
+}

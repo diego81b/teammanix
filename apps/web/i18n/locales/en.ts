@@ -903,6 +903,15 @@ const en: typeof it = {
     noneCurrent: 'No current or upcoming absences.',
     past: 'Past absences ({count})',
   },
+  teamRoster: {
+    title: 'Team roster',
+    intro: 'Players and staff of the season, without contact details. The Injured status applies to every team of the person and the staff of each team can see it.',
+    toCalendar: 'Calendar',
+    none: 'Nobody in the roster.',
+    markInjured: 'Mark as injured',
+    markAvailable: 'Mark as available',
+    statusChanged: 'Status updated.',
+  },
   settings: {
     title: 'Club settings',
     text: 'Rules that apply to the whole club. Every change is saved right away.',

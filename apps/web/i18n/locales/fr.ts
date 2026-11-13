@@ -903,6 +903,15 @@ const fr: typeof it = {
     noneCurrent: 'Aucune absence en cours ou à venir.',
     past: 'Absences terminées ({count})',
   },
+  teamRoster: {
+    title: 'Effectif de l\'équipe',
+    intro: 'Joueurs et staff de la saison, sans coordonnées. Le statut Blessé vaut pour toutes les équipes de la personne et le staff de chacune le voit.',
+    toCalendar: 'Calendrier',
+    none: 'Personne dans l\'effectif.',
+    markInjured: 'Marquer comme blessé',
+    markAvailable: 'Marquer comme disponible',
+    statusChanged: 'Statut mis à jour.',
+  },
   settings: {
     title: 'Paramètres du club',
     text: 'Règles valables pour tout le club. Chaque modification est enregistrée tout de suite.',

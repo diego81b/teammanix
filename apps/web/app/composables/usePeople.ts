@@ -1,5 +1,5 @@
 import type {
-  EnrollmentOut, PersonDetail, PersonDto, RosterRow, StaffRole, EnrollmentStatus, EnrollmentType,
+  EnrollmentOut, PersonDetail, PersonDto, RosterRow, StaffRole, EnrollmentStatus, EnrollmentType, TeamRoster,
 } from '../types/api'
 
 export interface PersonData {
@@ -29,6 +29,7 @@ export function usePeople() {
     disable: (id: string) => api<PersonDto>(`/people/${id}/disable`, { method: 'POST', body: {} }),
     reenable: (id: string) => api<PersonDto>(`/people/${id}/reenable`, { method: 'POST', body: {} }),
     roster: (seasonId: string) => api<RosterRow[]>(`/seasons/${seasonId}/roster`),
+    teamRoster: (seasonId: string) => api<TeamRoster>(`/seasons/${seasonId}/team-roster`),
     enroll: (seasonId: string, data: EnrollmentData) =>
       api<EnrollmentOut>(`/seasons/${seasonId}/enrollments`, { method: 'POST', body: { ...data } }),
     editEnrollment: (id: string, data: { staffRole?: StaffRole, position?: string, jerseyNumber?: number, status?: EnrollmentStatus }) =>
