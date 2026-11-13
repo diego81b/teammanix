@@ -57,7 +57,7 @@ export interface MyEnrollmentAbsences {
   seasonStatus: SeasonStatus;
   seasonStart: string;
   seasonEnd: string;
-  /** Players only: the person's own state and the expected injury still running (#21). Staff get `available` and null. */
+  /** Players only: the person's own state and the expected injury still running. Staff get `available` and null. */
   status: EnrollmentStatus;
   expectedInjury: ExpectedPeriod | null;
   absences: AbsenceOut[];

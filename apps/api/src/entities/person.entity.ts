@@ -56,10 +56,7 @@ export class Person extends TenantEntity<'surname' | 'birthDate' | 'completedAt'
   @Property({ type: 'timestamptz', nullable: true })
   disabledAt: Date | null = null;
 
-  /**
-   * Permanent deletion (art. 17): personal fields cleared, sensitive records deleted. The row stays, always disabled, so
-   * enrollments, call-ups and attendance keep the team figures. Null = never deleted.
-   */
+  /** Set by permanent deletion: personal fields cleared, row kept for the team figures. */
   @Property({ type: 'timestamptz', nullable: true })
   anonymizedAt: Date | null = null;
 

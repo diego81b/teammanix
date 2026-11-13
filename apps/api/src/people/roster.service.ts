@@ -37,7 +37,7 @@ export interface EnrollmentOut extends Omit<RosterRow, 'name' | 'surname' | 'cer
 }
 
 /**
- * The injured state belongs to the person, not to the team (#27): a new player enrollment starts injured when
+ * The injured state belongs to the person, not to the team: a new player enrollment starts injured when
  * the person is injured in another open enrollment of a season that is not closed.
  */
 export async function startingStatus(em: EntityManager, personId: string, type: EnrollmentType): Promise<EnrollmentStatus> {
@@ -52,7 +52,7 @@ export async function startingStatus(em: EntityManager, personId: string, type: 
   return injured > 0 ? EnrollmentStatus.INJURED : EnrollmentStatus.AVAILABLE;
 }
 
-/** The roster as staff reads it (#29): who is in the team, no contacts. Certificates only with `certificates.status`. */
+/** The roster as staff reads it: who is in the team, no contacts. Certificates only with `certificates.status`. */
 export interface TeamRoster {
   teamName: string;
   seasonName: string;
@@ -60,7 +60,7 @@ export interface TeamRoster {
   /** The person can set the injured state (`people.manage`, season not closed). For the UI only: the route checks again. */
   canSetStatus: boolean;
   canSeeCertificates: boolean;
-  /** `expectedInjury` (#21) is filled only for who can set the status; null for everybody else, managers included. */
+  /** `expectedInjury` is filled only for who can set the status; null for everybody else, managers included. */
   rows: (RosterRow & { expectedInjury: ExpectedPeriod | null })[];
 }
 
@@ -208,7 +208,7 @@ export class RosterService {
   }
 
   /**
-   * Status only, for staff with `people.manage` in the team of the enrollment (#27). The write reaches the person's
+   * Status only, for staff with `people.manage` in the team of the enrollment. The write reaches the person's
    * enrollments in other teams too, for this one field.
    */
   async setStatus(a: AuthContext, id: string, dto: EnrollmentStatusDto): Promise<EnrollmentOut> {
@@ -226,7 +226,7 @@ export class RosterService {
   /** Flushes the changes of `i` and, when the status moved, shares it with the person's other enrollments and audits each one. */
   private async saveStatus(a: AuthContext, i: Enrollment, statusBefore: EnrollmentStatus) {
     const touched = i.status !== statusBefore ? [i, ...(await this.shareStatus(i))] : [];
-    // Confirming the injury (#21) consumes the expected periods of the person.
+    // Confirming the injury consumes the expected periods of the person.
     const consumed = i.status === EnrollmentStatus.INJURED && statusBefore !== EnrollmentStatus.INJURED ? await consumeExpected(this.em, i.person.id) : [];
     await this.em.flush();
     for (const id of consumed) {
@@ -244,7 +244,7 @@ export class RosterService {
     }
   }
 
-  /** Copies the status of a player enrollment to the other open player enrollments of the person (#27). Status only, no cause. */
+  /** Copies the status of a player enrollment to the other open player enrollments of the person. Status only, no cause. */
   private async shareStatus(origin: Enrollment): Promise<Enrollment[]> {
     if (origin.type !== EnrollmentType.PLAYER) return [];
     const others = await this.em.find(Enrollment, {

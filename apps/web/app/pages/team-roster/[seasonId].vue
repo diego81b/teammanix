@@ -87,7 +87,7 @@ const roleRow = (r: RosterRow) => (r.type === 'staff' ? t(`staffRole.${r.staffRo
 
 type Row = RosterRow & { expectedInjury: ExpectedPeriod | null }
 
-/** Marking injured a probably injured player is confirming the injury (#21): same action, clearer words. */
+/** Marking injured a probably injured player is confirming the injury: same action, clearer words. */
 const statusLabel = (r: Row) =>
   statusAction(r, true) === 'available' ? 'teamRoster.markAvailable' : probablyInjured(r) ? 'teamRoster.confirmInjury' : 'teamRoster.markInjured'
 

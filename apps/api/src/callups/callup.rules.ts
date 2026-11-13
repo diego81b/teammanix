@@ -32,7 +32,7 @@ export interface Candidate {
   absence?: { until: string | null } | null;
   /** Suspension that covers this match (rule 13): its place in the count, and the end day for a period. Matches only. */
   suspension?: { match: number; total: number; until: string | null } | null;
-  /** Expected injury that covers the day of the event (#21): `until` is the expected return. Never blocks. */
+  /** Expected injury that covers the day of the event: `until` is the expected return. Never blocks. */
   expectedInjury?: { until: string } | null;
 }
 
@@ -73,7 +73,7 @@ export const suspensionProvider: ReasonProvider = (c, ctx) =>
     : [];
 
 /**
- * A player staff expect to be out (#21) is "probably injured": a warning only, staff stay in control. Once the injury is
+ * A player staff expect to be out is "probably injured": a warning only, staff stay in control. Once the injury is
  * confirmed the hard `injured` reason says it all, so the warning goes.
  */
 export const expectedInjuryProvider: ReasonProvider = (c) =>

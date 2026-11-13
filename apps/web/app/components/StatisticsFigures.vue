@@ -11,7 +11,7 @@
 import type { StatisticsTotals } from '~/types/api'
 import { statisticsFigures } from '~/utils/statistics'
 
-/** The figures of one player or of the whole team (#20), always in the same order. */
+/** The figures of one player or of the whole team, always in the same order. */
 const props = defineProps<{ stats: StatisticsTotals }>()
 const figures = computed(() => statisticsFigures(props.stats))
 </script>

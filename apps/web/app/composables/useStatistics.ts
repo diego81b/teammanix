@@ -1,7 +1,7 @@
 import type { OwnStatistics, SeasonStatistics } from '../types/api'
 
 /**
- * Season statistics (#20), read only. Staff of the season and the admin get every player, managers in scope the team
+ * Season statistics, read only. Staff of the season and the admin get every player, managers in scope the team
  * totals, a player only their own row. The API decides and audits every read.
  */
 export function useStatistics() {

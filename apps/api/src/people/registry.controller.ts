@@ -55,7 +55,6 @@ export class RegistryController {
     return this.registry.reenable(a, id);
   }
 
-  /** Art. 15 and 20: a JSON file, only for a disabled person. */
   @Get('people/:id/export')
   async export(@CurrentAuth() a: AuthContext, @Param('id', ParseUUIDPipe) id: string, @Res({ passthrough: true }) res: FastifyReply) {
     const data = await this.erasure.export(a, id);
@@ -64,7 +63,6 @@ export class RegistryController {
     return data;
   }
 
-  /** Art. 17: permanent deletion of a disabled person (sensitive data deleted, record anonymized). */
   @Delete('people/:id')
   @HttpCode(204)
   remove(@CurrentAuth() a: AuthContext, @Param('id', ParseUUIDPipe) id: string) {

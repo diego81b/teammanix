@@ -175,7 +175,7 @@ const absences = useAbsences()
 const toast = useToast()
 
 const { data, loading, error, reload: load } = useLoad(() => absences.mine())
-/** Own injury state (#21): the same in every team, so shown once above the teams. */
+/** Own injury state: the same in every team, so shown once above the teams. */
 const injury = computed(() => ownInjury(data.value ?? []))
 onMounted(load)
 

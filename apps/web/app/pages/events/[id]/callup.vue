@@ -182,7 +182,7 @@
         <!-- Staff availability: staff, managers and the admin see every answer. -->
         <section class="space-y-3 pt-2" :class="data.view === 'manage' ? 'pb-24' : ''" :aria-label="$t('callup.staffTitle')">
           <h2 class="font-semibold">{{ $t('callup.staffTitle') }}</h2>
-          <!-- A person who is also called up as a player answers that role here, apart from the availability below (#15). -->
+          <!-- A person who is also called up as a player answers that role here, apart from the availability below. -->
           <div v-if="staff?.ownCallup" class="space-y-2 rounded-lg border border-default bg-elevated p-3" role="group" :aria-label="$t('callup.answerAsPlayerTitle')">
             <p class="flex items-center gap-2 text-sm font-semibold">
               {{ $t('callup.answerAsPlayerTitle') }}

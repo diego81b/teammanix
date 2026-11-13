@@ -4,11 +4,7 @@ import { Membership } from '../entities/membership.entity';
 import { NotificationPreference } from '../entities/notification-preference.entity';
 import type { Person } from '../entities/person.entity';
 
-/**
- * Takes an account out of a club inside the caller's transaction: unlinks the record, removes roles, permission diff
- * and notification preferences. The account itself is untouched. The caller checks the last admin first. Returns how
- * many roles were removed.
- */
+/** Removes an account from a club inside the caller's transaction; the caller checks the last admin. Returns the roles removed. */
 export async function detachAccount(tem: EntityManager, userId: string, clubId: string, person: Person | null): Promise<number> {
   if (person) person.user = null;
   const roles = await tem.find(AccessRole, { club: clubId, user: userId }, { filters: false });

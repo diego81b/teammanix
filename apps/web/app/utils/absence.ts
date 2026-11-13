@@ -127,7 +127,7 @@ export function splitTeamAbsences(rows: readonly SeasonAbsences[], today: string
 }
 
 /**
- * The player's own injury state (#21), the same in every team: confirmed injured, or expected out with the dates staff
+ * The player's own injury state, the same in every team: confirmed injured, or expected out with the dates staff
  * recorded, or nothing. Staff enrollments never carry it.
  */
 export function ownInjury(rows: readonly Pick<MyEnrollmentAbsences, 'type' | 'status' | 'expectedInjury'>[]): { kind: 'injured' } | { kind: 'expected', period: ExpectedPeriod } | null {

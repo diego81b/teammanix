@@ -71,7 +71,7 @@ export interface StatisticsViewInput {
 }
 
 /**
- * Default of #20: staff of the season and the admin read every player; managers in scope read the team totals only;
+ * Default: staff of the season and the admin read every player; managers in scope read the team totals only;
  * a player reads only their own figures. Anybody else is refused.
  */
 export function statisticsView(i: StatisticsViewInput): StatisticsView {

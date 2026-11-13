@@ -26,14 +26,14 @@ export function countRoster(rows: readonly RosterRow[]): { players: number, staf
   return { players, staff: rows.length - players }
 }
 
-/** State a staff member can set on a row (#29): the opposite one, for players only and with `people.manage`. Otherwise no action. */
+/** State a staff member can set on a row: the opposite one, for players only and with `people.manage`. Otherwise no action. */
 export function statusAction(r: Pick<RosterRow, 'type' | 'status'>, canSet: boolean): EnrollmentStatus | null {
   if (!canSet || r.type !== 'player') return null
   return r.status === 'injured' ? 'available' : 'injured'
 }
 
 /**
- * The expected injury to show on a row (#21): players only, and not once the injury is confirmed (the injured badge says
+ * The expected injury to show on a row: players only, and not once the injury is confirmed (the injured badge says
  * it). The API sends the dates only to who can set the status; everybody else gets null.
  */
 export function probablyInjured(r: Pick<RosterRow, 'type' | 'status'> & { expectedInjury?: ExpectedPeriod | null }): ExpectedPeriod | null {

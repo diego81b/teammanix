@@ -87,7 +87,7 @@ export class RegistryService {
     return people.map((p) => this.dto(p));
   }
 
-  /** The archive: disabled people not deleted for good (a deleted record has nothing left to act on). */
+  /** Disabled people, deleted ones excluded. */
   async disabled(): Promise<PersonDto[]> {
     const people = await this.em.find(Person, { disabledAt: { $ne: null }, anonymizedAt: null }, { orderBy: { disabledAt: 'desc' }, limit: 200 });
     return people.map((p) => this.dto(p));

@@ -378,7 +378,7 @@ describe('call-ups: three lists per event', () => {
       expect(clean.reasons).toEqual([]);
     });
 
-    /** Writes a response row straight into the DB: the API that creates it (staff availability, declining) comes with #5. */
+    /** Writes a response row straight into the DB: the API that creates it (staff availability, declining) comes later. */
     async function answer(eventId: string, enrollmentId: string, response: CallupResponse) {
       const em = t.orm.em.fork();
       const event = await em.findOneOrFail(Event, { id: eventId }, { filters: false });

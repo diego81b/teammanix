@@ -18,8 +18,8 @@ const notFound = () => new NotFoundException({ message: 'Enrollment not found', 
 const invalid = () => new BadRequestException({ message: 'Invalid data', code: 'INVALID_DATA' });
 
 /**
- * Probably injured (#21). Staff with `people.manage` in the team of a player enrollment record when they expect the player
- * out; the period then reaches the person in every open player enrollment, as the injured state does (#27). Dates only.
+ * Probably injured. Staff with `people.manage` in the team of a player enrollment record when they expect the player
+ * out; the period then reaches the person in every open player enrollment, as the injured state does. Dates only.
  */
 @Injectable()
 export class ExpectedInjuryService {

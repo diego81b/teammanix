@@ -57,7 +57,7 @@ const bySurname = (x: StatisticsRow, y: StatisticsRow) =>
   (x.surname ?? '￿').localeCompare(y.surname ?? '￿') || (x.name ?? '').localeCompare(y.name ?? '') || x.enrollmentId.localeCompare(y.enrollmentId);
 
 /**
- * Season statistics (#20, slice 5): derived on every read from attendance, declared absences and suspensions, so a
+ * Season statistics: derived on every read from attendance, declared absences and suspensions, so a
  * correction shows at once. Staff of the season and the admin read every player, managers in scope the team totals, a
  * player only their own figures. Every read is audited with the season and the view, never the figures.
  */

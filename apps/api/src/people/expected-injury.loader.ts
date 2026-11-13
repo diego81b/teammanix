@@ -27,7 +27,7 @@ export async function currentByPerson(em: EntityManager, personIds: readonly str
   return new Map(personIds.map((id) => [id, currentExpected(all.get(id) ?? [], today)]));
 }
 
-/** Confirming the injury (#21) consumes the periods of the person: back available later, no stale warning comes back. */
+/** Confirming the injury consumes the periods of the person: back available later, no stale warning comes back. */
 export async function consumeExpected(em: EntityManager, personId: string): Promise<string[]> {
   const rows = await em.find(ExpectedInjury, { enrollment: { person: personId } }, { populate: ['enrollment'] });
   for (const r of rows) em.remove(r);

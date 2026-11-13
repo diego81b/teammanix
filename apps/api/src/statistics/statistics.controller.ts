@@ -3,7 +3,7 @@ import type { AuthContext } from '../common/auth-context';
 import { CurrentAuth } from '../common/decorators';
 import { StatisticsService } from './statistics.service';
 
-/** Season statistics (#20). Reads follow ANALISI section 6 and rules 10 to 13: no policy, the service decides by role. */
+/** Season statistics. Reads follow ANALISI section 6 and rules 10 to 13: no policy, the service decides by role. */
 @Controller()
 export class StatisticsController {
   constructor(private readonly statistics: StatisticsService) {}

@@ -3,8 +3,8 @@ import { Enrollment } from './enrollment.entity';
 import { TenantEntity } from './tenant.entity';
 
 /**
- * Staff expect a player to be out (#21): recorded on one player enrollment, read for the person in every team, as the
- * injured state (#27). `returnDate` is the first day available again. Dates only, never a cause or a note (health data,
+ * Staff expect a player to be out: recorded on one player enrollment, read for the person in every team, as the
+ * injured state. `returnDate` is the first day available again. Dates only, never a cause or a note (health data,
  * art. 9). It never blocks: confirming sets the injured state and removes the period.
  */
 @Entity({ tableName: 'expected_injuries' })

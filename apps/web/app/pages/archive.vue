@@ -112,7 +112,6 @@ function menu(p: PersonDto): DropdownMenuItem[] {
   ]
 }
 
-/** The API answers with JSON: the page turns it into a file the browser saves. */
 async function exportData(p: PersonDto) {
   ongoing.value = `export-${p.id}`
   errorAction.value = ''

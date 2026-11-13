@@ -74,7 +74,7 @@ export const DECLINE_REASONS: ReasonDecline[] = ['commitment_personal', 'work', 
 export const myAnswer = (calledUp: readonly { response: CallupResponse, mine: boolean }[]): CallupResponse | null =>
   calledUp.find(r => r.mine)?.response ?? null
 
-/** The answer as player of whoever is called up, in the player view or, for a person who is also staff, in the staff view (#15). */
+/** The answer as player of whoever is called up, in the player view or, for a person who is also staff, in the staff view. */
 export const ownPlayerAnswer = (dto: CallupsDto): CallupResponse | null =>
   dto.view === 'player' ? myAnswer(dto.calledUp) : dto.ownCallup?.response ?? null
 

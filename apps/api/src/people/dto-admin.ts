@@ -84,7 +84,7 @@ export class EditEnrollmentDto {
   status?: EnrollmentStatus;
 }
 
-/** Status of a player enrollment, set by staff with `people.manage` (#27). Nothing else can travel on this route. */
+/** Status of a player enrollment, set by staff with `people.manage`. Nothing else can travel on this route. */
 export class EnrollmentStatusDto {
   @IsEnum(EnrollmentStatus)
   status!: EnrollmentStatus;
@@ -128,7 +128,7 @@ export class PromoteEnrollmentDto {
   jerseyNumber?: number;
 }
 
-/** Expected injury (#21): two days and nothing else. That they are real days in order is decided by `validateExpected`. */
+/** Expected injury: two days and nothing else. That they are real days in order is decided by `validateExpected`. */
 export class ExpectedInjuryDto {
   @IsString()
   startDate!: string;

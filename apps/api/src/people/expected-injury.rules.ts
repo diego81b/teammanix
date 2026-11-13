@@ -1,7 +1,7 @@
 import { isDay } from '../absences/absence.rules';
 
 /**
- * Pure rules of the expected injury (#21). No DB, no Nest. Staff expect a player to be out from `startDate`; `returnDate`
+ * Pure rules of the expected injury. No DB, no Nest. Staff expect a player to be out from `startDate`; `returnDate`
  * is the first day the player is available again, so the period covers `startDate <= day < returnDate`. Dates only: no
  * cause, no note (health data, art. 9). A date never blocks: only the confirmed injured state does.
  */

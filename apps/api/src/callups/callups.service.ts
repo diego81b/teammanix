@@ -52,7 +52,7 @@ export interface StaffLists {
   staff: StaffRow[];
   /** The club asks for it and no coach declared available. */
   noCoachWarning: boolean;
-  /** The viewer's own call-up as a player, when they are also a player of the season and called up (#15). Null otherwise. */
+  /** The viewer's own call-up as a player, when they are also a player of the season and called up. Null otherwise. */
   ownCallup: { enrollmentId: string; response: CallupResponse } | null;
 }
 
@@ -203,7 +203,7 @@ export class CallupsService {
     return { notified: pending.map((c) => ({ enrollmentId: c.enrollment.id, personId: c.enrollment.person.id })) };
   }
 
-  /** Health data (#21): only staff of the season and the admin read the probably injured warning. */
+  /** Health data: only staff of the season and the admin read the probably injured warning. */
   private async hidesInjury(a: AuthContext, event: Event): Promise<boolean> {
     if (a.isAdmin) return false;
     if (!a.personId) return true;
@@ -230,7 +230,7 @@ export class CallupsService {
     const suspensions = event.type === EventType.MATCH ? await loadSuspensions(this.em, enrollments.map((e) => e.id)) : new Map();
     const matches = suspensions.size > 0 ? await loadMatches(this.em, event.season.id) : [];
     const now = new Date();
-    // Expected injuries (#21) belong to the person: every team of the player reads them.
+    // Expected injuries belong to the person: every team of the player reads them.
     const expected = hideInjury ? new Map() : await expectedByPerson(this.em, personIds);
     const club = await this.em.findOneOrFail(Club, event.club.id, { fields: ['blockCertificateExpired'] });
     // The certificate counts on the day of the event, not today.

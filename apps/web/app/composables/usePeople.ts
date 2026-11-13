@@ -28,9 +28,8 @@ export function usePeople() {
     create: (data: PersonData) => api<PersonDto>('/people', { method: 'POST', body: { ...data } }),
     disable: (id: string) => api<PersonDto>(`/people/${id}/disable`, { method: 'POST', body: {} }),
     reenable: (id: string) => api<PersonDto>(`/people/${id}/reenable`, { method: 'POST', body: {} }),
-    /** Disabled people only (#10): all the data the club keeps, as the API returns it. */
     exportData: (id: string) => api<Record<string, unknown>>(`/people/${id}/export`),
-    /** Disabled people only (#10): sensitive data deleted, record anonymized. Cannot be undone. */
+    /** Cannot be undone. */
     remove: (id: string) => api<void>(`/people/${id}`, { method: 'DELETE' }),
     roster: (seasonId: string) => api<RosterRow[]>(`/seasons/${seasonId}/roster`),
     teamRoster: (seasonId: string) => api<TeamRoster>(`/seasons/${seasonId}/team-roster`),
@@ -38,10 +37,10 @@ export function usePeople() {
       api<EnrollmentOut>(`/seasons/${seasonId}/enrollments`, { method: 'POST', body: { ...data } }),
     editEnrollment: (id: string, data: { staffRole?: StaffRole, position?: string, jerseyNumber?: number, status?: EnrollmentStatus }) =>
       api<EnrollmentOut>(`/enrollments/${id}`, { method: 'PATCH', body: { ...data } }),
-    /** Status only, for staff with `people.manage` in the team (#27). The API shares it across the person's teams. */
+    /** Status only, for staff with `people.manage` in the team. The API shares it across the person's teams. */
     setStatus: (id: string, status: EnrollmentStatus) =>
       api<EnrollmentOut>(`/enrollments/${id}/status`, { method: 'PUT', body: { status } }),
-    /** Probably injured (#21): records or moves the expected period. Confirming is `setStatus(id, 'injured')`. */
+    /** Probably injured: records or moves the expected period. Confirming is `setStatus(id, 'injured')`. */
     setExpectedInjury: (id: string, period: ExpectedPeriod) =>
       api<ExpectedPeriod & { enrollmentId: string }>(`/enrollments/${id}/expected-injury`, { method: 'PUT', body: { ...period } }),
     endExpectedInjury: (id: string) => api<void>(`/enrollments/${id}/expected-injury`, { method: 'DELETE' }),

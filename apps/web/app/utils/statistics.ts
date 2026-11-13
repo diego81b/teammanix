@@ -9,7 +9,7 @@ export interface Figure {
 }
 
 /**
- * The figures of a row or of the team totals, in the order of the screen (#20). The attendance rate is a whole percentage,
+ * The figures of a row or of the team totals, in the order of the screen. The attendance rate is a whole percentage,
  * or a dash when nobody available was recorded. The injury figure is a plain count: the API sends no date and no cause.
  */
 export function statisticsFigures(r: StatisticsTotals): Figure[] {

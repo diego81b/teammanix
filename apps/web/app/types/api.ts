@@ -138,20 +138,20 @@ export interface RosterRow {
   certificate: SummaryCertificate | null
 }
 
-/** Expected injury (#21): `returnDate` is the first day available again. Dates only. */
+/** Expected injury: `returnDate` is the first day available again. Dates only. */
 export interface ExpectedPeriod {
   startDate: string
   returnDate: string
 }
 
-/** Roster of the team as staff reads it (#29). */
+/** Roster of the team as staff reads it. */
 export interface TeamRoster {
   teamName: string
   seasonName: string
   seasonStatus: SeasonStatus
   canSetStatus: boolean
   canSeeCertificates: boolean
-  /** `expectedInjury` is filled only for who can set the status (#21). */
+  /** `expectedInjury` is filled only for who can set the status. */
   rows: (RosterRow & { expectedInjury: ExpectedPeriod | null })[]
 }
 
@@ -490,7 +490,7 @@ export interface MyEnrollmentAbsences {
   seasonStatus: SeasonStatus
   seasonStart: string
   seasonEnd: string
-  /** Players: own state and the expected injury still running (#21). */
+  /** Players: own state and the expected injury still running. */
   status: EnrollmentStatus
   expectedInjury: ExpectedPeriod | null
   absences: AbsenceOut[]
@@ -609,7 +609,7 @@ export type AttendanceDto =
     staffPresent: { enrollmentId: string, name: string | null, surname: string | null, staffRole: StaffRole | null }[]
   }
 
-/** Counts of the outcomes recorded plus the days and matches missed, for one player or for the whole team (#20). `injured` is a count only. */
+/** Counts of the outcomes recorded plus the days and matches missed, for one player or for the whole team. `injured` is a count only. */
 export interface StatisticsTotals {
   present: number
   late: number
