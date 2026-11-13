@@ -4748,7 +4748,8 @@
             "suspension_cancelled",
             "attendance_recorded",
             "attendance_modified",
-            "attendance_cleared"
+            "attendance_cleared",
+            "statistics_read"
           ],
           "mappedType": "enum"
         },

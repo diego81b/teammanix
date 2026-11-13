@@ -10,6 +10,7 @@ import { AttendanceModule } from './attendance/attendance.module';
 import { CallupsModule } from './callups/callups.module';
 import { CertificatesModule } from './certificates/certificates.module';
 import { EventsModule } from './events/events.module';
+import { StatisticsModule } from './statistics/statistics.module';
 import { HealthController } from './health.controller';
 import { InvitationsModule } from './invitations/invitations.module';
 import { MailModule } from './mail/mail.module';
@@ -49,6 +50,7 @@ import { SuspensionsModule } from './suspensions/suspensions.module';
     AbsencesModule,
     AttendanceModule,
     SuspensionsModule,
+    StatisticsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

@@ -197,4 +197,5 @@ export enum AuditAction {
   ATTENDANCE_RECORDED = 'attendance_recorded',
   ATTENDANCE_MODIFIED = 'attendance_modified',
   ATTENDANCE_CLEARED = 'attendance_cleared',
+  STATISTICS_READ = 'statistics_read',
 }
