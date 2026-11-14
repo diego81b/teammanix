@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
 import type { AuthContext } from '../common/auth-context';
 import { AdminOnly, CurrentAuth } from '../common/decorators';
-import { CreateStaffRoleDto, EditStaffRoleDto } from './dto';
+import { AddSuggestedStaffRolesDto, CreateStaffRoleDto, EditStaffRoleDto } from './dto';
 import { StaffRolesService } from './staff-roles.service';
 
 @Controller('staff-roles')
@@ -18,6 +18,13 @@ export class StaffRolesController {
   @Post()
   create(@CurrentAuth() a: AuthContext, @Body() dto: CreateStaffRoleDto) {
     return this.roles.create(a, dto);
+  }
+
+  /** Adds the roles the sport profile suggests that the admin chose; a name the club already has is skipped. */
+  @AdminOnly()
+  @Post('suggested')
+  addSuggested(@CurrentAuth() a: AuthContext, @Body() dto: AddSuggestedStaffRolesDto) {
+    return this.roles.addSuggested(a, dto);
   }
 
   /** Name, permission model, flag, archive (`archived: true`) and restore (`archived: false`). */

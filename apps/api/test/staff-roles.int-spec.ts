@@ -7,6 +7,14 @@ describe('staff roles: the catalog owned by the club', () => {
     t = await startEnvironment();
     const em = t.orm.em.fork();
     em.create(SportProfile, { code: 'football', positions: ['goalkeeper'], modulesAvailable: ['attendances'] } as never);
+    em.create(SportProfile, {
+      code: 'fencing',
+      modulesAvailable: ['attendances'],
+      suggestedStaffRoles: [
+        { code: 'master', policyModel: 'coach', mustBeAvailable: true },
+        { code: 'instructor', policyModel: 'assistant_coach', mustBeAvailable: false },
+      ],
+    } as never);
     await em.flush();
   });
   afterAll(async () => {
@@ -174,6 +182,98 @@ describe('staff roles: the catalog owned by the club', () => {
     });
   });
 
+  describe('suggested roles of a sport profile', () => {
+    const suggest = (token: string, body: object) => t.req('POST', '/staff-roles/suggested', { token, body });
+    const fencing = [{ code: 'master', name: 'Maestro' }, { code: 'instructor', name: 'Istruttore' }];
+
+    it('the admin adds the roles the profile suggests: model and flag from the seed, name as chosen', async () => {
+      const a = await admin('sg-1@test.it');
+      const r = await suggest(a.token, { sportProfile: 'fencing', roles: fencing });
+      expect(r.status).toBe(201);
+      expect(r.body).toEqual([
+        { id: expect.any(String), name: 'Maestro', policyModel: 'coach', mustBeAvailable: true, archived: false },
+        { id: expect.any(String), name: 'Istruttore', policyModel: 'assistant_coach', mustBeAvailable: false, archived: false },
+      ]);
+      expect((await list(a.token)).map((x) => x.name)).toEqual(expect.arrayContaining(['Maestro', 'Istruttore']));
+    });
+
+    it('only the roles sent are added: the admin may take a part of the suggestion', async () => {
+      const a = await admin('sg-2@test.it');
+      const r = await suggest(a.token, { sportProfile: 'fencing', roles: [fencing[1]] });
+      expect(r.body.map((x: { name: string }) => x.name)).toEqual(['Istruttore']);
+      expect(await list(a.token)).toHaveLength(6);
+    });
+
+    it('a name the club already has is skipped, not an error: nothing is overwritten', async () => {
+      const a = await admin('sg-3@test.it');
+      expect((await create(a.token, { name: 'Maestro', policyModel: 'none' })).status).toBe(201);
+      const r = await suggest(a.token, { sportProfile: 'fencing', roles: fencing });
+      expect([r.status, r.body.map((x: { name: string }) => x.name)]).toEqual([201, ['Istruttore']]);
+      expect((await list(a.token)).find((x) => x.name === 'Maestro')).toMatchObject({ policyModel: 'none', mustBeAvailable: false });
+    });
+
+    it('repeating the request adds nothing; case, accents and an archived role count as the same name', async () => {
+      const a = await admin('sg-4@test.it');
+      expect((await suggest(a.token, { sportProfile: 'fencing', roles: fencing })).body).toHaveLength(2);
+      const again = await suggest(a.token, { sportProfile: 'fencing', roles: fencing });
+      expect([again.status, again.body]).toEqual([201, []]);
+      const id = (await list(a.token)).find((x) => x.name === 'Maestro')?.id;
+      await t.req('PATCH', `/staff-roles/${id}`, { token: a.token, body: { archived: true } });
+      const variant = await suggest(a.token, { sportProfile: 'fencing', roles: [{ code: 'master', name: 'MAESTRO' }] });
+      expect(variant.body).toEqual([]);
+      expect(await list(a.token)).toHaveLength(7);
+    });
+
+    it('the same name twice in one request is added once', async () => {
+      const a = await admin('sg-5@test.it');
+      const r = await suggest(a.token, { sportProfile: 'fencing', roles: [{ code: 'master', name: 'Maestro' }, { code: 'instructor', name: ' maestro ' }] });
+      expect(r.body.map((x: { name: string; policyModel: string }) => [x.name, x.policyModel])).toEqual([['Maestro', 'coach']]);
+    });
+
+    it('a code the profile does not suggest is refused as a whole: nothing is added', async () => {
+      const a = await admin('sg-6@test.it');
+      for (const roles of [[...fencing, { code: 'goalkeeper_coach', name: 'Allenatore portieri' }], [{ code: 'Maestro', name: 'Maestro' }]]) {
+        const r = await suggest(a.token, { sportProfile: 'fencing', roles });
+        expect([r.status, r.body.code]).toEqual([400, 'INVALID_DATA']);
+      }
+      expect(await list(a.token)).toHaveLength(5);
+    });
+
+    it('an unknown profile is refused, a profile with no suggestion accepts no code', async () => {
+      const a = await admin('sg-7@test.it');
+      const unknown = await suggest(a.token, { sportProfile: 'chess', roles: fencing });
+      expect([unknown.status, unknown.body.code]).toEqual([400, 'INVALID_SPORT_PROFILE']);
+      const none = await suggest(a.token, { sportProfile: 'football', roles: [{ code: 'master', name: 'Maestro' }] });
+      expect([none.status, none.body.code]).toEqual([400, 'INVALID_DATA']);
+    });
+
+    it('invalid data is refused: no roles, a name out of length, a missing field, unknown fields', async () => {
+      const a = await admin('sg-8@test.it');
+      for (const body of [
+        { sportProfile: 'fencing', roles: [] },
+        { sportProfile: 'fencing' },
+        { roles: fencing },
+        { sportProfile: 'fencing', roles: [{ code: 'master', name: '' }] },
+        { sportProfile: 'fencing', roles: [{ code: 'master', name: 'x'.repeat(61) }] },
+        { sportProfile: 'fencing', roles: [{ code: 'master' }] },
+        { sportProfile: 'fencing', roles: [{ name: 'Maestro' }] },
+        { sportProfile: 'fencing', roles: [{ code: 'master', name: 'Maestro', policyModel: 'none' }] },
+        { sportProfile: 'fencing', roles: fencing, extra: 1 },
+      ]) {
+        const r = await suggest(a.token, body);
+        expect([JSON.stringify(body), r.status, r.body.code]).toEqual([JSON.stringify(body), 400, 'INVALID_DATA']);
+      }
+      expect(await list(a.token)).toHaveLength(5);
+    });
+
+    it('the other clubs are not touched', async () => {
+      const a = await admin('sg-9a@test.it');
+      const b = await admin('sg-9b@test.it');
+      await suggest(a.token, { sportProfile: 'fencing', roles: fencing });
+      expect(await list(b.token)).toHaveLength(5);
+    });
+  });
+
   describe('permissions', () => {
     it('any member reads the catalog, only the admin changes it', async () => {
       const a = await admin('sr-15@test.it');
@@ -187,6 +287,7 @@ describe('staff roles: the catalog owned by the club', () => {
       expect([read.status, read.body.length]).toEqual([200, 5]);
       for (const [method, url, body] of [
         ['POST', '/staff-roles', { name: 'Maestro', policyModel: 'coach' }],
+        ['POST', '/staff-roles/suggested', { sportProfile: 'fencing', roles: [{ code: 'master', name: 'Maestro' }] }],
         ['PATCH', `/staff-roles/${roles[0]?.id}`, { name: 'X' }],
         ['DELETE', `/staff-roles/${roles[4]?.id}`, undefined],
       ] as const) {

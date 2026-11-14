@@ -34,3 +34,29 @@ describe('sport profiles (seed)', () => {
     }
   });
 });
+
+describe('sport profiles (seed): suggested staff roles', () => {
+  const MODELS = ['coach', 'assistant_coach', 'trainer', 'none'];
+
+  it('codes are lowercase with underscores, never labels, and the model is one of the four', () => {
+    for (const p of SPORT_PROFILES) {
+      for (const r of p.suggestedStaffRoles) {
+        expect(r.code).toMatch(CODE);
+        expect(MODELS).toContain(r.policyModel);
+        expect(typeof r.mustBeAvailable).toBe('boolean');
+        expect(Object.keys(r).sort()).toEqual(['code', 'mustBeAvailable', 'policyModel']);
+      }
+    }
+  });
+
+  it('no duplicate code within a profile', () => {
+    for (const p of SPORT_PROFILES) expect(new Set(p.suggestedStaffRoles.map((r) => r.code)).size).toBe(p.suggestedStaffRoles.length);
+  });
+
+  it('the generic profile suggests nothing, fencing suggests master and instructor, football the goalkeeper coach', () => {
+    const codes = (profile: string) => SPORT_PROFILES.find((p) => p.code === profile)?.suggestedStaffRoles.map((r) => r.code);
+    expect(codes('generic')).toEqual([]);
+    expect(codes('fencing')).toEqual(['master', 'instructor']);
+    expect(codes('football')).toEqual(['goalkeeper_coach']);
+  });
+});

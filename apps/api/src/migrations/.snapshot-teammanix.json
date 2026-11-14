@@ -387,6 +387,22 @@
           "enumItems": [],
           "mappedType": "json"
         },
+        "suggested_staff_roles": {
+          "name": "suggested_staff_roles",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "'[]'",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "json"
+        },
         "starter_bench": {
           "name": "starter_bench",
           "type": "boolean",

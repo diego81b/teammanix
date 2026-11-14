@@ -4,8 +4,9 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import type { AuthContext } from '../common/auth-context';
 import { Enrollment } from '../entities/enrollment.entity';
 import type { StaffPolicyModel } from '../entities/enums';
+import { SportProfile, type SuggestedStaffRole } from '../entities/sport-profile.entity';
 import { StaffRole } from '../entities/staff-role.entity';
-import type { CreateStaffRoleDto, EditStaffRoleDto } from './dto';
+import type { AddSuggestedStaffRolesDto, CreateStaffRoleDto, EditStaffRoleDto } from './dto';
 import { nameKey, usableForNewEnrollment } from './staff-role.rules';
 
 export interface StaffRoleDto {
@@ -58,6 +59,32 @@ export class StaffRolesService {
     });
     await this.save();
     return toDto(role);
+  }
+
+  /**
+   * The roles of the sport profile the admin chose, with the model and the flag of the profile. A name the club already
+   * has (case, accents and archived roles included) is skipped, so repeating the request adds nothing.
+   */
+  async addSuggested(a: AuthContext, dto: AddSuggestedStaffRolesDto): Promise<StaffRoleDto[]> {
+    const profile = await this.em.findOne(SportProfile, { code: dto.sportProfile });
+    if (!profile) throw new BadRequestException({ message: 'Invalid sport profile', code: 'INVALID_SPORT_PROFILE' });
+    const suggested = new Map(profile.suggestedStaffRoles.map((r) => [r.code, r]));
+    if (dto.roles.some((r) => !suggested.has(r.code))) {
+      throw new BadRequestException({ message: 'A role is not suggested by the sport profile', code: 'INVALID_DATA' });
+    }
+    const taken = new Set((await this.em.find(StaffRole, {})).map((r) => r.nameKey));
+    const created: StaffRole[] = [];
+    for (const r of dto.roles) {
+      const key = nameKey(r.name);
+      if (taken.has(key)) continue;
+      taken.add(key);
+      const model = suggested.get(r.code) as SuggestedStaffRole;
+      created.push(
+        this.em.create(StaffRole, { club: a.clubId as string, name: r.name, nameKey: key, policyModel: model.policyModel, mustBeAvailable: model.mustBeAvailable }),
+      );
+    }
+    await this.save();
+    return created.map(toDto);
   }
 
   async edit(id: string, dto: EditStaffRoleDto): Promise<StaffRoleDto> {

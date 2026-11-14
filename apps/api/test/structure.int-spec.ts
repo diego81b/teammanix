@@ -41,7 +41,7 @@ describe('structure: sections, teams, seasons', () => {
       const r = await t.req('GET', '/sport-profiles', { token: a.token });
       expect(r.status).toBe(200);
       expect(r.body).toEqual([
-        { code: 'football', positions: ['goalkeeper', 'defender'], starterBench: false, maxStarters: null, modulesAvailable: ['attendances', 'standings', 'sanctions'], unitTerm: 'team' },
+        { code: 'football', positions: ['goalkeeper', 'defender'], starterBench: false, maxStarters: null, modulesAvailable: ['attendances', 'standings', 'sanctions'], unitTerm: 'team', suggestedStaffRoles: [] },
       ]);
     });
   });

@@ -1,7 +1,15 @@
 import { Entity, Property } from '@mikro-orm/core';
 import { BaseEntity } from './base.entity';
+import type { StaffPolicyModel } from './enums';
 
 export type UnitTerm = 'team' | 'group';
+
+/** A staff role the profile suggests: the code names it in the frontend, the model and the flag are what the role gets. */
+export interface SuggestedStaffRole {
+  code: string;
+  policyModel: StaffPolicyModel;
+  mustBeAvailable: boolean;
+}
 
 /**
  * Sport configuration, populated by seed. Shared by all clubs: no tenant.
@@ -17,6 +25,10 @@ export class SportProfile extends BaseEntity {
   /** Codes of the allowed positions (lowercase, underscore). Empty: the profile has no positions. */
   @Property({ type: 'json' })
   positions: string[] = [];
+
+  /** Staff roles the admin may add to the club's catalog for a team with this profile. Never added on their own. */
+  @Property({ type: 'json', default: '[]' })
+  suggestedStaffRoles: SuggestedStaffRole[] = [];
 
   /** Enables the starter or bench toggle on called-up players. Football yes, fencing no. */
   @Property({ default: false })

@@ -7,7 +7,7 @@ import { AccessRole } from '../entities/access-role.entity';
 import { AuditAction, InvitationStatus, SeasonStatus } from '../entities/enums';
 import { Invitation } from '../entities/invitation.entity';
 import { Section } from '../entities/section.entity';
-import { SportProfile } from '../entities/sport-profile.entity';
+import { SportProfile, type SuggestedStaffRole } from '../entities/sport-profile.entity';
 import { Team } from '../entities/team.entity';
 import { Season } from '../entities/season.entity';
 import type {
@@ -24,6 +24,7 @@ import { editable, periodValid, canActivate, canClose } from './season.rules';
 export interface SportProfileDto {
   code: string;
   positions: string[];
+  suggestedStaffRoles: SuggestedStaffRole[];
   starterBench: boolean;
   maxStarters: number | null;
   modulesAvailable: string[];
@@ -90,6 +91,7 @@ export class StructureService {
     return profiles.map((p) => ({
       code: p.code,
       positions: p.positions,
+      suggestedStaffRoles: p.suggestedStaffRoles,
       starterBench: p.starterBench,
       maxStarters: p.maxStarters,
       modulesAvailable: p.modulesAvailable,
