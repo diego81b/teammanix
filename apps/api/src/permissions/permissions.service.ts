@@ -13,6 +13,8 @@ import { effective, defaultValue, validateDiff, type PolicyKey, type DiffPolicy,
 
 export interface PermissionDtoRole {
   role: RolePolicy;
+  /** Name of the club's staff role, staff enrollments only. */
+  staffRoleName: string | null;
   scope: ScopeType;
   /** Section or team the role is limited to. */
   destination: string | null;
@@ -57,7 +59,7 @@ export class PermissionsService {
           season: { status: { $ne: SeasonStatus.CLOSED } },
           person: { user: { $ne: null }, disabledAt: null },
         },
-        { populate: ['person.user', 'season.team'] },
+        { populate: ['person.user', 'season.team', 'staffRole'] },
       ),
       this.em.find(Membership, {}),
       this.em.find(Person, { user: { $ne: null }, disabledAt: { $ne: null } }),
@@ -72,11 +74,11 @@ export class PermissionsService {
     };
     for (const r of roles) {
       if (outside.has(r.user.id)) continue;
-      item(r.user).roles.push({ role: r.role, scope: r.scope, destination: r.team?.name ?? r.section?.name ?? null, season: null });
+      item(r.user).roles.push({ role: r.role, staffRoleName: null, scope: r.scope, destination: r.team?.name ?? r.section?.name ?? null, season: null });
     }
     for (const i of enrollments) {
       const u = i.person.user as User;
-      item(u).roles.push({ role: i.staffRole ?? 'other', scope: ScopeType.TEAM, destination: i.season.team.name, season: i.season.name });
+      item(u).roles.push({ role: i.staffRole?.policyModel ?? 'none', staffRoleName: i.staffRole?.name ?? null, scope: ScopeType.TEAM, destination: i.season.team.name, season: i.season.name });
     }
 
     const diffOf = new Map(memberships.map((a) => [a.user.id, a.diff]));

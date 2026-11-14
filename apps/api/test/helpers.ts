@@ -52,6 +52,39 @@ export async function createTeams(
   };
 }
 
+export type DefaultRoles = Record<'coach' | 'assistant_coach' | 'trainer' | 'escort' | 'other', string>;
+
+/**
+ * Ids of the five roles a new club starts with (Italian names: the language of a new user), so fixtures keep one
+ * line per staff enrollment: `staffRoleId: roles.coach`. `escort` and `other` have no permission model.
+ */
+export async function defaultRoles(req: Environment['req'], token: string): Promise<DefaultRoles> {
+  const r = await req('GET', '/staff-roles', { token });
+  if (r.status !== 200) throw new Error(`staff roles ${r.status} ${JSON.stringify(r.body)}`);
+  const byName = (name: string): string => {
+    const found = (r.body as { id: string; name: string }[]).find((x) => x.name === name);
+    if (!found) throw new Error(`default role ${name} missing`);
+    return found.id;
+  };
+  return {
+    coach: byName('Allenatore'),
+    assistant_coach: byName('Vice allenatore'),
+    trainer: byName('Preparatore'),
+    escort: byName('Accompagnatore'),
+    other: byName('Altro'),
+  };
+}
+
+const rolesOfToken = new Map<string, Promise<DefaultRoles>>();
+
+/** Id of one default role (coach, assistant_coach, trainer, escort, other) of the club the token belongs to; looked up once per token. */
+export async function roleId(req: Environment['req'], token: string, key: string): Promise<string> {
+  if (!rolesOfToken.has(token)) rolesOfToken.set(token, defaultRoles(req, token));
+  const id = (await rolesOfToken.get(token))?.[key as keyof DefaultRoles];
+  if (!id) throw new Error(`unknown default role ${key}`);
+  return id;
+}
+
 export async function startEnvironment(): Promise<Environment> {
   const pg: StartedPostgreSqlContainer = await new PostgreSqlContainer('postgres:16-alpine').start();
   process.env.DATABASE_URL = pg.getConnectionUri();

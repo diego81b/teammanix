@@ -6,7 +6,8 @@ import { loadEvent, permissionDenied } from '../callups/event-access';
 import type { AuthContext } from '../common/auth-context';
 import { Attendance } from '../entities/attendance.entity';
 import { Enrollment } from '../entities/enrollment.entity';
-import { AttendanceOutcome, AuditAction, EnrollmentType, type StaffRole } from '../entities/enums';
+import { AttendanceOutcome, AuditAction, EnrollmentType } from '../entities/enums';
+import { type StaffRoleRef, staffRoleRef } from '../staff-roles/staff-roles.service';
 import { Event } from '../entities/event.entity';
 import { User } from '../entities/user.entity';
 import { toEventDto, type EventDto } from '../events/events.service';
@@ -19,7 +20,7 @@ import { disabledMask, recordable, summarize, viewOf, type Summary } from './att
 export interface AttendanceRow {
   enrollmentId: string;
   type: EnrollmentType;
-  staffRole: StaffRole | null;
+  staffRole: StaffRoleRef | null;
   jerseyNumber: number | null;
   name: string | null;
   surname: string | null;
@@ -35,7 +36,7 @@ export type AttendanceViewOut =
       event: EventDto;
       mine: { enrollmentId: string; outcome: AttendanceOutcome | null } | null;
       /** Only the staff recorded present or late. The other players are never shown. */
-      staffPresent: { enrollmentId: string; name: string | null; surname: string | null; staffRole: StaffRole | null }[];
+      staffPresent: { enrollmentId: string; name: string | null; surname: string | null; staffRole: StaffRoleRef | null }[];
     };
 
 const enrollmentNotFound = () => new NotFoundException({ message: 'Enrollment not found', code: 'ENROLLMENT_NOT_FOUND' });
@@ -154,14 +155,14 @@ export class AttendanceService {
     const enrollments = await this.em.find(
       Enrollment,
       { season: event.season.id, $or: [{ id: { $in: [...outcomes.keys()] } }, { endedAt: null, person: { disabledAt: null } }] },
-      { populate: ['person'] },
+      { populate: ['person', 'staffRole'] },
     );
     const rows = enrollments.map((e) =>
       disabledMask(
         {
           enrollmentId: e.id,
           type: e.type,
-          staffRole: e.staffRole,
+          staffRole: staffRoleRef(e.staffRole),
           jerseyNumber: e.jerseyNumber,
           name: e.person.name as string | null,
           surname: e.person.surname,

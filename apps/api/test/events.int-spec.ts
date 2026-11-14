@@ -1,5 +1,5 @@
 import { SportProfile } from '../src/entities/sport-profile.entity';
-import { Environment, startEnvironment, createTeams } from './helpers';
+import { Environment, startEnvironment, createTeams, roleId } from './helpers';
 
 const DAY = '2026-10-06';
 const slot = (day = DAY, from = '16:00', to = '17:30') => ({ start: `${day}T${from}:00Z`, end: `${day}T${to}:00Z` });
@@ -46,7 +46,7 @@ describe('events: plan trainings and matches for the active season of a team', (
     const t2 = await team('T2');
     const staff = async (seasonId: string, addr: string, type: 'staff' | 'player') => {
       const p = await post(admin, '/people', { name: 'Carlo', surname: 'Neri', birthDate: '1985-02-03', email: addr });
-      await post(admin, `/seasons/${seasonId}/enrollments`, { personId: p.id, type, ...(type === 'staff' ? { staffRole: 'coach' } : {}) });
+      await post(admin, `/seasons/${seasonId}/enrollments`, { personId: p.id, type, ...(type === 'staff' ? { staffRoleId: await roleId(t.req, admin, 'coach') } : {}) });
       await post(admin, '/invitations', { email: addr, role: type, personId: p.id });
       return accept(addr);
     };

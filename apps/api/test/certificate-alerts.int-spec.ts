@@ -2,7 +2,7 @@ import { CertificateAlertsService } from '../src/certificates/certificate-alerts
 import { NotificationType } from '../src/entities/enums';
 import { Notification } from '../src/entities/notification.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
-import { Environment, startEnvironment, createTeams } from './helpers';
+import { Environment, startEnvironment, createTeams, roleId } from './helpers';
 
 const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
 /** The moment the job runs, `offset` days from now. */
@@ -41,7 +41,7 @@ describe('certificate alerts job', () => {
     const member = async (name: string, type: 'player' | 'staff', opts: { account?: boolean; staffRole?: string } = {}) => {
       const email = `${name}-${tag}@test.it`;
       const p = await post(admin, '/people', { name, surname: 'Rossi', birthDate: '1990-01-01', email });
-      await post(admin, `/seasons/${season.id}/enrollments`, { personId: p.id, type, ...(type === 'staff' ? { staffRole: opts.staffRole ?? 'coach' } : {}) });
+      await post(admin, `/seasons/${season.id}/enrollments`, { personId: p.id, type, ...(type === 'staff' ? { staffRoleId: await roleId(t.req, admin, opts.staffRole ?? 'coach') } : {}) });
       if (opts.account === false) return { personId: p.id as string, userId: '', token: '' };
       await post(admin, '/invitations', { email, role: type, personId: p.id });
       const u = await t.newUser(email);
@@ -65,8 +65,8 @@ describe('certificate alerts job', () => {
   async function secondTeam(s: Scenario, name: string) {
     const team = await s.struct.team(name);
     const season = await post(s.admin, `/teams/${team.id}/seasons`, { name: 'Now', startDate: day(-60), endDate: day(400) });
-    const enroll = (personId: string, type: 'player' | 'staff') =>
-      post(s.admin, `/seasons/${season.id}/enrollments`, { personId, type, ...(type === 'staff' ? { staffRole: 'coach' } : {}) });
+    const enroll = async (personId: string, type: 'player' | 'staff') =>
+      post(s.admin, `/seasons/${season.id}/enrollments`, { personId, type, ...(type === 'staff' ? { staffRoleId: await roleId(t.req, s.admin, 'coach') } : {}) });
     const activate = async () => expect((await t.req('POST', `/seasons/${season.id}/active`, { token: s.admin })).status).toBe(200);
     return { seasonId: season.id as string, enroll, activate };
   }

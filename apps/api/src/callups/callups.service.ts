@@ -9,7 +9,8 @@ import { Absence } from '../entities/absence.entity';
 import { Callup } from '../entities/callup.entity';
 import { Club } from '../entities/club.entity';
 import { Enrollment } from '../entities/enrollment.entity';
-import { CallupResponse, EnrollmentStatus, EnrollmentType, EventStatus, EventType, NotificationType, Placement, type StaffRole } from '../entities/enums';
+import { CallupResponse, EnrollmentStatus, EnrollmentType, EventStatus, EventType, NotificationType, Placement } from '../entities/enums';
+import type { StaffRoleRef } from '../staff-roles/staff-roles.service';
 import { Event } from '../entities/event.entity';
 import { localDate } from '../events/event.rules';
 import { loadMatches, loadSuspensions, suspensionBlock } from '../suspensions/suspension.loader';
@@ -66,7 +67,7 @@ export interface PlayerLists {
   iAmCalledUp: boolean;
   calledUp: { enrollmentId: string; name: string; surname: string | null; jerseyNumber: number | null; response: CallupResponse; mine: boolean }[];
   /** Only the staff who declared available. Not available and no answer are never shown to players. */
-  staff: { enrollmentId: string; name: string; surname: string | null; staffRole: StaffRole | null }[];
+  staff: { enrollmentId: string; name: string; surname: string | null; staffRole: StaffRoleRef | null }[];
 }
 
 const notFound = () => new NotFoundException({ message: 'Enrollment not found', code: 'ENROLLMENT_NOT_FOUND' });

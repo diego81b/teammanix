@@ -22,8 +22,7 @@ export type RolePolicy =
   | 'coach'
   | 'assistant_coach'
   | 'trainer'
-  | 'escort'
-  | 'other'
+  | 'none'
   | 'player';
 
 export type PolicyScope =
@@ -56,8 +55,7 @@ const TEMPLATES: Record<RolePolicy, readonly PolicyKey[]> = {
   trainer: ['attendances.record'],
   manager: [],
   player: [],
-  escort: [],
-  other: [],
+  none: [],
 };
 
 export function templateDefault(role: RolePolicy): PolicyKey[] {

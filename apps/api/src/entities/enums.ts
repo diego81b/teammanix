@@ -83,12 +83,12 @@ export enum EnrollmentType {
   STAFF = 'staff',
 }
 
-export enum StaffRole {
+/** Permission template (rule 14) that a staff role of the club applies to whoever holds it. */
+export enum StaffPolicyModel {
   COACH = 'coach',
   ASSISTANT_COACH = 'assistant_coach',
   TRAINER = 'trainer',
-  ESCORT = 'escort',
-  OTHER = 'other',
+  NONE = 'none',
 }
 
 /** Manual status, with no clinical detail. Eligibility ("eligible") is computed, not stored. */

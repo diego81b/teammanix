@@ -1,6 +1,6 @@
 import { AuditLog } from '../src/entities/audit-log.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
-import { Environment, startEnvironment, createTeams } from './helpers';
+import { Environment, startEnvironment, createTeams, roleId } from './helpers';
 
 const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
 const slot = (offset: number) => ({ start: `${day(offset)}T16:00:00Z`, end: `${day(offset)}T17:30:00Z` });
@@ -46,7 +46,7 @@ describe('season statistics (slice 5, rules 10 to 13)', () => {
     const t2 = await team('T2');
     const withAccount = async (seasonId: string, tag: string, type: 'player' | 'staff', staffRole?: string) => {
       const p = await post(admin, '/people', { name: tag, surname: 'Rossi', birthDate: '1990-01-01', email: `${tag}-${email}` });
-      const enrollment = await post(admin, `/seasons/${seasonId}/enrollments`, { personId: p.id, type, ...(staffRole ? { staffRole } : {}) });
+      const enrollment = await post(admin, `/seasons/${seasonId}/enrollments`, { personId: p.id, type, ...(staffRole ? { staffRoleId: await roleId(t.req, admin, staffRole) } : {}) });
       await post(admin, '/invitations', { email: `${tag}-${email}`, role: type, personId: p.id });
       return { ...(await accept(`${tag}-${email}`)), personId: p.id as string, enrollmentId: enrollment.id as string };
     };

@@ -4,7 +4,7 @@ import { AttendanceOutcome, CallupResponse, EnrollmentType } from '../src/entiti
 import { Enrollment } from '../src/entities/enrollment.entity';
 import { Event } from '../src/entities/event.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
-import { Environment, startEnvironment, createTeams } from './helpers';
+import { Environment, startEnvironment, createTeams, roleId } from './helpers';
 
 /** Fixed season for the rules that do not depend on the clock. */
 const FIXED = { startDate: '2026-09-01', endDate: '2027-06-30' };
@@ -94,7 +94,7 @@ describe('event series: recurring trainings that create real events', () => {
       await post(admin, `/seasons/${seasonId}/enrollments`, {
         personId: p.id,
         type,
-        ...(type === 'staff' ? { staffRole: 'coach' } : {}),
+        ...(type === 'staff' ? { staffRoleId: await roleId(t.req, admin, 'coach') } : {}),
       });
       await post(admin, '/invitations', {
         email: addr,

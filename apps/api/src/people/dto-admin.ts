@@ -1,6 +1,6 @@
 import { Transform } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, ArrayUnique, IsArray, IsBoolean, IsEmail, IsEnum, IsInt, IsOptional, IsString, IsUUID, Length, MaxLength } from 'class-validator';
-import { StaffRole, EnrollmentStatus, EnrollmentType } from '../entities/enums';
+import { EnrollmentStatus, EnrollmentType } from '../entities/enums';
 import { CreateSeasonDto } from '../structure/dto';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
@@ -49,9 +49,10 @@ export class EnrollmentDto {
   @IsEnum(EnrollmentType)
   type!: EnrollmentType;
 
+  /** A role of the club's catalog: not archived, not of another club (STAFF_ROLE_NOT_FOUND). */
   @IsOptional()
-  @IsEnum(StaffRole)
-  staffRole?: StaffRole;
+  @IsUUID()
+  staffRoleId?: string;
 
   @IsOptional()
   @Transform(trim)
@@ -66,9 +67,10 @@ export class EnrollmentDto {
 }
 
 export class EditEnrollmentDto {
+  /** A role of the club's catalog: not archived, not of another club (STAFF_ROLE_NOT_FOUND). */
   @IsOptional()
-  @IsEnum(StaffRole)
-  staffRole?: StaffRole;
+  @IsUUID()
+  staffRoleId?: string;
 
   @IsOptional()
   @Transform(trim)
@@ -114,9 +116,10 @@ export class PromoteEnrollmentDto {
   @IsBoolean()
   closeSource?: boolean;
 
+  /** A role of the club's catalog: not archived, not of another club (STAFF_ROLE_NOT_FOUND). */
   @IsOptional()
-  @IsEnum(StaffRole)
-  staffRole?: StaffRole;
+  @IsUUID()
+  staffRoleId?: string;
 
   @IsOptional()
   @Transform(trim)
@@ -146,6 +149,6 @@ export class StaffEnrollmentsDto {
   @IsUUID('all', { each: true })
   teamIds!: string[];
 
-  @IsEnum(StaffRole)
-  staffRole!: StaffRole;
+  @IsUUID()
+  staffRoleId!: string;
 }

@@ -3,7 +3,7 @@ import { Enrollment } from '../src/entities/enrollment.entity';
 import { Person } from '../src/entities/person.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
 import { Season } from '../src/entities/season.entity';
-import { Environment, startEnvironment, createTeams } from './helpers';
+import { Environment, startEnvironment, createTeams, roleId } from './helpers';
 
 describe('people, roster and disabling', () => {
   let t: Environment;
@@ -36,8 +36,15 @@ describe('people, roster and disabling', () => {
 
   const person = (token: string, extra: object = {}) =>
     t.req('POST', '/people', { token, body: { name: 'Luca', surname: 'Verdi', birthDate: '2010-03-04', email: 'luca@test.it', ...extra } });
-  const enroll = (token: string, seasonId: string, personId: string, extra: object = { type: 'player' }) =>
-    t.req('POST', `/seasons/${seasonId}/enrollments`, { token, body: { personId, ...extra } });
+  /** Fixtures name a default role (`staffRole: 'coach'`); the API takes the id of the club's role. An unknown name goes through as it is. */
+  const withRole = async (token: string, body: Record<string, unknown>) => {
+    const { staffRole, ...rest } = body;
+    if (typeof staffRole !== 'string') return body;
+    const known = ['coach', 'assistant_coach', 'trainer', 'escort', 'other'].includes(staffRole);
+    return { ...rest, staffRoleId: known ? await roleId(t.req, token, staffRole) : staffRole };
+  };
+  const enroll = async (token: string, seasonId: string, personId: string, extra: Record<string, unknown> = { type: 'player' }) =>
+    t.req('POST', `/seasons/${seasonId}/enrollments`, { token, body: { personId, ...(await withRole(token, extra)) } });
   const roster = (token: string, seasonId: string) => t.req('GET', `/seasons/${seasonId}/roster`, { token });
   const audit = (action: string, entityId: string) =>
     t.orm.em.fork().find(AuditLog, { action: action as never, entityId }, { filters: false });
@@ -117,7 +124,7 @@ describe('people, roster and disabling', () => {
       expect(r.body).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ personId: g.id, name: 'Luca', surname: 'Verdi', type: 'player', position: 'forward', jerseyNumber: 9, status: 'available' }),
-          expect.objectContaining({ personId: s.id, name: 'Pietro', type: 'staff', staffRole: 'coach' }),
+          expect.objectContaining({ personId: s.id, name: 'Pietro', type: 'staff', staffRole: { id: expect.any(String), name: 'Allenatore' } }),
         ]),
       );
     });
@@ -176,7 +183,7 @@ describe('people, roster and disabling', () => {
       const r = await t.req('PATCH', `/enrollments/${i.id}`, { token: c.token, body: { jerseyNumber: 10, position: 'defender', status: 'injured' } });
       expect(r.status).toBe(200);
       expect(r.body).toMatchObject({ jerseyNumber: 10, position: 'defender', status: 'injured' });
-      const inconsistent = await t.req('PATCH', `/enrollments/${i.id}`, { token: c.token, body: { staffRole: 'other' } });
+      const inconsistent = await t.req('PATCH', `/enrollments/${i.id}`, { token: c.token, body: { staffRoleId: await roleId(t.req, c.token, 'other') } });
       expect([inconsistent.status, inconsistent.body.code]).toEqual([400, 'STAFF_ROLE_NOT_ALLOWED']);
     });
 
@@ -415,7 +422,8 @@ describe('people, roster and disabling', () => {
       if (then === 'closed') expect((await t.req('POST', `/seasons/${id}/close`, { token })).status).toBe(200);
       return id;
     };
-    const several = (token: string, personId: string, body: object) => t.req('POST', `/people/${personId}/staff-enrollments`, { token, body });
+    const several = async (token: string, personId: string, body: Record<string, unknown>) =>
+      t.req('POST', `/people/${personId}/staff-enrollments`, { token, body: await withRole(token, body) });
     const staffOf = async (token: string, seasonId: string) =>
       ((await roster(token, seasonId)).body as Array<{ personId: string; type: string }>).filter((r) => r.type === 'staff').map((r) => r.personId);
 
@@ -438,7 +446,7 @@ describe('people, roster and disabling', () => {
       expect(r.status).toBe(201);
       expect(r.body).toHaveLength(3);
       expect(r.body.map((e: any) => e.seasonId)).toEqual([c.activeA, c.draftB, c.activeC]);
-      for (const e of r.body) expect(e).toMatchObject({ personId: c.coach.id, type: 'staff', staffRole: 'trainer', position: null, jerseyNumber: null });
+      for (const e of r.body) expect(e).toMatchObject({ personId: c.coach.id, type: 'staff', staffRole: { id: expect.any(String), name: 'Preparatore' }, position: null, jerseyNumber: null });
       for (const s of [c.activeA, c.draftB, c.activeC]) expect(await staffOf(c.token, s)).toEqual([c.coach.id]);
       // The draft of a team that already has an active season is left alone.
       expect(await staffOf(c.token, c.draftA)).toEqual([]);
@@ -513,7 +521,7 @@ describe('people, roster and disabling', () => {
         ['POST', `/people/${p.id}/reenable`],
         ['GET', `/seasons/${c.seasonId}/roster`],
         ['POST', `/seasons/${c.seasonId}/enrollments`, { personId: p.id, type: 'player' }],
-        ['POST', `/people/${p.id}/staff-enrollments`, { teamIds: [c.teamId], staffRole: 'trainer' }],
+        ['POST', `/people/${p.id}/staff-enrollments`, { teamIds: [c.teamId], staffRoleId: '00000000-0000-4000-8000-000000000000' }],
         ['PATCH', `/enrollments/${i.id}`, { jerseyNumber: 2 }],
         ['POST', `/enrollments/${i.id}/close`],
       ];

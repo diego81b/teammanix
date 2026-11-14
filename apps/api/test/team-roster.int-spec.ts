@@ -1,5 +1,5 @@
 import { SportProfile } from '../src/entities/sport-profile.entity';
-import { Environment, startEnvironment, createTeams } from './helpers';
+import { Environment, startEnvironment, createTeams, roleId } from './helpers';
 
 const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
 
@@ -42,8 +42,8 @@ describe('roster of the team for staff (#29)', () => {
     const s1 = await team('T1');
     const s2 = await team('T2');
     const person = (tag: string) => post(admin, '/people', { name: tag, surname: 'Rossi', birthDate: '1990-01-01', email: `${tag}-${email}` });
-    const enroll = (seasonId: string, personId: string, type: 'player' | 'staff', staffRole?: string) =>
-      post(admin, `/seasons/${seasonId}/enrollments`, { personId, type, ...(staffRole ? { staffRole } : {}) });
+    const enroll = async (seasonId: string, personId: string, type: 'player' | 'staff', staffRole?: string) =>
+      post(admin, `/seasons/${seasonId}/enrollments`, { personId, type, ...(staffRole ? { staffRoleId: await roleId(t.req, admin, staffRole) } : {}) });
     const withAccount = async (seasonId: string, tag: string, type: 'player' | 'staff', staffRole?: string) => {
       const p = await person(tag);
       await enroll(seasonId, p.id, type, staffRole);
@@ -65,7 +65,7 @@ describe('roster of the team for staff (#29)', () => {
     return { admin, s1, s2, coach1, assistant, coach2, player };
   }
 
-  type Row = { name: string; certificate: unknown; type: string; staffRole: string | null; status: string };
+  type Row = { name: string; certificate: unknown; type: string; staffRole: { id: string; name: string } | null; status: string };
 
   it('the coach of the team reads the roster of the season with role, position, jersey and status', async () => {
     const c = await club('tr-1@test.it');
@@ -73,7 +73,7 @@ describe('roster of the team for staff (#29)', () => {
     expect(r.status).toBe(200);
     expect(r.body).toMatchObject({ teamName: 'T1', seasonName: 'Now', seasonStatus: 'active', canSetStatus: true });
     expect(r.body.rows.map((x: Row) => x.name).sort()).toEqual(['as', 'both', 'c1', 'p1']);
-    expect(r.body.rows.find((x: Row) => x.name === 'c1')).toMatchObject({ type: 'staff', staffRole: 'coach', status: 'available' });
+    expect(r.body.rows.find((x: Row) => x.name === 'c1')).toMatchObject({ type: 'staff', staffRole: { name: 'Allenatore' }, status: 'available' });
   });
 
   it('the assistant reads it but cannot set the state, and contacts never travel', async () => {

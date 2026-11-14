@@ -2,7 +2,8 @@ import { Check, Entity, Enum, Index, ManyToOne, Property, Unique, type Rel } fro
 import { TenantEntity } from './tenant.entity';
 import { Season } from './season.entity';
 import { Person } from './person.entity';
-import { StaffRole, EnrollmentStatus, EnrollmentType } from './enums';
+import { StaffRole } from './staff-role.entity';
+import { EnrollmentStatus, EnrollmentType } from './enums';
 
 /**
  * Person in a Season, as player or as staff. The staff or player role derives from here.
@@ -13,7 +14,7 @@ import { StaffRole, EnrollmentStatus, EnrollmentType } from './enums';
 @Entity({ tableName: 'enrollments' })
 @Unique({ properties: ['season', 'person', 'type'] })
 @Index({ properties: ['person'] })
-@Check({ expression: `(type = 'staff' or staff_role is null)` })
+@Check({ expression: `(type = 'staff' or staff_role_id is null)` })
 export class Enrollment extends TenantEntity {
   @ManyToOne(() => Season, { deleteRule: 'cascade' })
   season!: Rel<Season>;
@@ -24,8 +25,9 @@ export class Enrollment extends TenantEntity {
   @Enum({ items: () => EnrollmentType, length: 20 })
   type!: EnrollmentType;
 
-  @Enum({ items: () => StaffRole, nullable: true, length: 30 })
-  staffRole: StaffRole | null = null;
+  /** Only for staff. The foreign key has no delete rule: a role in use is archived, and the service refuses to delete it. */
+  @ManyToOne(() => StaffRole, { nullable: true, deleteRule: 'no action' })
+  staffRole: Rel<StaffRole> | null = null;
 
   /** Optional label taken from SportProfile.positions. Structures nothing. */
   @Property({ length: 40, nullable: true })

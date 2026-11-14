@@ -20,6 +20,7 @@ import { PeopleModule } from './people/people.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { RolesModule } from './roles/roles.module';
 import { ClubModule } from './club/club.module';
+import { StaffRolesModule } from './staff-roles/staff-roles.module';
 import { StructureModule } from './structure/structure.module';
 import { SuspensionsModule } from './suspensions/suspensions.module';
 
@@ -44,6 +45,7 @@ import { SuspensionsModule } from './suspensions/suspensions.module';
     PeopleModule,
     CertificatesModule,
     RolesModule,
+    StaffRolesModule,
     StructureModule,
     EventsModule,
     CallupsModule,

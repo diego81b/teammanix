@@ -1,7 +1,7 @@
 import { NotificationType } from '../src/entities/enums';
 import { Notification } from '../src/entities/notification.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
-import { Environment, startEnvironment, createTeams } from './helpers';
+import { Environment, startEnvironment, createTeams, roleId } from './helpers';
 
 const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
 const slot = (offset: number) => ({ start: `${day(offset)}T16:00:00Z`, end: `${day(offset)}T17:30:00Z` });
@@ -39,7 +39,7 @@ describe('who gets notified by call-ups and event changes', () => {
     const member = async (name: string, type: 'player' | 'staff', account = true) => {
       const email = `${name}-${tag}@test.it`;
       const p = await post(admin, '/people', { name, surname: 'Rossi', birthDate: '1990-01-01', email });
-      const enrollment = await post(admin, `/seasons/${season.id}/enrollments`, { personId: p.id, type, ...(type === 'staff' ? { staffRole: 'coach' } : {}) });
+      const enrollment = await post(admin, `/seasons/${season.id}/enrollments`, { personId: p.id, type, ...(type === 'staff' ? { staffRoleId: await roleId(t.req, admin, 'coach') } : {}) });
       if (type === 'player') await post(admin, `/people/${p.id}/certificates`, { type: 'competitive', issueDate: day(-10), expiryDate: day(365) });
       if (!account) return { personId: p.id as string, enrollmentId: enrollment.id as string, userId: '', token: '' };
       await post(admin, '/invitations', { email, role: type, personId: p.id });

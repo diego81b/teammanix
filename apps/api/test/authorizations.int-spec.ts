@@ -5,7 +5,7 @@ import { Event } from '../src/entities/event.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
 import { AuthorizationsService, type Goal } from '../src/permissions/authorizations.service';
 import type { PolicyKey } from '../src/permissions/policy';
-import { Environment, startEnvironment, createTeams } from './helpers';
+import { Environment, startEnvironment, createTeams, roleId } from './helpers';
 
 describe('authorizations: policies applied by scope', () => {
   let t: Environment;
@@ -61,8 +61,8 @@ describe('authorizations: policies applied by scope', () => {
     expect(acc.status).toBe(200);
     return { userId: u.user.id as string, personId: p.id as string, enrollmentId: i.id as string };
   }
-  const coach = (a: { token: string }, seasonId: string, email: string, staffRole = 'coach') =>
-    withAccount(a, seasonId, email, { type: 'staff', staffRole }, 'staff');
+  const coach = async (a: { token: string }, seasonId: string, email: string, staffRole = 'coach') =>
+    withAccount(a, seasonId, email, { type: 'staff', staffRoleId: await roleId(t.req, a.token, staffRole) }, 'staff');
   const managerOf = async (a: { token: string }, email: string, extra: object) => {
     await post(a.token, '/invitations', { email, role: 'manager', ...extra });
     const u = await t.newUser(email);

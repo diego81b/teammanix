@@ -8,7 +8,9 @@ import { Callup } from '../entities/callup.entity';
 import { CallupResponseChange } from '../entities/callup-response-change.entity';
 import { Club } from '../entities/club.entity';
 import { Enrollment } from '../entities/enrollment.entity';
-import { CallupResponse, EnrollmentType, EventType, ReasonDecline, type StaffRole } from '../entities/enums';
+import { CallupResponse, EnrollmentType, EventType, ReasonDecline } from '../entities/enums';
+import { StaffRole } from '../entities/staff-role.entity';
+import { type StaffRoleRef, staffRoleRef } from '../staff-roles/staff-roles.service';
 import { Event } from '../entities/event.entity';
 import { User } from '../entities/user.entity';
 import { localDate } from '../events/event.rules';
@@ -29,7 +31,7 @@ export interface StaffRow {
   enrollmentId: string;
   name: string;
   surname: string | null;
-  staffRole: StaffRole | null;
+  staffRole: StaffRoleRef | null;
   /** null = no answer yet. */
   response: CallupResponse | null;
   /** The row is the viewer's own. */
@@ -97,7 +99,7 @@ export class ResponsesService {
     const enrollments = await this.em.find(
       Enrollment,
       { season: event.season.id, type: EnrollmentType.STAFF, endedAt: null, person: { disabledAt: null } },
-      { populate: ['person'], orderBy: { person: { surname: 'asc', name: 'asc' } } },
+      { populate: ['person', 'staffRole'], orderBy: { person: { surname: 'asc', name: 'asc' } } },
     );
     const answers = new Map(
       (await this.em.find(Callup, { event: event.id, enrollment: { $in: enrollments.map((e) => e.id) } })).map((c) => [c.enrollment.id, c.response]),
@@ -110,13 +112,16 @@ export class ResponsesService {
       enrollmentId: e.id,
       name: e.person.name,
       surname: e.person.surname,
-      staffRole: e.staffRole,
+      staffRole: staffRoleRef(e.staffRole),
       response: answers.get(e.id) ?? null,
       mine: viewerEnrollmentIds.includes(e.id),
       ...(viewerEnrollmentIds.includes(e.id) ? { absence: blockOn(absences.filter((x) => x.enrollment.id === e.id), onDay), suspension: own(e.id) } : {}),
     }));
-    const club = await this.em.findOneOrFail(Club, event.club.id, { fields: ['warnNoCoachAvailable', 'coachRoles'] });
-    return { rows, noCoachWarning: club.warnNoCoachAvailable && noCoachAvailable(rows, club.coachRoles) };
+    const club = await this.em.findOneOrFail(Club, event.club.id, { fields: ['warnNoCoachAvailable'] });
+    // With no role marked "must be available" nobody can satisfy the check, so there is nothing to warn about.
+    const anyRequired = club.warnNoCoachAvailable && (await this.em.count(StaffRole, { mustBeAvailable: true })) > 0;
+    const noCoachWarning = anyRequired && noCoachAvailable(enrollments.map((e) => ({ mustBeAvailable: e.staffRole?.mustBeAvailable ?? false, response: answers.get(e.id) ?? null })));
+    return { rows, noCoachWarning };
   }
 
   /** For matches only: the suspension that covers the event for each of these enrollments. Trainings are never blocked. */

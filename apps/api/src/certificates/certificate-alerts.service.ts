@@ -120,7 +120,7 @@ export class CertificateAlertsService {
       em.find(
         Enrollment,
         { club: clubId, type: EnrollmentType.STAFF, endedAt: null, season: { status: { $ne: SeasonStatus.CLOSED } }, person: { user: { $ne: null }, disabledAt: null } },
-        { filters: false, populate: ['person.user', 'season.team'] },
+        { filters: false, populate: ['person.user', 'season.team', 'staffRole'] },
       ),
       em.find(Membership, { club: clubId }, { filters: false }),
     ]);
@@ -129,7 +129,7 @@ export class CertificateAlertsService {
     const staffOf = new Map<string, EnrollmentStaffCtx[]>();
     for (const e of staff) {
       const userId = (e.person.user as NonNullable<typeof e.person.user>).id;
-      staffOf.set(userId, [...(staffOf.get(userId) ?? []), { staffRole: e.staffRole, teamId: e.season.team.id }]);
+      staffOf.set(userId, [...(staffOf.get(userId) ?? []), { policyModel: e.staffRole?.policyModel ?? null, teamId: e.season.team.id }]);
     }
     const diffOf = new Map(memberships.map((m) => [m.user.id, m.diff]));
     const userIds = new Set([...rolesOf.keys(), ...staffOf.keys()]);

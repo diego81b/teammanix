@@ -2,7 +2,7 @@ import { AuditLog } from '../src/entities/audit-log.entity';
 import { Enrollment } from '../src/entities/enrollment.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
 import { Season } from '../src/entities/season.entity';
-import { Environment, startEnvironment, createTeams } from './helpers';
+import { Environment, startEnvironment, createTeams, roleId } from './helpers';
 
 describe('closure, cloning and promotion (rules 7, 8, 9)', () => {
   let t: Environment;
@@ -39,8 +39,13 @@ describe('closure, cloning and promotion (rules 7, 8, 9)', () => {
     t.req('POST', `/teams/${teamId}/seasons`, { token, body: { name: '2026/27', startDate: '2026-09-01', endDate: '2027-06-30', ...extra } });
   const person = async (token: string, name: string) =>
     (await t.req('POST', '/people', { token, body: { name, surname: 'Rossi', birthDate: '2010-03-04', email: `${name.toLowerCase()}-${Math.random().toString(36).slice(2)}@test.it` } })).body;
-  const enroll = async (token: string, seasonId: string, personId: string, extra: object = { type: 'player' }) => {
-    const r = await t.req('POST', `/seasons/${seasonId}/enrollments`, { token, body: { personId, ...extra } });
+  /** Fixtures name a default role (`staffRole: 'coach'`); the API takes the id of the club's role. */
+  const withRole = async (token: string, body: Record<string, unknown>) => {
+    const { staffRole, ...rest } = body;
+    return typeof staffRole === 'string' ? { ...rest, staffRoleId: await roleId(t.req, token, staffRole) } : body;
+  };
+  const enroll = async (token: string, seasonId: string, personId: string, extra: Record<string, unknown> = { type: 'player' }) => {
+    const r = await t.req('POST', `/seasons/${seasonId}/enrollments`, { token, body: { personId, ...(await withRole(token, extra)) } });
     expect(r.status).toBe(201);
     return r.body;
   };
@@ -49,7 +54,7 @@ describe('closure, cloning and promotion (rules 7, 8, 9)', () => {
   const newSeason = { name: '2027/28', startDate: '2027-09-01', endDate: '2028-06-30' };
   const clone = (token: string, id: string, enrollments: string[], extra: object = {}) =>
     t.req('POST', `/seasons/${id}/clone`, { token, body: { ...newSeason, enrollments, ...extra } });
-  const promote = (token: string, id: string, body: object) => t.req('POST', `/enrollments/${id}/promote`, { token, body });
+  const promote = async (token: string, id: string, body: Record<string, unknown>) => t.req('POST', `/enrollments/${id}/promote`, { token, body: await withRole(token, body) });
   const audit = (action: string, entityId: string) => t.orm.em.fork().find(AuditLog, { action: action as never, entityId }, { filters: false });
   const seasonsOf = (teamId: string) => t.orm.em.fork().find(Season, { team: teamId }, { filters: false });
 
@@ -117,7 +122,7 @@ describe('closure, cloning and promotion (rules 7, 8, 9)', () => {
       expect(fresh).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ personId: a.id, type: 'player', position: 'goalkeeper', jerseyNumber: 1, status: 'available' }),
-          expect.objectContaining({ personId: s.id, type: 'staff', staffRole: 'coach' }),
+          expect.objectContaining({ personId: s.id, type: 'staff', staffRole: { id: expect.any(String), name: 'Allenatore' } }),
         ]),
       );
       // Source unchanged: full roster, injured status of the first enrollment, no closed enrollment.
@@ -237,9 +242,21 @@ describe('closure, cloning and promotion (rules 7, 8, 9)', () => {
       expect(r.body).toMatchObject({ position: 'midfielder', jerseyNumber: 8 });
       const s = await enroll(c.token, c.seasonId, (await person(c.token, 'Sara')).id, { type: 'staff', staffRole: 'assistant_coach' });
       const rs = await promote(c.token, s.id, { seasonId: c.destId, staffRole: 'coach' });
-      expect(rs.body).toMatchObject({ type: 'staff', staffRole: 'coach', position: null, jerseyNumber: null });
+      expect(rs.body).toMatchObject({ type: 'staff', staffRole: { id: expect.any(String), name: 'Allenatore' }, position: null, jerseyNumber: null });
       const inconsistent = await promote(c.token, s.id, { seasonId: c.destId, jerseyNumber: 3 });
       expect([inconsistent.status, inconsistent.body.code]).toEqual([400, 'PLAYER_DATA_NOT_ALLOWED']);
+    });
+
+    it('the role of the origin travels even if archived since; choosing an archived one is refused', async () => {
+      const c = await withADraftElsewhere('pr-9@test.it');
+      const s = await enroll(c.token, c.seasonId, (await person(c.token, 'Sara')).id, { type: 'staff', staffRole: 'trainer' });
+      const trainer = await roleId(t.req, c.token, 'trainer');
+      expect((await t.req('PATCH', `/staff-roles/${trainer}`, { token: c.token, body: { archived: true } })).status).toBe(200);
+      const carried = await promote(c.token, s.id, { seasonId: c.destId });
+      expect([carried.status, carried.body.staffRole]).toEqual([201, { id: trainer, name: 'Preparatore' }]);
+      const other = await enroll(c.token, c.seasonId, (await person(c.token, 'Tina')).id, { type: 'staff', staffRole: 'coach' });
+      const chosen = await promote(c.token, other.id, { seasonId: c.destId, staffRoleId: trainer });
+      expect([chosen.status, chosen.body.code]).toEqual([404, 'STAFF_ROLE_NOT_FOUND']);
     });
 
     describe('position and sport profile of the destination', () => {

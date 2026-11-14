@@ -8,6 +8,7 @@ import { AuditAction, AccessRoleType, ScopeType, EnrollmentType } from '../entit
 import { Enrollment } from '../entities/enrollment.entity';
 import { Person } from '../entities/person.entity';
 import { AccessRole } from '../entities/access-role.entity';
+import { type StaffRoleRef, staffRoleRef } from '../staff-roles/staff-roles.service';
 import { validIsoDate } from '../structure/season.rules';
 import type { CreatePersonDto } from './dto-admin';
 
@@ -31,7 +32,7 @@ export interface EnrollmentPersonDto {
   /** Null for a team outside any section. */
   section: string | null;
   type: EnrollmentType;
-  staffRole: string | null;
+  staffRole: StaffRoleRef | null;
   position: string | null;
   jerseyNumber: number | null;
   status: string;
@@ -100,7 +101,7 @@ export class RegistryService {
     const enrollments = await this.em.find(
       Enrollment,
       { person: id },
-      { populate: ['season.team.section'], orderBy: { season: { startDate: 'desc' } } },
+      { populate: ['season.team.section', 'staffRole'], orderBy: { season: { startDate: 'desc' } } },
     );
     // Rule 11: staff-only people have no certificate.
     const onlyStaff = enrollments.length > 0 && enrollments.every((i) => i.type === EnrollmentType.STAFF);
@@ -116,7 +117,7 @@ export class RegistryService {
         team: i.season.team.name,
         section: i.season.team.section?.name ?? null,
         type: i.type,
-        staffRole: i.staffRole,
+        staffRole: staffRoleRef(i.staffRole),
         position: i.position,
         jerseyNumber: i.jerseyNumber,
         status: i.status,

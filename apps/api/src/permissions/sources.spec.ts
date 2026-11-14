@@ -1,4 +1,4 @@
-import { AccessRoleType, StaffRole, ScopeType } from '../entities/enums';
+import { AccessRoleType, StaffPolicyModel, ScopeType } from '../entities/enums';
 import { targetFromTeam, sourcesFrom, type EnrollmentStaffCtx } from './sources';
 import { can } from './policy';
 
@@ -6,7 +6,7 @@ const ADMIN = { role: AccessRoleType.ADMIN, scope: ScopeType.CLUB, sectionId: nu
 const managerClub = { role: AccessRoleType.MANAGER, scope: ScopeType.CLUB, sectionId: null, teamId: null };
 const managerSection = { role: AccessRoleType.MANAGER, scope: ScopeType.SECTION, sectionId: 'sec-1', teamId: null };
 const managerTeam = { role: AccessRoleType.MANAGER, scope: ScopeType.TEAM, sectionId: null, teamId: 'sq-1' };
-const staff = (staffRole: StaffRole | null, teamId = 'sq-1'): EnrollmentStaffCtx => ({ staffRole, teamId });
+const staff = (policyModel: StaffPolicyModel | null, teamId = 'sq-1'): EnrollmentStaffCtx => ({ policyModel, teamId });
 
 describe('sourcesFrom', () => {
   it('admin and manager carry their scope', () => {
@@ -18,10 +18,10 @@ describe('sourcesFrom', () => {
     expect(sourcesFrom([managerTeam], [])).toEqual([{ role: 'manager', scope: { type: 'team', teamId: 'sq-1' } }]);
   });
 
-  it('staff always has team scope and the enrollment role; without a role it is other', () => {
-    expect(sourcesFrom([], [staff(StaffRole.COACH), staff(null, 'sq-2')])).toEqual([
+  it('staff always has team scope and the permission model of the role; without a role it is none', () => {
+    expect(sourcesFrom([], [staff(StaffPolicyModel.COACH), staff(null, 'sq-2')])).toEqual([
       { role: 'coach', scope: { type: 'team', teamId: 'sq-1' } },
-      { role: 'other', scope: { type: 'team', teamId: 'sq-2' } },
+      { role: 'none', scope: { type: 'team', teamId: 'sq-2' } },
     ]);
   });
 
@@ -40,19 +40,19 @@ describe('sources and policy by scope, from real sources', () => {
   const on = (teamId: string, sectionId: string | null = 'sec-1') => targetFromTeam(sectionId, teamId);
 
   it('the coach manages events only in their own team', () => {
-    const f = sourcesFrom([], [staff(StaffRole.COACH)]);
+    const f = sourcesFrom([], [staff(StaffPolicyModel.COACH)]);
     expect(can(f, {}, 'events.manage', on('sq-1'))).toBe(true);
     expect(can(f, {}, 'events.manage', on('sq-2'))).toBe(false);
     expect(can(f, {}, 'events.manage', on('sq-3', 'sec-2'))).toBe(false);
   });
 
   it('the coach manages their team whether it has a section or not', () => {
-    const f = sourcesFrom([], [staff(StaffRole.COACH)]);
+    const f = sourcesFrom([], [staff(StaffPolicyModel.COACH)]);
     expect(can(f, {}, 'events.manage', on('sq-1', null))).toBe(true);
   });
 
   it('the coach does not act at club or section level', () => {
-    const f = sourcesFrom([], [staff(StaffRole.COACH)]);
+    const f = sourcesFrom([], [staff(StaffPolicyModel.COACH)]);
     expect(can(f, {}, 'events.manage', { sectionId: null, teamId: null })).toBe(false);
     expect(can(f, {}, 'events.manage', { sectionId: 'sec-1', teamId: null })).toBe(false);
   });
@@ -70,7 +70,7 @@ describe('sources and policy by scope, from real sources', () => {
   });
 
   it('the diff also revokes from the coach', () => {
-    const f = sourcesFrom([], [staff(StaffRole.COACH)]);
+    const f = sourcesFrom([], [staff(StaffPolicyModel.COACH)]);
     expect(can(f, { 'events.manage': false }, 'events.manage', on('sq-1'))).toBe(false);
   });
 

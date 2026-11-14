@@ -1,10 +1,9 @@
 import { Entity, Property } from '@mikro-orm/core';
 import { BaseEntity } from './base.entity';
-import { StaffRole } from './enums';
 
 /** Tenant. It has no tenant filter: it is the tenant itself. */
 @Entity({ tableName: 'clubs' })
-export class Club extends BaseEntity<'theme' | 'blockCertificateExpired' | 'certificatesWithFile' | 'warnNoCoachAvailable' | 'coachRoles'> {
+export class Club extends BaseEntity<'theme' | 'blockCertificateExpired' | 'certificatesWithFile' | 'warnNoCoachAvailable'> {
   @Property({ length: 200 })
   name!: string;
 
@@ -22,13 +21,9 @@ export class Club extends BaseEntity<'theme' | 'blockCertificateExpired' | 'cert
   @Property({ default: true })
   blockCertificateExpired: boolean = true;
 
-  /** Staff see a warning on an event where no coach has declared available. On by default. */
+  /** Staff see a warning on an event where nobody in a role marked as must be available has declared available. On by default. */
   @Property({ default: true })
   warnNoCoachAvailable: boolean = true;
-
-  /** Staff roles that count as a coach for that warning: a club may let the assistant step in. Never empty. */
-  @Property({ type: 'json', default: '["coach"]' })
-  coachRoles: StaffRole[] = [StaffRole.COACH];
 
   /**
    * Minimization (GDPR art. 5): by default only type, issue and expiry are recorded.

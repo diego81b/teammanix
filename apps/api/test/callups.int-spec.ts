@@ -3,7 +3,7 @@ import { Enrollment } from '../src/entities/enrollment.entity';
 import { CallupResponse } from '../src/entities/enums';
 import { Event } from '../src/entities/event.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
-import { Environment, startEnvironment, createTeams } from './helpers';
+import { Environment, startEnvironment, createTeams, roleId } from './helpers';
 
 const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
 const slot = (offset = 30, from = '16:00', to = '17:30') => ({ start: `${day(offset)}T${from}:00Z`, end: `${day(offset)}T${to}:00Z` });
@@ -56,7 +56,7 @@ describe('call-ups: three lists per event', () => {
     const certify = async (personId: string, expiryDate = day(365)) =>
       post(admin, `/people/${personId}/certificates`, { type: 'competitive', issueDate: day(-10), expiryDate });
     const enroll = async (seasonId: string, personId: string, type: 'player' | 'staff', staffRole?: string) =>
-      post(admin, `/seasons/${seasonId}/enrollments`, { personId, type, ...(staffRole ? { staffRole } : {}) });
+      post(admin, `/seasons/${seasonId}/enrollments`, { personId, type, ...(staffRole ? { staffRoleId: await roleId(t.req, admin, staffRole) } : {}) });
     const withAccount = async (seasonId: string, tag: string, type: 'player' | 'staff', staffRole?: string) => {
       const p = await person(tag);
       const enrollment = await enroll(seasonId, p.id, type, staffRole);
@@ -738,7 +738,7 @@ describe('call-ups: three lists per event', () => {
       await available(s.coach1.token, ev.id, { response: 'confirmed' });
       await available(s.assistant.token, ev.id, { response: 'declined' });
       const player = await lists(s.player.token, ev.id);
-      expect(player.staff).toEqual([{ enrollmentId: s.coach1.enrollmentId, name: 'c1', surname: 'Rossi', staffRole: 'coach' }]);
+      expect(player.staff).toEqual([{ enrollmentId: s.coach1.enrollmentId, name: 'c1', surname: 'Rossi', staffRole: { id: expect.any(String), name: 'Allenatore' } }]);
       const text = JSON.stringify(player);
       for (const hidden of ['as-', 'tr-', s.assistant.enrollmentId, s.trainer.enrollmentId, 'declined']) expect(text).not.toContain(hidden);
       expect(Object.keys(player)).not.toContain('noCoachWarning');
@@ -770,19 +770,39 @@ describe('call-ups: three lists per event', () => {
       expect((await lists(s.coach1.token, ev.id)).noCoachWarning).toBe(false);
     });
 
-    it('the club decides which staff roles count as a coach, for instance the assistant who steps in', async () => {
+    const mark = async (token: string, key: string, body: object) =>
+      expect((await t.req('PATCH', `/staff-roles/${await roleId(t.req, token, key)}`, { token, body })).status).toBe(200);
+
+    it('the club decides which staff roles must be available, for instance the assistant who steps in', async () => {
       const s = await club('cu-85@test.it');
       const ev = await s.event(s.t1.teamId);
-      const patch = (body: object) => t.req('PATCH', '/club/current/settings', { token: s.admin, body });
       await available(s.assistant.token, ev.id, { response: 'confirmed' });
       expect((await lists(s.coach1.token, ev.id)).noCoachWarning).toBe(true);
-      expect((await patch({ coachRoles: ['coach', 'assistant_coach'] })).status).toBe(200);
+      await mark(s.admin, 'assistant_coach', { mustBeAvailable: true });
       expect((await lists(s.coach1.token, ev.id)).noCoachWarning).toBe(false);
-      // The trainer is not in the list: his availability changes nothing.
+      // The trainer is not marked: his availability changes nothing.
       await available(s.assistant.token, ev.id, { response: 'declined' });
       await available(s.trainer.token, ev.id, { response: 'confirmed' });
       expect((await lists(s.coach1.token, ev.id)).noCoachWarning).toBe(true);
-      expect((await patch({ coachRoles: ['trainer'] })).status).toBe(200);
+      await mark(s.admin, 'trainer', { mustBeAvailable: true });
+      expect((await lists(s.coach1.token, ev.id)).noCoachWarning).toBe(false);
+    });
+
+    it('with no role marked as must be available there is nothing to warn about', async () => {
+      const s = await club('cu-88@test.it');
+      const ev = await s.event(s.t1.teamId);
+      expect((await lists(s.coach1.token, ev.id)).noCoachWarning).toBe(true);
+      await mark(s.admin, 'coach', { mustBeAvailable: false });
+      expect((await lists(s.coach1.token, ev.id)).noCoachWarning).toBe(false);
+      expect((await lists(s.admin, ev.id)).noCoachWarning).toBe(false);
+    });
+
+    it('an archived role that must be available still counts for who already has it', async () => {
+      const s = await club('cu-89@test.it');
+      const ev = await s.event(s.t1.teamId);
+      await mark(s.admin, 'coach', { archived: true });
+      expect((await lists(s.coach1.token, ev.id)).noCoachWarning).toBe(true);
+      await available(s.coach1.token, ev.id, { response: 'confirmed' });
       expect((await lists(s.coach1.token, ev.id)).noCoachWarning).toBe(false);
     });
   });

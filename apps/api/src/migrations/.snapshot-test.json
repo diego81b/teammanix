@@ -156,7 +156,7 @@
       "checks": [
         {
           "name": "absences_check",
-          "columnName": "end_date",
+          "columnName": "start_date",
           "definition": "CHECK (((end_date IS NULL) OR (end_date >= start_date)))",
           "expression": "(end_date IS NULL) OR (end_date >= start_date)"
         }
@@ -389,7 +389,7 @@
         },
         {
           "name": "access_scope_consistent_roles",
-          "columnName": "scope",
+          "columnName": "section_id",
           "definition": "CHECK ((((scope = 'club'::text) AND (section_id IS NULL) AND (team_id IS NULL)) OR ((scope = 'section'::text) AND (section_id IS NOT NULL) AND (team_id IS NULL)) OR ((scope = 'team'::text) AND (team_id IS NOT NULL))))",
           "expression": "((scope = 'club'::text) AND (section_id IS NULL) AND (team_id IS NULL)) OR ((scope = 'section'::text) AND (section_id IS NOT NULL) AND (team_id IS NULL)) OR ((scope = 'team'::text) AND (team_id IS NOT NULL))"
         }
@@ -1697,22 +1697,6 @@
           "comment": null,
           "enumItems": [],
           "mappedType": "boolean"
-        },
-        "coach_roles": {
-          "name": "coach_roles",
-          "type": "jsonb",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "unique": false,
-          "length": null,
-          "precision": null,
-          "scale": null,
-          "default": "'[\"coach\"]'",
-          "comment": null,
-          "enumItems": [],
-          "mappedType": "json"
         }
       },
       "name": "clubs",
@@ -2329,28 +2313,6 @@
           ],
           "mappedType": "enum"
         },
-        "staff_role": {
-          "name": "staff_role",
-          "type": "text",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": true,
-          "unique": false,
-          "length": null,
-          "precision": null,
-          "scale": null,
-          "default": null,
-          "comment": null,
-          "enumItems": [
-            "coach",
-            "assistant_coach",
-            "trainer",
-            "escort",
-            "other"
-          ],
-          "mappedType": "enum"
-        },
         "position": {
           "name": "position",
           "type": "varchar(40)",
@@ -2417,6 +2379,22 @@
           "comment": null,
           "enumItems": [],
           "mappedType": "date"
+        },
+        "staff_role_id": {
+          "name": "staff_role_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
         }
       },
       "name": "enrollments",
@@ -2468,9 +2446,9 @@
       "checks": [
         {
           "name": "enrollments_check",
-          "columnName": "staff_role",
-          "definition": "CHECK (((type = 'staff'::text) OR (staff_role IS NULL)))",
-          "expression": "(type = 'staff'::text) OR (staff_role IS NULL)"
+          "columnName": "staff_role_id",
+          "definition": "CHECK (((type = 'staff'::text) OR (staff_role_id IS NULL)))",
+          "expression": "(type = 'staff'::text) OR (staff_role_id IS NULL)"
         }
       ],
       "foreignKeys": {
@@ -2512,6 +2490,19 @@
           ],
           "updateRule": "cascade",
           "deleteRule": "cascade"
+        },
+        "enrollments_staff_role_id_foreign": {
+          "columnNames": [
+            "staff_role_id"
+          ],
+          "constraintName": "enrollments_staff_role_id_foreign",
+          "localTableName": "public.enrollments",
+          "referencedTableName": "public.staff_roles",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "no action"
         }
       },
       "nativeEnums": {},
@@ -3240,7 +3231,7 @@
         },
         {
           "name": "events_fields_only_match",
-          "columnName": "type",
+          "columnName": "opponent_id",
           "definition": "CHECK (((type = 'match'::text) OR ((opponent_id IS NULL) AND (home_away IS NULL) AND (own_score IS NULL) AND (opponent_score IS NULL))))",
           "expression": "(type = 'match'::text) OR ((opponent_id IS NULL) AND (home_away IS NULL) AND (own_score IS NULL) AND (opponent_score IS NULL))"
         }
@@ -3467,7 +3458,7 @@
       "checks": [
         {
           "name": "expected_injuries_dates",
-          "columnName": "start_date",
+          "columnName": "return_date",
           "definition": "CHECK ((return_date > start_date))",
           "expression": "return_date > start_date"
         }
@@ -3680,7 +3671,7 @@
       "checks": [
         {
           "name": "guardian_links_check",
-          "columnName": "guardian_id",
+          "columnName": "minor_id",
           "definition": "CHECK ((minor_id <> guardian_id))",
           "expression": "minor_id <> guardian_id"
         }
@@ -4054,13 +4045,13 @@
       "checks": [
         {
           "name": "invitations_admin_only_club",
-          "columnName": "role",
+          "columnName": "scope",
           "definition": "CHECK (((role <> 'admin'::text) OR (scope = 'club'::text)))",
           "expression": "(role <> 'admin'::text) OR (scope = 'club'::text)"
         },
         {
           "name": "invitations_scope_consistent",
-          "columnName": "team_id",
+          "columnName": "scope",
           "definition": "CHECK ((((scope = 'club'::text) AND (section_id IS NULL) AND (team_id IS NULL)) OR ((scope = 'section'::text) AND (section_id IS NOT NULL) AND (team_id IS NULL)) OR ((scope = 'team'::text) AND (team_id IS NOT NULL))))",
           "expression": "((scope = 'club'::text) AND (section_id IS NULL) AND (team_id IS NULL)) OR ((scope = 'section'::text) AND (section_id IS NOT NULL) AND (team_id IS NULL)) OR ((scope = 'team'::text) AND (team_id IS NOT NULL))"
         }
@@ -5521,13 +5512,13 @@
       "checks": [
         {
           "name": "people_complete_consistent",
-          "columnName": "birth_date",
+          "columnName": "surname",
           "definition": "CHECK (((completed_at IS NULL) OR ((surname IS NOT NULL) AND (birth_date IS NOT NULL))))",
           "expression": "(completed_at IS NULL) OR ((surname IS NOT NULL) AND (birth_date IS NOT NULL))"
         },
         {
           "name": "people_contact",
-          "columnName": "email",
+          "columnName": "anonymized_at",
           "definition": "CHECK (((email IS NOT NULL) OR (phone IS NOT NULL) OR (anonymized_at IS NOT NULL)))",
           "expression": "(email IS NOT NULL) OR (phone IS NOT NULL) OR (anonymized_at IS NOT NULL)"
         }
@@ -6336,6 +6327,212 @@
       ],
       "checks": [],
       "foreignKeys": {},
+      "nativeEnums": {},
+      "comment": null
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "gen_random_uuid()",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": true,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(60)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 60,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "name_key": {
+          "name": "name_key",
+          "type": "varchar(60)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 60,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "policy_model": {
+          "name": "policy_model",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [
+            "coach",
+            "assistant_coach",
+            "trainer",
+            "none"
+          ],
+          "mappedType": "enum"
+        },
+        "must_be_available": {
+          "name": "must_be_available",
+          "type": "bool",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "false",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "staff_roles",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "club_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "staff_roles_club_id_index",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "club_id",
+            "name_key"
+          ],
+          "composite": true,
+          "constraint": true,
+          "keyName": "staff_roles_club_id_name_key_unique",
+          "unique": true,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "staff_roles_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {
+        "staff_roles_club_id_foreign": {
+          "columnNames": [
+            "club_id"
+          ],
+          "constraintName": "staff_roles_club_id_foreign",
+          "localTableName": "public.staff_roles",
+          "referencedTableName": "public.clubs",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
+        }
+      },
       "nativeEnums": {},
       "comment": null
     },

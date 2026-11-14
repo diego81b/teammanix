@@ -33,8 +33,8 @@ describe('default templates (rule 14)', () => {
   it('trainer', () => {
     expect(templateDefault('trainer')).toEqual(['attendances.record']);
   });
-  it('manager, player and staff roles without a template: no policy', () => {
-    for (const r of ['manager', 'player', 'escort', 'other'] as const) {
+  it('manager, player and the staff model without a template: no policy', () => {
+    for (const r of ['manager', 'player', 'none'] as const) {
       expect(templateDefault(r)).toEqual([]);
     }
   });

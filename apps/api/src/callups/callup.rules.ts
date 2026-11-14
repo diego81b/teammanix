@@ -1,5 +1,5 @@
 import type { CtxRole } from '../common/auth-context';
-import { CallupResponse, EnrollmentStatus, EventType, StaffRole, type ReasonDecline } from '../entities/enums';
+import { CallupResponse, EnrollmentStatus, EventType, type ReasonDecline } from '../entities/enums';
 import type { CertificateStatus } from '../certificates/certificate.rules';
 import { canReadSeasonEvents, type SeasonTarget } from '../events/visibility';
 
@@ -159,10 +159,7 @@ export function isChange(was: { response: CallupResponse; reason: ReasonDecline 
   return was.response !== next.response || was.reason !== (next.reason ?? null);
 }
 
-/** Warning for staff: nobody in a role the club counts as coach has declared available. */
-export function noCoachAvailable(
-  staff: readonly { staffRole: string | null; response: CallupResponse | null }[],
-  coachRoles: readonly string[],
-): boolean {
-  return !staff.some((s) => s.staffRole !== null && coachRoles.includes(s.staffRole) && s.response === CallupResponse.CONFIRMED);
+/** Warning for staff: nobody in a role the club requires to be available has declared available. */
+export function noCoachAvailable(staff: readonly { mustBeAvailable: boolean; response: CallupResponse | null }[]): boolean {
+  return !staff.some((s) => s.mustBeAvailable && s.response === CallupResponse.CONFIRMED);
 }

@@ -4,7 +4,7 @@ import { CallupResponseChange } from '../src/entities/callup-response-change.ent
 import { Notification } from '../src/entities/notification.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
 import { localDate } from '../src/events/event.rules';
-import { Environment, startEnvironment, createTeams } from './helpers';
+import { Environment, startEnvironment, createTeams, roleId } from './helpers';
 
 const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
 const slot = (offset: number) => ({ start: `${day(offset)}T16:00:00Z`, end: `${day(offset)}T17:30:00Z` });
@@ -49,8 +49,8 @@ describe('declared absences (rule 10)', () => {
     const t1 = await team('T1');
     const t2 = await team('T2');
     const person = (tag: string) => post(admin, '/people', { name: tag, surname: 'Rossi', birthDate: '1990-01-01', email: `${tag}-${email}` });
-    const enroll = (seasonId: string, personId: string, type: 'player' | 'staff', staffRole?: string) =>
-      post(admin, `/seasons/${seasonId}/enrollments`, { personId, type, ...(staffRole ? { staffRole } : {}) });
+    const enroll = async (seasonId: string, personId: string, type: 'player' | 'staff', staffRole?: string) =>
+      post(admin, `/seasons/${seasonId}/enrollments`, { personId, type, ...(staffRole ? { staffRoleId: await roleId(t.req, admin, staffRole) } : {}) });
     const withAccount = async (seasonId: string, tag: string, type: 'player' | 'staff', staffRole?: string) => {
       const p = await person(tag);
       const enrollment = await enroll(seasonId, p.id, type, staffRole);
@@ -416,7 +416,7 @@ const row = (rows: any[], id: string) => rows.find((r) => r.enrollmentId === id)
         expect(g.status).toBe(200);
         expect(g.body).toEqual([
           { enrollmentId: s.player.enrollmentId, personId: s.player.personId, name: 'p1', surname: 'Rossi', type: 'player', staffRole: null, absences: [{ startDate: day(10), endDate: day(20) }] },
-          { enrollmentId: s.coach1.enrollmentId, personId: s.coach1.personId, name: 'c1', surname: 'Rossi', type: 'staff', staffRole: 'coach', absences: [{ startDate: day(30), endDate: null }] },
+          { enrollmentId: s.coach1.enrollmentId, personId: s.coach1.personId, name: 'c1', surname: 'Rossi', type: 'staff', staffRole: { id: expect.any(String), name: 'Allenatore' }, absences: [{ startDate: day(30), endDate: null }] },
         ]);
       }
     });

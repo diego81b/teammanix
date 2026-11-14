@@ -107,8 +107,8 @@ export class AuthorizationsService {
         endedAt: null,
         season: { status: { $ne: SeasonStatus.CLOSED } },
       },
-      { filters: false, populate: ['season.team'] },
+      { filters: false, populate: ['season.team', 'staffRole'] },
     );
-    return rows.map((i) => ({ staffRole: i.staffRole, teamId: i.season.team.id }));
+    return rows.map((i) => ({ policyModel: i.staffRole?.policyModel ?? null, teamId: i.season.team.id }));
   }
 }

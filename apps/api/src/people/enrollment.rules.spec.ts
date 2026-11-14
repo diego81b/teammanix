@@ -1,4 +1,4 @@
-import { StaffRole, EnrollmentType, SeasonStatus } from '../entities/enums';
+import { StaffPolicyModel, EnrollmentType, SeasonStatus } from '../entities/enums';
 import { allowedPosition, positionInherited, rolePolicyFrom, seasonToEnroll, validateEnrollment } from './enrollment.rules';
 
 const G = EnrollmentType.PLAYER;
@@ -13,17 +13,18 @@ describe('validateEnrollment', () => {
   });
 
   it('valid staff requires the staff role', () => {
-    expect(validateEnrollment({ type: S, staffRole: StaffRole.COACH })).toBeNull();
+    expect(validateEnrollment({ type: S, staffRoleId: 'r-1' })).toBeNull();
     expect(validateEnrollment({ type: S })).toBe('STAFF_ROLE_REQUIRED');
+    expect(validateEnrollment({ type: S, staffRoleId: null })).toBe('STAFF_ROLE_REQUIRED');
   });
 
   it('the staff role is not valid for a player', () => {
-    expect(validateEnrollment({ type: G, staffRole: StaffRole.COACH })).toBe('STAFF_ROLE_NOT_ALLOWED');
+    expect(validateEnrollment({ type: G, staffRoleId: 'r-1' })).toBe('STAFF_ROLE_NOT_ALLOWED');
   });
 
   it('jersey and position apply only to a player', () => {
-    expect(validateEnrollment({ type: S, staffRole: StaffRole.OTHER, jerseyNumber: 7 })).toBe('PLAYER_DATA_NOT_ALLOWED');
-    expect(validateEnrollment({ type: S, staffRole: StaffRole.OTHER, position: 'libero' })).toBe('PLAYER_DATA_NOT_ALLOWED');
+    expect(validateEnrollment({ type: S, staffRoleId: 'r-1', jerseyNumber: 7 })).toBe('PLAYER_DATA_NOT_ALLOWED');
+    expect(validateEnrollment({ type: S, staffRoleId: 'r-1', position: 'libero' })).toBe('PLAYER_DATA_NOT_ALLOWED');
   });
 
   it('jersey number is an integer between 0 and 999', () => {
@@ -60,11 +61,11 @@ describe('rolePolicyFrom', () => {
   it('a player is a player', () => {
     expect(rolePolicyFrom({ type: G, staffRole: null })).toBe('player');
   });
-  it('staff carries its own role', () => {
-    for (const r of Object.values(StaffRole)) expect(rolePolicyFrom({ type: S, staffRole: r })).toBe(r);
+  it('staff takes the template of the permission model of its role', () => {
+    for (const policyModel of Object.values(StaffPolicyModel)) expect(rolePolicyFrom({ type: S, staffRole: { policyModel } })).toBe(policyModel);
   });
-  it('staff without a role: inconsistent data, role without permissions', () => {
-    expect(rolePolicyFrom({ type: S, staffRole: null })).toBe('other');
+  it('staff without a role: inconsistent data, no permissions', () => {
+    expect(rolePolicyFrom({ type: S, staffRole: null })).toBe('none');
   });
 });
 

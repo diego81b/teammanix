@@ -6,12 +6,13 @@ import { AuthorizationsService } from '../permissions/authorizations.service';
 import type { SummaryCertificate } from '../certificates/certificates.service';
 import { CertificatesService } from '../certificates/certificates.service';
 import type { AuthContext } from '../common/auth-context';
-import { AuditAction, SeasonStatus, StaffRole, EnrollmentStatus, EnrollmentType } from '../entities/enums';
+import { AuditAction, SeasonStatus, EnrollmentStatus, EnrollmentType } from '../entities/enums';
 import { Enrollment } from '../entities/enrollment.entity';
 import { Person } from '../entities/person.entity';
 import { Season } from '../entities/season.entity';
 import { Team } from '../entities/team.entity';
 import { canReadRoster, canReadSeasonEvents } from '../events/visibility';
+import { type StaffRoleRef, staffRoleRef, usableStaffRole } from '../staff-roles/staff-roles.service';
 import { editable } from '../structure/season.rules';
 import { consumeExpected, currentByPerson } from './expected-injury.loader';
 import type { ExpectedPeriod } from './expected-injury.rules';
@@ -24,7 +25,7 @@ export interface RosterRow {
   name: string;
   surname: string | null;
   type: EnrollmentType;
-  staffRole: StaffRole | null;
+  staffRole: StaffRoleRef | null;
   position: string | null;
   jerseyNumber: number | null;
   status: EnrollmentStatus;
@@ -85,7 +86,7 @@ export function enrollmentOut(i: Enrollment): EnrollmentOut {
     id: i.id,
     personId: i.person.id,
     type: i.type,
-    staffRole: i.staffRole,
+    staffRole: staffRoleRef(i.staffRole),
     position: i.position,
     jerseyNumber: i.jerseyNumber,
     status: i.status,
@@ -112,7 +113,7 @@ export class RosterService {
     const enrollments = await this.em.find(
       Enrollment,
       { season: seasonId, endedAt: null, person: { disabledAt: null } },
-      { populate: ['person'], orderBy: { type: 'desc', person: { surname: 'asc', name: 'asc' } } },
+      { populate: ['person', 'staffRole'], orderBy: { type: 'desc', person: { surname: 'asc', name: 'asc' } } },
     );
     const certificates = await this.certificates.summary(
       enrollments.filter((i) => i.type === EnrollmentType.PLAYER).map((i) => i.person.id),
@@ -160,8 +161,9 @@ export class RosterService {
   async enroll(a: AuthContext, seasonId: string, dto: EnrollmentDto): Promise<EnrollmentOut> {
     const st = await this.season(seasonId);
     if (!editable(st.status)) throw closedSeason();
-    this.check({ type: dto.type, staffRole: dto.staffRole, position: dto.position, jerseyNumber: dto.jerseyNumber });
+    this.check({ type: dto.type, staffRoleId: dto.staffRoleId, position: dto.position, jerseyNumber: dto.jerseyNumber });
     await this.checkPosition(st.id, dto.position);
+    const role = dto.staffRoleId ? await usableStaffRole(this.em, dto.staffRoleId) : null;
     const person = await this.em.findOne(Person, dto.personId);
     if (!person) throw new NotFoundException({ message: 'Person not found', code: 'PERSON_NOT_FOUND' });
     if (person.disabledAt) throw new ConflictException({ message: 'The person is disabled', code: 'PERSON_DISABLED' });
@@ -173,7 +175,7 @@ export class RosterService {
       season: st,
       person,
       type: dto.type,
-      staffRole: dto.staffRole ?? null,
+      staffRole: role,
       position: dto.position ?? null,
       jerseyNumber: dto.jerseyNumber ?? null,
       status: await startingStatus(this.em, person.id, dto.type),
@@ -199,6 +201,7 @@ export class RosterService {
     const person = await this.em.findOne(Person, personId);
     if (!person) throw new NotFoundException({ message: 'Person not found', code: 'PERSON_NOT_FOUND' });
     if (person.disabledAt) throw new ConflictException({ message: 'The person is disabled', code: 'PERSON_DISABLED' });
+    const role = await usableStaffRole(this.em, dto.staffRoleId);
     const teams = await this.em.count(Team, { id: { $in: dto.teamIds } });
     if (teams !== dto.teamIds.length) throw new NotFoundException({ message: 'Team not found', code: 'TEAM_NOT_FOUND' });
 
@@ -217,7 +220,7 @@ export class RosterService {
         season,
         person,
         type: EnrollmentType.STAFF,
-        staffRole: dto.staffRole,
+        staffRole: role,
         position: null,
         jerseyNumber: null,
         status: EnrollmentStatus.AVAILABLE,
@@ -239,13 +242,14 @@ export class RosterService {
     const i = await this.open(id);
     this.check({
       type: i.type,
-      staffRole: dto.staffRole ?? i.staffRole,
+      staffRoleId: dto.staffRoleId ?? i.staffRole?.id,
       position: dto.position ?? i.position,
       jerseyNumber: dto.jerseyNumber ?? i.jerseyNumber,
     });
     await this.checkPosition(i.season.id, dto.position);
     const statusBefore = i.status;
-    if (dto.staffRole !== undefined) i.staffRole = dto.staffRole;
+    // Keeping the role it already has is always fine, even if archived since; a different one must be usable.
+    if (dto.staffRoleId !== undefined && dto.staffRoleId !== i.staffRole?.id) i.staffRole = await usableStaffRole(this.em, dto.staffRoleId);
     if (dto.position !== undefined) i.position = dto.position;
     if (dto.jerseyNumber !== undefined) i.jerseyNumber = dto.jerseyNumber;
     if (dto.status !== undefined) i.status = dto.status;
@@ -316,7 +320,7 @@ export class RosterService {
 
   /** An enrollment can be touched only if the season is not closed and the enrollment is still open. */
   private async open(id: string): Promise<Enrollment> {
-    const i = await this.em.findOne(Enrollment, id, { populate: ['season'] });
+    const i = await this.em.findOne(Enrollment, id, { populate: ['season', 'staffRole'] });
     if (!i) throw new NotFoundException({ message: 'Enrollment not found', code: 'ENROLLMENT_NOT_FOUND' });
     if (!editable(i.season.status)) throw closedSeason();
     if (i.endedAt) throw closedEnrollment();
@@ -345,7 +349,7 @@ export class RosterService {
       id: i.id,
       personId: i.person.id,
       type: i.type,
-      staffRole: i.staffRole,
+      staffRole: staffRoleRef(i.staffRole),
       position: i.position,
       jerseyNumber: i.jerseyNumber,
       status: i.status,

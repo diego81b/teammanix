@@ -1,6 +1,6 @@
 import { AuditLog } from '../src/entities/audit-log.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
-import { Environment, startEnvironment, createTeams } from './helpers';
+import { Environment, startEnvironment, createTeams, roleId } from './helpers';
 
 /** ISO date `days` from today (UTC, like the service). */
 const between = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
@@ -106,7 +106,7 @@ describe('medical certificates (data)', () => {
     it('the certificate does not apply to staff-only people', async () => {
       const a = await context('ce-6@test.it');
       const s = (await t.req('POST', '/people', { token: a.token, body: { name: 'Carlo', email: 'carlo@test.it' } })).body;
-      await t.req('POST', `/seasons/${a.seasonId}/enrollments`, { token: a.token, body: { personId: s.id, type: 'staff', staffRole: 'coach' } });
+      await t.req('POST', `/seasons/${a.seasonId}/enrollments`, { token: a.token, body: { personId: s.id, type: 'staff', staffRoleId: await roleId(t.req, a.token, 'coach') } });
       const r = await create(a.token, s.id, data());
       expect([r.status, r.body.code]).toEqual([409, 'CERTIFICATE_NOT_EXPECTED']);
       // If also a player, it applies.
@@ -173,7 +173,7 @@ describe('medical certificates (data)', () => {
       const without = await player(a, 'Piero');
       await create(a.token, p, data({ expiryDate: between(10) }));
       const s = (await t.req('POST', '/people', { token: a.token, body: { name: 'Carlo', email: 'carlo12@test.it' } })).body;
-      await t.req('POST', `/seasons/${a.seasonId}/enrollments`, { token: a.token, body: { personId: s.id, type: 'staff', staffRole: 'coach' } });
+      await t.req('POST', `/seasons/${a.seasonId}/enrollments`, { token: a.token, body: { personId: s.id, type: 'staff', staffRoleId: await roleId(t.req, a.token, 'coach') } });
 
       const roster = (await t.req('GET', `/seasons/${a.seasonId}/roster`, { token: a.token })).body;
       const row = (id: string) => roster.find((r: { personId: string }) => r.personId === id);

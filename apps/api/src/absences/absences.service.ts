@@ -8,7 +8,8 @@ import type { AuthContext } from '../common/auth-context';
 import { Club } from '../entities/club.entity';
 import { Enrollment } from '../entities/enrollment.entity';
 import { Season } from '../entities/season.entity';
-import { AuditAction, CallupResponse, EnrollmentStatus, EnrollmentType, NotificationType, ReasonDecline, SeasonStatus, StaffRole } from '../entities/enums';
+import { AuditAction, CallupResponse, EnrollmentStatus, EnrollmentType, NotificationType, ReasonDecline, SeasonStatus } from '../entities/enums';
+import { type StaffRoleRef, staffRoleRef } from '../staff-roles/staff-roles.service';
 import { canPlanEvents, editableEvent, localDate } from '../events/event.rules';
 import { NotificationsService } from '../notifications/notifications.service';
 import { canReadRoster } from '../events/visibility';
@@ -45,7 +46,7 @@ export interface SeasonAbsences {
   name: string;
   surname: string | null;
   type: EnrollmentType;
-  staffRole: StaffRole | null;
+  staffRole: StaffRoleRef | null;
   absences: Period[];
 }
 
@@ -132,7 +133,7 @@ export class AbsencesService {
     const season = await this.em.findOne(Season, { id: seasonId }, { populate: ['team'] });
     if (!season) throw new NotFoundException({ message: 'Season not found', code: 'SEASON_NOT_FOUND' });
     await this.assertReadsRoster(a, season);
-    const enrollments = await this.em.find(Enrollment, { season: seasonId, endedAt: null, person: { disabledAt: null } }, { populate: ['person'] });
+    const enrollments = await this.em.find(Enrollment, { season: seasonId, endedAt: null, person: { disabledAt: null } }, { populate: ['person', 'staffRole'] });
     const rows = await this.em.find(Absence, { enrollment: { $in: enrollments.map((e) => e.id) } });
     return enrollments
       .map((e) => ({
@@ -141,7 +142,7 @@ export class AbsencesService {
         name: e.person.name,
         surname: e.person.surname,
         type: e.type,
-        staffRole: e.staffRole,
+        staffRole: staffRoleRef(e.staffRole),
         absences: mergePeriods(rows.filter((r) => r.enrollment.id === e.id).map(period)),
       }))
       .filter((r) => r.absences.length > 0)

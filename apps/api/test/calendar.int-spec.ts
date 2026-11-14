@@ -1,6 +1,6 @@
 import { Enrollment } from '../src/entities/enrollment.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
-import { Environment, startEnvironment, createTeams } from './helpers';
+import { Environment, startEnvironment, createTeams, roleId } from './helpers';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ymd = (offsetDays: number) => new Date(Date.now() + offsetDays * DAY_MS).toISOString().slice(0, 10);
@@ -55,7 +55,7 @@ describe('calendar: team and personal views', () => {
     const t2 = await team('T2');
     const member = async (seasonId: string, addr: string, type: 'staff' | 'player') => {
       const p = await post(admin, '/people', { name: 'Carlo', surname: 'Neri', birthDate: '1985-02-03', email: addr });
-      const enrollment = await post(admin, `/seasons/${seasonId}/enrollments`, { personId: p.id, type, ...(type === 'staff' ? { staffRole: 'coach' } : {}) });
+      const enrollment = await post(admin, `/seasons/${seasonId}/enrollments`, { personId: p.id, type, ...(type === 'staff' ? { staffRoleId: await roleId(t.req, admin, 'coach') } : {}) });
       await post(admin, '/invitations', { email: addr, role: type, personId: p.id });
       return { token: await accept(addr), personId: p.id as string, enrollmentId: enrollment.id as string };
     };
@@ -148,7 +148,7 @@ describe('calendar: team and personal views', () => {
       const token = await accept(addr);
       expect(ids((await get(token, '/calendar/me')).body)).toEqual([]);
 
-      const bulk = await t.req('POST', `/people/${trainer.id}/staff-enrollments`, { token: s.admin, body: { teamIds: [s.t1.teamId, s.t2.teamId, third.id], staffRole: 'trainer' } });
+      const bulk = await t.req('POST', `/people/${trainer.id}/staff-enrollments`, { token: s.admin, body: { teamIds: [s.t1.teamId, s.t2.teamId, third.id], staffRoleId: await roleId(t.req, s.admin, 'trainer') } });
       expect([bulk.status, bulk.body.length]).toEqual([201, 3]);
 
       const c = await plan(s.admin, third.id, 7);

@@ -1,6 +1,5 @@
 import { Transform } from 'class-transformer';
-import { ArrayNotEmpty, ArrayUnique, Equals, IsArray, IsBoolean, IsEnum, IsOptional, Length } from 'class-validator';
-import { StaffRole } from '../entities/enums';
+import { Equals, IsBoolean, IsOptional, Length } from 'class-validator';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
@@ -27,11 +26,4 @@ export class EditSettingsDto {
   @IsOptional()
   @IsBoolean()
   warnNoCoachAvailable?: boolean;
-
-  @IsOptional()
-  @IsArray()
-  @ArrayNotEmpty()
-  @ArrayUnique()
-  @IsEnum(StaffRole, { each: true })
-  coachRoles?: StaffRole[];
 }

@@ -11,6 +11,7 @@ import { loadMatches, loadSuspensions, suspensionData } from '../suspensions/sus
 import { residue } from '../suspensions/suspension.rules';
 import { type SeasonDto, draftExists, toSeasonDto } from '../structure/structure.service';
 import { editable, periodValid } from '../structure/season.rules';
+import { usableStaffRole } from '../staff-roles/staff-roles.service';
 import type { CloneSeasonDto, PromoteEnrollmentDto } from './dto-admin';
 import { allowedPosition, positionInherited, validateEnrollment } from './enrollment.rules';
 import { ERRORS as ENROLLMENT_ERRORS, type EnrollmentOut, enrollmentOut, allowedPositions, startingStatus } from './roster.service';
@@ -42,7 +43,7 @@ export class CloningService {
     }
     if ((await this.em.count(Season, { team: source.team.id, status: SeasonStatus.DRAFT })) > 0) throw draftExists();
     const choices = dto.enrollments.length
-      ? await this.em.find(Enrollment, { id: { $in: dto.enrollments }, season: source.id, endedAt: null }, { populate: ['person'] })
+      ? await this.em.find(Enrollment, { id: { $in: dto.enrollments }, season: source.id, endedAt: null }, { populate: ['person', 'staffRole'] })
       : [];
     if (choices.length !== dto.enrollments.length) {
       throw new BadRequestException({ message: 'Some enrollments do not belong to the season or are closed', code: 'INVALID_ENROLLMENTS' });
@@ -133,7 +134,7 @@ export class CloningService {
    * by choice. The origin is closed with the same date and audit as a manual closure.
    */
   async promote(a: AuthContext, id: string, dto: PromoteEnrollmentDto): Promise<EnrollmentOut> {
-    const source = await this.em.findOne(Enrollment, id, { populate: ['season', 'person'] });
+    const source = await this.em.findOne(Enrollment, id, { populate: ['season', 'person', 'staffRole'] });
     if (!source) throw new NotFoundException({ message: 'Enrollment not found', code: 'ENROLLMENT_NOT_FOUND' });
     if (!editable(source.season.status)) throw closedSeason();
     if (source.endedAt) throw new ConflictException({ message: 'The enrollment is closed', code: 'ENROLLMENT_CLOSED' });
@@ -148,13 +149,15 @@ export class CloningService {
     // Explicit position: must be in the destination's profile. Inherited: kept only if the profile has it.
     const allowed = await allowedPositions(this.em, destination.id);
     if (!allowedPosition(dto.position, allowed)) throw new BadRequestException(ENROLLMENT_ERRORS.INVALID_POSITION);
+    // The role of the origin travels as it is, even if archived since; only an explicit choice must be usable.
+    const staffRole = dto.staffRoleId && dto.staffRoleId !== source.staffRole?.id ? await usableStaffRole(this.em, dto.staffRoleId) : source.staffRole;
     const data = {
       type: source.type,
-      staffRole: dto.staffRole ?? source.staffRole,
+      staffRole,
       position: dto.position ?? positionInherited(source.position, allowed),
       jerseyNumber: dto.jerseyNumber ?? source.jerseyNumber,
     };
-    const error = validateEnrollment(data);
+    const error = validateEnrollment({ ...data, staffRoleId: staffRole?.id });
     if (error) throw new BadRequestException(ENROLLMENT_ERRORS[error]);
     if ((await this.em.count(Enrollment, { season: destination.id, person: source.person.id, type: source.type })) > 0) {
       throw enrollmentExists();

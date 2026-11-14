@@ -209,24 +209,23 @@ describe('what counts as a change of answer', () => {
 });
 
 describe('no coach available', () => {
-  const staff = (...rows: [string, CallupResponse | null][]) => rows.map(([staffRole, response]) => ({ staffRole, response }));
+  const staff = (...rows: [boolean, CallupResponse | null][]) => rows.map(([mustBeAvailable, response]) => ({ mustBeAvailable, response }));
 
-  it('warns when no coach has confirmed, whether declined or silent', () => {
-    expect(noCoachAvailable(staff(['coach', null]), ['coach'])).toBe(true);
-    expect(noCoachAvailable(staff(['coach', CallupResponse.DECLINED]), ['coach'])).toBe(true);
-    expect(noCoachAvailable([], ['coach'])).toBe(true);
+  it('warns when no required role has confirmed, whether declined or silent', () => {
+    expect(noCoachAvailable(staff([true, null]))).toBe(true);
+    expect(noCoachAvailable(staff([true, CallupResponse.DECLINED]))).toBe(true);
+    expect(noCoachAvailable([])).toBe(true);
   });
 
-  it('a confirmed coach is enough; other roles do not replace the coach', () => {
-    expect(noCoachAvailable(staff(['coach', CallupResponse.CONFIRMED]), ['coach'])).toBe(false);
-    expect(noCoachAvailable(staff(['assistant_coach', CallupResponse.CONFIRMED], ['trainer', CallupResponse.CONFIRMED]), ['coach'])).toBe(true);
+  it('one confirmed required role is enough; other roles do not replace it', () => {
+    expect(noCoachAvailable(staff([true, CallupResponse.CONFIRMED]))).toBe(false);
+    expect(noCoachAvailable(staff([false, CallupResponse.CONFIRMED], [false, CallupResponse.CONFIRMED]))).toBe(true);
   });
 
-  it('the club decides which roles count as a coach', () => {
-    const assistantOnly = staff(['assistant_coach', CallupResponse.CONFIRMED], ['coach', CallupResponse.DECLINED]);
-    expect(noCoachAvailable(assistantOnly, ['coach', 'assistant_coach'])).toBe(false);
-    expect(noCoachAvailable(assistantOnly, ['coach'])).toBe(true);
-    expect(noCoachAvailable(staff(['trainer', CallupResponse.CONFIRMED]), ['coach', 'assistant_coach'])).toBe(true);
+  it('the club decides which roles must be available, one or several', () => {
+    expect(noCoachAvailable(staff([false, CallupResponse.CONFIRMED], [true, CallupResponse.CONFIRMED]))).toBe(false);
+    expect(noCoachAvailable(staff([true, CallupResponse.DECLINED], [false, CallupResponse.CONFIRMED]))).toBe(true);
+    expect(noCoachAvailable(staff([true, CallupResponse.DECLINED], [true, CallupResponse.CONFIRMED]))).toBe(false);
   });
 });
 

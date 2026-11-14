@@ -8,8 +8,10 @@ import { AuditAction, AccessRoleType, ScopeType, TypeLegalDocument } from '../en
 import { Person } from '../entities/person.entity';
 import { AccessRole } from '../entities/access-role.entity';
 import { Club } from '../entities/club.entity';
+import { StaffRole } from '../entities/staff-role.entity';
 import { User } from '../entities/user.entity';
 import { AuthService, SessionDto } from '../auth/auth.service';
+import { DEFAULT_STAFF_ROLES, nameKey } from '../staff-roles/staff-role.rules';
 import type { CreateClubDto } from './dto';
 import { detachAccount } from './detach-account';
 
@@ -28,6 +30,9 @@ export class ClubService {
       const s = tem.create(Club, { name: dto.name });
       tem.create(AccessRole, { club: s, user: u, role: AccessRoleType.ADMIN, scope: ScopeType.CLUB });
       tem.create(TermsAcceptance, { user: u, club: s, type: TypeLegalDocument.DPA, version: DOCUMENTS_VERSION });
+      // Creation instants a millisecond apart, so the catalog lists the roles in this order.
+      const at = Date.now();
+      DEFAULT_STAFF_ROLES[u.language].forEach((r, i) => tem.create(StaffRole, { club: s, ...r, nameKey: nameKey(r.name), createdAt: new Date(at + i) }));
       return { user: u, club: s };
     });
     await this.audit.register({ action: AuditAction.CLUB_CREATED, userId, clubId: club.id, entity: 'Club', entityId: club.id });

@@ -1,6 +1,6 @@
 import { AuditLog } from '../src/entities/audit-log.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
-import { Environment, startEnvironment, createTeams } from './helpers';
+import { Environment, startEnvironment, createTeams, roleId } from './helpers';
 
 const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
 
@@ -53,7 +53,7 @@ describe('certificates due, for staff', () => {
     const member = async (seasonId: string, name: string, type: 'player' | 'staff', opts: { account?: boolean; staffRole?: string; expiry?: number } = {}) => {
       const email = `${name}-${tag}@test.it`;
       const p = await post(admin, '/people', { name, surname: 'Rossi', birthDate: '1990-01-01', email });
-      const enrollment = await post(admin, `/seasons/${seasonId}/enrollments`, { personId: p.id, type, ...(type === 'staff' ? { staffRole: opts.staffRole ?? 'coach' } : {}) });
+      const enrollment = await post(admin, `/seasons/${seasonId}/enrollments`, { personId: p.id, type, ...(type === 'staff' ? { staffRoleId: await roleId(t.req, admin, opts.staffRole ?? 'coach') } : {}) });
       if (opts.expiry !== undefined) {
         await post(admin, `/people/${p.id}/certificates`, { type: 'competitive', issueDate: day(Math.min(opts.expiry, 0) - 300), expiryDate: day(opts.expiry) });
       }

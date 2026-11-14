@@ -2,7 +2,7 @@ import { Membership } from '../src/entities/membership.entity';
 import { AuditLog } from '../src/entities/audit-log.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
 import { POLICY } from '../src/permissions/policy';
-import { Environment, startEnvironment, createTeams } from './helpers';
+import { Environment, startEnvironment, createTeams, roleId } from './helpers';
 
 describe('permissions (per-person policy)', () => {
   let t: Environment;
@@ -43,7 +43,7 @@ describe('permissions (per-person policy)', () => {
   /** Staff with an account: record, season enrollment with the given role, accepted invitation. */
   async function staff(a: { token: string; seasonId: string }, email: string, staffRole = 'coach') {
     const p = (await t.req('POST', '/people', { token: a.token, body: { name: 'Carlo', surname: 'Neri', birthDate: '1985-02-03', email } })).body;
-    const i = await t.req('POST', `/seasons/${a.seasonId}/enrollments`, { token: a.token, body: { personId: p.id, type: 'staff', staffRole } });
+    const i = await t.req('POST', `/seasons/${a.seasonId}/enrollments`, { token: a.token, body: { personId: p.id, type: 'staff', staffRoleId: await roleId(t.req, a.token, staffRole) } });
     expect(i.status).toBe(201);
     expect((await t.req('POST', '/invitations', { token: a.token, body: { email, role: 'staff', personId: p.id } })).status).toBe(201);
     const u = await t.newUser(email);
@@ -99,7 +99,7 @@ describe('permissions (per-person policy)', () => {
       await t.req('POST', '/invitations/accept', { token: ug.accessToken, body: { token: t.tokenInvitation('pe-2g@test.it') } });
       // Staff without an account.
       const without = (await t.req('POST', '/people', { token: a.token, body: { name: 'Sara', email: 'pe-2s@test.it' } })).body;
-      await t.req('POST', `/seasons/${a.seasonId}/enrollments`, { token: a.token, body: { personId: without.id, type: 'staff', staffRole: 'trainer' } });
+      await t.req('POST', `/seasons/${a.seasonId}/enrollments`, { token: a.token, body: { personId: without.id, type: 'staff', staffRoleId: await roleId(t.req, a.token, 'trainer') } });
       // Staff with a closed enrollment and disabled staff.
       const closed = await staff(a, 'pe-2c@test.it');
       await t.req('POST', `/enrollments/${closed.enrollmentId}/close`, { token: a.token });
