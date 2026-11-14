@@ -16,6 +16,8 @@ Code is in English. Italian stays only in user-facing texts (i18n locales, email
 | tesserato | registered member | |
 | appartenenza | membership | user in a club |
 | ruolo di accesso | access role | scope `club`, `section`, `team` |
+| ruolo staff | staff role | catalog of the club (`StaffRole`, route `/staff-roles`), permission model `policyModel`, flag `mustBeAvailable`; a role in use is archived, not deleted |
+| ruoli staff suggeriti | suggested staff roles | `suggestedStaffRoles` of the sport profile, added to the catalog only when the admin chooses |
 | ambito | scope | |
 | permessi | permissions | policy keys like `callups.manage` |
 | invito | invitation | |
