@@ -20,7 +20,8 @@ export interface CalendarSeasonDto {
   seasonStatus: SeasonStatus;
   teamId: string;
   teamName: string;
-  activityName: string;
+  /** Null for a team outside any section. */
+  sectionName: string | null;
 }
 
 const PAGE = 50;
@@ -33,7 +34,7 @@ function toEntry(e: Event): CalendarEntryDto {
 function scopeCondition(scope: SeasonScope): FilterQuery<Season> | null {
   if (scope.all) return {};
   const or: FilterQuery<Season>[] = [];
-  if (scope.activityIds.length) or.push({ team: { activity: { $in: scope.activityIds } } });
+  if (scope.sectionIds.length) or.push({ team: { section: { $in: scope.sectionIds } } });
   if (scope.teamIds.length) or.push({ team: { $in: scope.teamIds } });
   return or.length ? { $or: or } : null;
 }
@@ -76,7 +77,7 @@ export class CalendarService {
     const scope = scopeCondition(seasonScope(a.roles));
     if (scope) or.push({ $and: [scope, { status: SeasonStatus.ACTIVE }] });
     if (or.length === 0) return [];
-    const rows = await this.em.find(Season, { $or: or }, { populate: ['team.activity'] });
+    const rows = await this.em.find(Season, { $or: or }, { populate: ['team.section'] });
     return rows
       .map((s) => ({
         seasonId: s.id,
@@ -84,12 +85,12 @@ export class CalendarService {
         seasonStatus: s.status,
         teamId: s.team.id,
         teamName: s.team.name,
-        activityName: s.team.activity.name,
+        sectionName: s.team.section?.name ?? null,
       }))
       .sort(
         (x, y) =>
           Number(y.seasonStatus === SeasonStatus.ACTIVE) - Number(x.seasonStatus === SeasonStatus.ACTIVE) ||
-          x.activityName.localeCompare(y.activityName) ||
+          (x.sectionName ?? '').localeCompare(y.sectionName ?? '') ||
           x.teamName.localeCompare(y.teamName),
       );
   }
@@ -112,8 +113,8 @@ export class CalendarService {
     };
     // An event seen only through a closed enrollment can be filtered out afterwards: read in pages until one stays.
     for (let offset = 0; ; offset += PAGE) {
-      const rows = await this.em.find(Event, where, { populate: ['venue', 'opponent', 'season.team.activity'], orderBy: { start: 'asc' }, limit: PAGE, offset });
-      const hit = rows.find((e) => seasonVisible(scope, { activityId: e.season.team.activity.id, teamId: e.season.team.id }) || this.covered(enrolled, e));
+      const rows = await this.em.find(Event, where, { populate: ['venue', 'opponent', 'season.team'], orderBy: { start: 'asc' }, limit: PAGE, offset });
+      const hit = rows.find((e) => seasonVisible(scope, { sectionId: e.season.team.section?.id ?? null, teamId: e.season.team.id }) || this.covered(enrolled, e));
       if (hit) return toEntry(hit);
       if (rows.length < PAGE) return null;
     }

@@ -35,7 +35,7 @@ export class Callup extends TenantEntity {
   notifiedAt: Date | null = null;
 
   /**
-   * Starter or bench. Can be set only if the activity's SportProfile has starterBench = true.
+   * Starter or bench. Can be set only if the team's SportProfile has starterBench = true.
    * Never exposed to the player: must be excluded from serialization for the player role.
    */
   @Enum({ items: () => Placement, nullable: true, length: 20 })

@@ -2,7 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { AuditLog } from '../src/entities/audit-log.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
-import { Environment, startEnvironment } from './helpers';
+import { Environment, startEnvironment, createTeams } from './helpers';
 
 const between = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
 const PDF = Buffer.concat([Buffer.from('%PDF-1.7\n'), Buffer.from('contenuto riconoscibile del certificato')]);
@@ -26,8 +26,8 @@ describe('medical certificates (file and settings)', () => {
     const token = c.body.accessToken as string;
     const clubId = c.body.activeClub.id;
     if (withFile) await t.req('PATCH', '/club/current/settings', { token, body: { certificatesWithFile: true } });
-    const act = (await t.req('POST', '/activities', { token, body: { name: 'Football', sportProfile: 'football' } })).body;
-    const sq = (await t.req('POST', `/activities/${act.id}/teams`, { token, body: { name: 'Under 15' } })).body;
+    const struct = await createTeams(t.req, token, { sportProfile: 'football' });
+    const sq = await struct.team('Under 15');
     const st = (await t.req('POST', `/teams/${sq.id}/seasons`, { token, body: { name: '2026/27', startDate: '2026-09-01', endDate: '2027-06-30' } })).body;
     const p = (await t.req('POST', '/people', { token, body: { name: 'Luca', surname: 'Verdi', birthDate: '2010-03-04', email: `luca-${email}` } })).body;
     await t.req('POST', `/seasons/${st.id}/enrollments`, { token, body: { personId: p.id, type: 'player' } });

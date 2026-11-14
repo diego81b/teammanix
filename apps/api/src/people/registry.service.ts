@@ -28,7 +28,8 @@ export interface EnrollmentPersonDto {
   season: string;
   teamId: string;
   team: string;
-  activity: string;
+  /** Null for a team outside any section. */
+  section: string | null;
   type: EnrollmentType;
   staffRole: string | null;
   position: string | null;
@@ -99,7 +100,7 @@ export class RegistryService {
     const enrollments = await this.em.find(
       Enrollment,
       { person: id },
-      { populate: ['season.team.activity'], orderBy: { season: { startDate: 'desc' } } },
+      { populate: ['season.team.section'], orderBy: { season: { startDate: 'desc' } } },
     );
     // Rule 11: staff-only people have no certificate.
     const onlyStaff = enrollments.length > 0 && enrollments.every((i) => i.type === EnrollmentType.STAFF);
@@ -113,7 +114,7 @@ export class RegistryService {
         season: i.season.name,
         teamId: i.season.team.id,
         team: i.season.team.name,
-        activity: i.season.team.activity.name,
+        section: i.season.team.section?.name ?? null,
         type: i.type,
         staffRole: i.staffRole,
         position: i.position,

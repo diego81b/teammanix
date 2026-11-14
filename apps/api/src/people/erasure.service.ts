@@ -35,7 +35,7 @@ export class ErasureService {
   /** No storage keys, file content or other people's data. */
   async export(a: AuthContext, id: string) {
     const p = await this.archived(id);
-    const enrollments = await this.em.find(Enrollment, { person: id }, { populate: ['season.team.activity'], orderBy: { season: { startDate: 'asc' } } });
+    const enrollments = await this.em.find(Enrollment, { person: id }, { populate: ['season.team.section'], orderBy: { season: { startDate: 'asc' } } });
     const ids = enrollments.map((e) => e.id);
     const of = { enrollment: { $in: ids } };
     const [callups, changes, attendance, absences, suspensions, injuries] = await Promise.all([
@@ -71,7 +71,7 @@ export class ErasureService {
       enrollments: enrollments.map((e) => {
         const injury = injuries.find((x) => x.enrollment.id === e.id);
         return {
-          activity: e.season.team.activity.name,
+          section: e.season.team.section?.name ?? null,
           team: e.season.team.name,
           season: e.season.name,
           type: e.type,

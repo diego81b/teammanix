@@ -3,7 +3,7 @@ import { Enrollment } from '../src/entities/enrollment.entity';
 import { CallupResponse } from '../src/entities/enums';
 import { Event } from '../src/entities/event.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
-import { Environment, startEnvironment } from './helpers';
+import { Environment, startEnvironment, createTeams } from './helpers';
 
 const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
 const slot = (offset = 30, from = '16:00', to = '17:30') => ({ start: `${day(offset)}T${from}:00Z`, end: `${day(offset)}T${to}:00Z` });
@@ -44,9 +44,9 @@ describe('call-ups: three lists per event', () => {
     const c = await t.req('POST', '/club', { token: s.accessToken, body: { name: `Club ${email}`, acceptDpa: true } });
     expect(c.status).toBe(201);
     const admin = c.body.accessToken as string;
-    const act = await post(admin, '/activities', { name: 'Sport', sportProfile: sport });
+    const struct = await createTeams(t.req, admin, { sportProfile: sport });
     const team = async (name: string) => {
-      const sq = await post(admin, `/activities/${act.id}/teams`, { name });
+      const sq = await struct.team(name);
       const st = await post(admin, `/teams/${sq.id}/seasons`, { name: 'Now', startDate: day(-60), endDate: day(400) });
       return { teamId: sq.id as string, seasonId: st.id as string };
     };

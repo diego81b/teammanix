@@ -3,7 +3,7 @@ import { Enrollment } from '../src/entities/enrollment.entity';
 import { Person } from '../src/entities/person.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
 import { Season } from '../src/entities/season.entity';
-import { Environment, startEnvironment } from './helpers';
+import { Environment, startEnvironment, createTeams } from './helpers';
 
 describe('people, roster and disabling', () => {
   let t: Environment;
@@ -25,11 +25,11 @@ describe('people, roster and disabling', () => {
     return { token: c.body.accessToken as string, clubId: c.body.activeClub.id as string, userId: s.user.id as string };
   }
 
-  /** Club with an activity, a team and a season (draft). */
+  /** Club with a section, a team and a season (draft). */
   async function context(email: string) {
     const a = await admin(email);
-    const act = (await t.req('POST', '/activities', { token: a.token, body: { name: 'Football', sportProfile: 'football' } })).body;
-    const sq = (await t.req('POST', `/activities/${act.id}/teams`, { token: a.token, body: { name: 'Under 15' } })).body;
+    const struct = await createTeams(t.req, a.token, { sportProfile: 'football', section: 'Football' });
+    const sq = await struct.team('Under 15');
     const st = (await t.req('POST', `/teams/${sq.id}/seasons`, { token: a.token, body: { name: '2026/27', startDate: '2026-09-01', endDate: '2027-06-30' } })).body;
     return { ...a, seasonId: st.id as string, teamId: sq.id as string };
   }
@@ -98,7 +98,7 @@ describe('people, roster and disabling', () => {
       const r = await t.req('GET', `/people/${p.id}`, { token: c.token });
       expect(r.status).toBe(200);
       expect(r.body.enrollments).toEqual([
-        expect.objectContaining({ seasonId: c.seasonId, season: '2026/27', team: 'Under 15', activity: 'Football', type: 'player', position: 'goalkeeper', jerseyNumber: 1, endedAt: null }),
+        expect.objectContaining({ seasonId: c.seasonId, season: '2026/27', team: 'Under 15', section: 'Football', type: 'player', position: 'goalkeeper', jerseyNumber: 1, endedAt: null }),
       ]);
     });
   });
@@ -202,8 +202,8 @@ describe('people, roster and disabling', () => {
 
       it('a profile without positions rejects all of them, a missing position stays valid', async () => {
         const a = await admin('po-3@test.it');
-        const act = (await t.req('POST', '/activities', { token: a.token, body: { name: 'Fencing', sportProfile: 'generic' } })).body;
-        const sq = (await t.req('POST', `/activities/${act.id}/teams`, { token: a.token, body: { name: 'Group' } })).body;
+        const struct = await createTeams(t.req, a.token, { sportProfile: 'generic' });
+        const sq = await struct.team('Group');
         const st = (await t.req('POST', `/teams/${sq.id}/seasons`, { token: a.token, body: { name: '2026/27', startDate: '2026-09-01', endDate: '2027-06-30' } })).body;
         const p = (await person(a.token)).body;
         const r = await enroll(a.token, st.id, p.id, { type: 'player', position: 'goalkeeper' });
@@ -232,8 +232,8 @@ describe('people, roster and disabling', () => {
   describe('injured state shared across the teams of a person (#27)', () => {
     /** Second team with its own draft season in the same club. */
     async function secondSeason(token: string, name = 'Under 17') {
-      const act = (await t.req('POST', '/activities', { token, body: { name: `Football ${name}`, sportProfile: 'football' } })).body;
-      const sq = (await t.req('POST', `/activities/${act.id}/teams`, { token, body: { name } })).body;
+      const struct = await createTeams(t.req, token, { sportProfile: 'football', section: `Football ${name}` });
+      const sq = await struct.team(name);
       const st = (await t.req('POST', `/teams/${sq.id}/seasons`, { token, body: { name: '2026/27', startDate: '2026-09-01', endDate: '2027-06-30' } })).body;
       return st.id as string;
     }
@@ -406,6 +406,94 @@ describe('people, roster and disabling', () => {
     });
   });
 
+  describe('staff in several teams at once', () => {
+    const season = async (token: string, teamId: string, name: string, then?: 'active' | 'closed') => {
+      const r = await t.req('POST', `/teams/${teamId}/seasons`, { token, body: { name, startDate: '2026-09-01', endDate: '2027-06-30' } });
+      expect(r.status).toBe(201);
+      const id = r.body.id as string;
+      if (then) expect((await t.req('POST', `/seasons/${id}/active`, { token })).status).toBe(200);
+      if (then === 'closed') expect((await t.req('POST', `/seasons/${id}/close`, { token })).status).toBe(200);
+      return id;
+    };
+    const several = (token: string, personId: string, body: object) => t.req('POST', `/people/${personId}/staff-enrollments`, { token, body });
+    const staffOf = async (token: string, seasonId: string) =>
+      ((await roster(token, seasonId)).body as Array<{ personId: string; type: string }>).filter((r) => r.type === 'staff').map((r) => r.personId);
+
+    /** Club with a section and three teams: A has an active season and a draft, B only a draft, C an active one. */
+    async function youth(email: string) {
+      const a = await admin(email);
+      const struct = await createTeams(t.req, a.token, { sportProfile: 'football', section: 'Youth' });
+      const [teamA, teamB, teamC] = [await struct.team('Under 12'), await struct.team('Under 14'), await struct.team('Under 16')];
+      const activeA = await season(a.token, teamA.id, '2026/27', 'active');
+      const draftA = await season(a.token, teamA.id, '2027/28');
+      const draftB = await season(a.token, teamB.id, '2026/27');
+      const activeC = await season(a.token, teamC.id, '2026/27', 'active');
+      const coach = (await person(a.token, { name: 'Gino', surname: 'Portieri', email: `coach-${email}` })).body;
+      return { ...a, teams: [teamA.id, teamB.id, teamC.id] as string[], activeA, draftA, draftB, activeC, coach };
+    }
+
+    it('enrolls the person as staff in the open season of each chosen team: the active one, else the draft', async () => {
+      const c = await youth('ss-1@test.it');
+      const r = await several(c.token, c.coach.id, { teamIds: c.teams, staffRole: 'trainer' });
+      expect(r.status).toBe(201);
+      expect(r.body).toHaveLength(3);
+      expect(r.body.map((e: any) => e.seasonId)).toEqual([c.activeA, c.draftB, c.activeC]);
+      for (const e of r.body) expect(e).toMatchObject({ personId: c.coach.id, type: 'staff', staffRole: 'trainer', position: null, jerseyNumber: null });
+      for (const s of [c.activeA, c.draftB, c.activeC]) expect(await staffOf(c.token, s)).toEqual([c.coach.id]);
+      // The draft of a team that already has an active season is left alone.
+      expect(await staffOf(c.token, c.draftA)).toEqual([]);
+    });
+
+    it('all or nothing: a team without an open season refuses the whole request', async () => {
+      const c = await youth('ss-2@test.it');
+      const struct = await createTeams(t.req, c.token, { sportProfile: 'football' });
+      const noSeason = await struct.team('Esordienti');
+      const closedOnly = await struct.team('Pulcini');
+      await season(c.token, closedOnly.id, '2025/26', 'closed');
+      for (const team of [noSeason.id, closedOnly.id]) {
+        const r = await several(c.token, c.coach.id, { teamIds: [...c.teams, team], staffRole: 'trainer' });
+        expect([r.status, r.body.code]).toEqual([409, 'NO_OPEN_SEASON']);
+      }
+      for (const s of [c.activeA, c.draftB, c.activeC]) expect(await staffOf(c.token, s)).toEqual([]);
+    });
+
+    it('all or nothing: already staff in one of the seasons refuses the whole request', async () => {
+      const c = await youth('ss-3@test.it');
+      expect((await enroll(c.token, c.draftB, c.coach.id, { type: 'staff', staffRole: 'assistant_coach' })).status).toBe(201);
+      const r = await several(c.token, c.coach.id, { teamIds: c.teams, staffRole: 'trainer' });
+      expect([r.status, r.body.code]).toEqual([409, 'ENROLLMENT_EXISTS']);
+      expect(await staffOf(c.token, c.activeA)).toEqual([]);
+      expect(await staffOf(c.token, c.activeC)).toEqual([]);
+    });
+
+    it('validates the body: at least one team, no repeated team, a staff role', async () => {
+      const c = await youth('ss-4@test.it');
+      for (const body of [
+        { teamIds: [], staffRole: 'trainer' },
+        { teamIds: [c.teams[0], c.teams[0]], staffRole: 'trainer' },
+        { teamIds: ['nope'], staffRole: 'trainer' },
+        { teamIds: c.teams },
+        { teamIds: c.teams, staffRole: 'astronaut' },
+      ]) {
+        const r = await several(c.token, c.coach.id, body);
+        expect([r.status, r.body.code]).toEqual([400, 'INVALID_DATA']);
+      }
+    });
+
+    it('unknown or disabled person, team of another club', async () => {
+      const c = await youth('ss-5@test.it');
+      const other = await youth('ss-6@test.it');
+      const unknown = await several(c.token, '00000000-0000-4000-8000-000000000000', { teamIds: c.teams, staffRole: 'trainer' });
+      expect([unknown.status, unknown.body.code]).toEqual([404, 'PERSON_NOT_FOUND']);
+      const foreign = await several(c.token, c.coach.id, { teamIds: [c.teams[0], other.teams[0]], staffRole: 'trainer' });
+      expect([foreign.status, foreign.body.code]).toEqual([404, 'TEAM_NOT_FOUND']);
+      expect(await staffOf(c.token, c.activeA)).toEqual([]);
+      await t.req('POST', `/people/${c.coach.id}/disable`, { token: c.token });
+      const disabled = await several(c.token, c.coach.id, { teamIds: c.teams, staffRole: 'trainer' });
+      expect([disabled.status, disabled.body.code]).toEqual([409, 'PERSON_DISABLED']);
+    });
+  });
+
   describe('permissions', () => {
     it('a non-admin gets 403 on registry, roster and disabling', async () => {
       const c = await context('pe-1@test.it');
@@ -425,6 +513,7 @@ describe('people, roster and disabling', () => {
         ['POST', `/people/${p.id}/reenable`],
         ['GET', `/seasons/${c.seasonId}/roster`],
         ['POST', `/seasons/${c.seasonId}/enrollments`, { personId: p.id, type: 'player' }],
+        ['POST', `/people/${p.id}/staff-enrollments`, { teamIds: [c.teamId], staffRole: 'trainer' }],
         ['PATCH', `/enrollments/${i.id}`, { jerseyNumber: 2 }],
         ['POST', `/enrollments/${i.id}/close`],
       ];

@@ -71,12 +71,12 @@ describe('digestKey', () => {
 });
 
 describe('staffDigests', () => {
-  const team = (teamId: string, activityId = 'a1') => ({ activityId, teamId, seasonId: `s-${teamId}`, teamName: `Team ${teamId}` });
+  const team = (teamId: string, sectionId: string | null = 'a1') => ({ sectionId, teamId, seasonId: `s-${teamId}`, teamName: `Team ${teamId}` });
   const admin: Source = { role: 'admin', scope: { type: 'club' } };
-  const coachOf = (teamId: string, activityId = 'a1'): Source => ({ role: 'coach', scope: { type: 'team', activityId, teamId } });
-  const assistantOf = (teamId: string): Source => ({ role: 'assistant_coach', scope: { type: 'team', activityId: 'a1', teamId } });
-  const trainerOf = (teamId: string): Source => ({ role: 'trainer', scope: { type: 'team', activityId: 'a1', teamId } });
-  const managerOfActivity = (activityId: string): Source => ({ role: 'manager', scope: { type: 'activity', activityId } });
+  const coachOf = (teamId: string): Source => ({ role: 'coach', scope: { type: 'team', teamId } });
+  const assistantOf = (teamId: string): Source => ({ role: 'assistant_coach', scope: { type: 'team', teamId } });
+  const trainerOf = (teamId: string): Source => ({ role: 'trainer', scope: { type: 'team', teamId } });
+  const managerOfSection = (sectionId: string): Source => ({ role: 'manager', scope: { type: 'section', sectionId } });
   const person = (personId: string, bucket: AlertedPerson['bucket'], ...teams: string[]): AlertedPerson => ({
     personId,
     bucket,
@@ -147,17 +147,23 @@ describe('staffDigests', () => {
     expect(of(digests, 'c')).toMatchObject([{ seasonId: 's-t2' }]);
   });
 
-  it('a manager granted the permission over an activity gets one digest for each of its teams with people due', () => {
+  it('a manager granted the permission over a section gets one digest for each of its teams with people due', () => {
     const digests = staffDigests(
-      [candidate('m', [managerOfActivity('a1')], { 'certificates.status': true })],
+      [candidate('m', [managerOfSection('a1')], { 'certificates.status': true })],
       [person('p1', '30d', 't1'), person('p2', '30d', 't2'), person('p3', '30d', 't3'), person('p4', '30d', 't4')],
     );
     expect(of(digests, 'm').map((d) => d.seasonId)).toEqual(['s-t1', 's-t2', 's-t3', 's-t4']);
     expect(of(digests, 'm').every((d) => d.expiring === 1)).toBe(true);
   });
 
+  it('a section manager is not told about a team that has no section', () => {
+    const noSection: AlertedPerson = { personId: 'p9', bucket: '30d', targets: [team('t9', null)] };
+    const digests = staffDigests([candidate('m', [managerOfSection('a1')], { 'certificates.status': true })], [noSection]);
+    expect(of(digests, 'm')).toEqual([]);
+  });
+
   it('two sources of the permission over the same team give one digest for that team', () => {
-    const digests = staffDigests([candidate('c', [coachOf('t1'), managerOfActivity('a1'), coachOf('t1')], { 'certificates.status': true })], [person('p1', '30d', 't1')]);
+    const digests = staffDigests([candidate('c', [coachOf('t1'), managerOfSection('a1'), coachOf('t1')], { 'certificates.status': true })], [person('p1', '30d', 't1')]);
     expect(of(digests, 'c')).toHaveLength(1);
   });
 

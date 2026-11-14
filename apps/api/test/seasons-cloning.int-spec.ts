@@ -2,7 +2,7 @@ import { AuditLog } from '../src/entities/audit-log.entity';
 import { Enrollment } from '../src/entities/enrollment.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
 import { Season } from '../src/entities/season.entity';
-import { Environment, startEnvironment } from './helpers';
+import { Environment, startEnvironment, createTeams } from './helpers';
 
 describe('closure, cloning and promotion (rules 7, 8, 9)', () => {
   let t: Environment;
@@ -24,12 +24,12 @@ describe('closure, cloning and promotion (rules 7, 8, 9)', () => {
     return { token: c.body.accessToken as string, clubId: c.body.activeClub.id as string };
   }
 
-  /** Club with an activity, two teams and an active season for the first (2026/27). */
+  /** Club without sections, two teams and an active season for the first (2026/27). */
   async function context(email: string) {
     const a = await admin(email);
-    const act = (await t.req('POST', '/activities', { token: a.token, body: { name: 'Football', sportProfile: 'football' } })).body;
-    const sq1 = (await t.req('POST', `/activities/${act.id}/teams`, { token: a.token, body: { name: 'Under 15' } })).body;
-    const sq2 = (await t.req('POST', `/activities/${act.id}/teams`, { token: a.token, body: { name: 'Under 17' } })).body;
+    const struct = await createTeams(t.req, a.token, { sportProfile: 'football' });
+    const sq1 = await struct.team('Under 15');
+    const sq2 = await struct.team('Under 17');
     const st = (await createSeason(a.token, sq1.id)).body;
     expect((await t.req('POST', `/seasons/${st.id}/active`, { token: a.token })).status).toBe(200);
     return { ...a, team1: sq1.id as string, team2: sq2.id as string, seasonId: st.id as string };
@@ -243,11 +243,11 @@ describe('closure, cloning and promotion (rules 7, 8, 9)', () => {
     });
 
     describe('position and sport profile of the destination', () => {
-      /** Destination in another activity with a generic profile (no position). */
+      /** Destination team with a generic profile (no position). */
       async function towardsWithoutPositions(email: string) {
         const c = await withADraftElsewhere(email);
-        const act = (await t.req('POST', '/activities', { token: c.token, body: { name: 'Fencing', sportProfile: 'generic' } })).body;
-        const sq = (await t.req('POST', `/activities/${act.id}/teams`, { token: c.token, body: { name: 'Group' } })).body;
+        const struct = await createTeams(t.req, c.token, { sportProfile: 'generic' });
+        const sq = await struct.team('Group');
         const dest = (await createSeason(c.token, sq.id)).body;
         return { ...c, destGeneric: dest.id as string };
       }

@@ -124,7 +124,7 @@ describe('invitations (resend) and access roles', () => {
         email: 'ruo-dir@test.it',
         name: 'Mario',
         surname: 'Rossi',
-        activityId: null,
+        sectionId: null,
         teamId: null,
         destination: null,
       });

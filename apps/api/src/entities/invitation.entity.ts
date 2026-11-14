@@ -2,7 +2,7 @@ import { Check, Entity, Enum, Index, ManyToOne, Property, type Rel } from '@mikr
 import { TenantEntity } from './tenant.entity';
 import { User } from './user.entity';
 import { Person } from './person.entity';
-import { Activity } from './activity.entity';
+import { Section } from './section.entity';
 import { Team } from './team.entity';
 import { Language, InvitationRole, InvitationStatus, ScopeType } from './enums';
 import { CHECK_ADMIN_CLUB, CHECK_SCOPE } from './scope';
@@ -25,8 +25,8 @@ export class Invitation extends TenantEntity<'status'> {
   @Enum({ items: () => ScopeType, length: 20 })
   scope!: ScopeType;
 
-  @ManyToOne(() => Activity, { nullable: true, deleteRule: 'cascade' })
-  activity: Rel<Activity> | null = null;
+  @ManyToOne(() => Section, { nullable: true, deleteRule: 'cascade' })
+  section: Rel<Section> | null = null;
 
   @ManyToOne(() => Team, { nullable: true, deleteRule: 'cascade' })
   team: Rel<Team> | null = null;

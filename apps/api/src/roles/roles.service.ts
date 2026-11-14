@@ -16,9 +16,9 @@ export interface RoleDto {
   email: string;
   role: AccessRoleType;
   scope: ScopeType;
-  activityId: string | null;
+  sectionId: string | null;
   teamId: string | null;
-  /** Name of the activity or team the role is limited to. */
+  /** Name of the section or team the role is limited to. */
   destination: string | null;
 }
 
@@ -31,7 +31,7 @@ export class RolesService {
   ) {}
 
   async list(): Promise<RoleDto[]> {
-    const roles = await this.em.find(AccessRole, {}, { populate: ['user', 'activity', 'team'], orderBy: { createdAt: 'asc' } });
+    const roles = await this.em.find(AccessRole, {}, { populate: ['user', 'section', 'team'], orderBy: { createdAt: 'asc' } });
     return roles.map((r) => ({
       id: r.id,
       userId: r.user.id,
@@ -40,9 +40,9 @@ export class RolesService {
       email: r.user.email,
       role: r.role,
       scope: r.scope,
-      activityId: r.activity?.id ?? null,
+      sectionId: r.section?.id ?? null,
       teamId: r.team?.id ?? null,
-      destination: r.team?.name ?? r.activity?.name ?? null,
+      destination: r.team?.name ?? r.section?.name ?? null,
     }));
   }
 

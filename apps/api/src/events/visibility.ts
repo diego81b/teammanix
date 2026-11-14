@@ -3,7 +3,8 @@ import { EnrollmentType, ScopeType } from '../entities/enums';
 
 export interface SeasonTarget {
   id: string;
-  activityId: string;
+  /** Null for a team that belongs to no section. */
+  sectionId: string | null;
   teamId: string;
 }
 
@@ -18,8 +19,8 @@ export function canReadSeasonEvents(roles: readonly CtxRole[], enrolledSeasonIds
     switch (r.scope) {
       case ScopeType.CLUB:
         return true;
-      case ScopeType.ACTIVITY:
-        return r.activityId === season.activityId;
+      case ScopeType.SECTION:
+        return r.sectionId !== null && r.sectionId === season.sectionId;
       case ScopeType.TEAM:
         return r.teamId === season.teamId;
     }

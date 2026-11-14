@@ -59,12 +59,12 @@ export class CertificateAlertsService {
     const enrollments = await em.find(
       Enrollment,
       { club: clubId, type: EnrollmentType.PLAYER, endedAt: null, season: { status: { $ne: SeasonStatus.CLOSED } }, person: { disabledAt: null } },
-      { filters: false, populate: ['person.user', 'season.team.activity'] },
+      { filters: false, populate: ['person.user', 'season.team'] },
     );
     const targetsOf = new Map<string, AlertTarget[]>();
     const userOf = new Map<string, string | null>();
     for (const e of enrollments) {
-      const target: AlertTarget = { activityId: e.season.team.activity.id, teamId: e.season.team.id, seasonId: e.season.id, teamName: e.season.team.name };
+      const target: AlertTarget = { sectionId: e.season.team.section?.id ?? null, teamId: e.season.team.id, seasonId: e.season.id, teamName: e.season.team.name };
       const known = targetsOf.get(e.person.id) ?? [];
       if (!known.some((t) => t.teamId === target.teamId)) known.push(target);
       targetsOf.set(e.person.id, known);
@@ -120,7 +120,7 @@ export class CertificateAlertsService {
       em.find(
         Enrollment,
         { club: clubId, type: EnrollmentType.STAFF, endedAt: null, season: { status: { $ne: SeasonStatus.CLOSED } }, person: { user: { $ne: null }, disabledAt: null } },
-        { filters: false, populate: ['person.user', 'season.team.activity'] },
+        { filters: false, populate: ['person.user', 'season.team'] },
       ),
       em.find(Membership, { club: clubId }, { filters: false }),
     ]);
@@ -129,7 +129,7 @@ export class CertificateAlertsService {
     const staffOf = new Map<string, EnrollmentStaffCtx[]>();
     for (const e of staff) {
       const userId = (e.person.user as NonNullable<typeof e.person.user>).id;
-      staffOf.set(userId, [...(staffOf.get(userId) ?? []), { staffRole: e.staffRole, activityId: e.season.team.activity.id, teamId: e.season.team.id }]);
+      staffOf.set(userId, [...(staffOf.get(userId) ?? []), { staffRole: e.staffRole, teamId: e.season.team.id }]);
     }
     const diffOf = new Map(memberships.map((m) => [m.user.id, m.diff]));
     const userIds = new Set([...rolesOf.keys(), ...staffOf.keys()]);
@@ -137,7 +137,7 @@ export class CertificateAlertsService {
       userId,
       diff: diffOf.get(userId) ?? {},
       sources: sourcesFrom(
-        (rolesOf.get(userId) ?? []).map((r) => ({ role: r.role, scope: r.scope, activityId: r.activity?.id ?? null, teamId: r.team?.id ?? null })),
+        (rolesOf.get(userId) ?? []).map((r) => ({ role: r.role, scope: r.scope, sectionId: r.section?.id ?? null, teamId: r.team?.id ?? null })),
         staffOf.get(userId) ?? [],
       ),
     }));

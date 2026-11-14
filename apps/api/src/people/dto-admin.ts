@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { ArrayMaxSize, ArrayUnique, IsArray, IsBoolean, IsEmail, IsEnum, IsInt, IsOptional, IsString, IsUUID, Length, MaxLength } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, ArrayUnique, IsArray, IsBoolean, IsEmail, IsEnum, IsInt, IsOptional, IsString, IsUUID, Length, MaxLength } from 'class-validator';
 import { StaffRole, EnrollmentStatus, EnrollmentType } from '../entities/enums';
 import { CreateSeasonDto } from '../structure/dto';
 
@@ -135,4 +135,17 @@ export class ExpectedInjuryDto {
 
   @IsString()
   returnDate!: string;
+}
+
+/** Staff enrollment of one person in the open season of several teams at once. */
+export class StaffEnrollmentsDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(50)
+  @ArrayUnique()
+  @IsUUID('all', { each: true })
+  teamIds!: string[];
+
+  @IsEnum(StaffRole)
+  staffRole!: StaffRole;
 }

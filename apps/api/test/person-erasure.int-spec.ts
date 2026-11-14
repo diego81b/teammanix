@@ -9,7 +9,7 @@ import { Notification } from '../src/entities/notification.entity';
 import { Person } from '../src/entities/person.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
 import { StorageService } from '../src/storage/storage.service';
-import { Environment, PASSWORD, startEnvironment } from './helpers';
+import { Environment, PASSWORD, startEnvironment, createTeams } from './helpers';
 
 const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
 const slot = (offset: number) => ({ start: `${day(offset)}T16:00:00Z`, end: `${day(offset)}T17:30:00Z` });
@@ -54,8 +54,8 @@ describe('export and permanent deletion of people (art. 15, 17, 20)', () => {
     const admin = c.body.accessToken as string;
     const clubId = c.body.activeClub.id as string;
     await send(admin, 'PATCH', '/club/current/settings', { certificatesWithFile: true });
-    const act = await post(admin, '/activities', { name: 'Sport', sportProfile: 'football' });
-    const team = await post(admin, `/activities/${act.id}/teams`, { name: 'T1' });
+    const struct = await createTeams(t.req, admin, { sportProfile: 'football' });
+    const team = await struct.team('T1');
     const season = await post(admin, `/teams/${team.id}/seasons`, { name: 'Now', startDate: day(-60), endDate: day(400) });
     const withAccount = async (tag: string, type: 'player' | 'staff', staffRole?: string) => {
       const p = await post(admin, '/people', { name: tag, surname: 'Rossi', birthDate: '2000-01-01', email: `${tag}-${email}` });

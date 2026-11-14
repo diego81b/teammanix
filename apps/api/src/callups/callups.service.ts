@@ -104,7 +104,7 @@ export class CallupsService {
     return {
       event: dto,
       view,
-      starterBench: event.season.team.activity.sportProfile.starterBench,
+      starterBench: event.season.team.sportProfile.starterBench,
       blockCertificate: club.blockCertificateExpired,
       calledUp,
       callable,
@@ -166,7 +166,7 @@ export class CallupsService {
     const event = await this.open(eventId);
     const callup = await this.callup(event.id, enrollmentId);
     if (dto.placement === undefined) throw new BadRequestException({ message: 'Invalid data', code: 'INVALID_DATA' });
-    if (!event.season.team.activity.sportProfile.starterBench) {
+    if (!event.season.team.sportProfile.starterBench) {
       throw new BadRequestException({ message: 'The sport does not use starters and bench', code: 'PLACEMENT_NOT_ALLOWED' });
     }
     callup.placement = dto.placement;

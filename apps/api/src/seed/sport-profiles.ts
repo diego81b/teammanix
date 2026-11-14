@@ -1,7 +1,7 @@
 import type { EntityManager } from '@mikro-orm/postgresql';
 import { SportProfile } from '../entities/sport-profile.entity';
 
-type Seed = Pick<SportProfile, 'code' | 'positions' | 'starterBench' | 'maxStarters' | 'modulesAvailable'>;
+type Seed = Pick<SportProfile, 'code' | 'positions' | 'starterBench' | 'maxStarters' | 'modulesAvailable' | 'unitTerm'>;
 
 const MODULES = ['attendances', 'standings', 'sanctions'];
 
@@ -17,6 +17,7 @@ export const SPORT_PROFILES: Seed[] = [
     starterBench: false,
     maxStarters: null,
     modulesAvailable: MODULES,
+    unitTerm: 'team',
   },
   {
     code: 'football',
@@ -24,6 +25,7 @@ export const SPORT_PROFILES: Seed[] = [
     starterBench: true,
     maxStarters: 11,
     modulesAvailable: MODULES,
+    unitTerm: 'team',
   },
   {
     code: 'five_a_side_football',
@@ -31,6 +33,7 @@ export const SPORT_PROFILES: Seed[] = [
     starterBench: true,
     maxStarters: 5,
     modulesAvailable: MODULES,
+    unitTerm: 'team',
   },
   {
     code: 'volleyball',
@@ -38,6 +41,7 @@ export const SPORT_PROFILES: Seed[] = [
     starterBench: false,
     maxStarters: null,
     modulesAvailable: MODULES,
+    unitTerm: 'team',
   },
   {
     code: 'basket',
@@ -45,6 +49,7 @@ export const SPORT_PROFILES: Seed[] = [
     starterBench: false,
     maxStarters: null,
     modulesAvailable: MODULES,
+    unitTerm: 'team',
   },
   {
     code: 'fencing',
@@ -52,6 +57,7 @@ export const SPORT_PROFILES: Seed[] = [
     starterBench: false,
     maxStarters: null,
     modulesAvailable: ['attendances', 'standings'],
+    unitTerm: 'group',
   },
 ];
 

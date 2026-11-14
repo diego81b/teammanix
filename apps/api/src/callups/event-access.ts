@@ -8,7 +8,7 @@ import { AuthorizationsService } from '../permissions/authorizations.service';
 import { viewOf, type CallupView } from './callup.rules';
 
 export const loadEvent = (em: EntityManager, id: string): Promise<Event> =>
-  em.findOneOrFail(Event, { id }, { populate: ['season.team.activity.sportProfile', 'venue', 'opponent'] });
+  em.findOneOrFail(Event, { id }, { populate: ['season.team.sportProfile', 'venue', 'opponent'] });
 
 /** The event can still be changed: scheduled or postponed, in the active season. */
 export async function openEvent(em: EntityManager, id: string): Promise<Event> {
@@ -26,14 +26,14 @@ export async function viewFor(
   authz: AuthorizationsService,
   a: AuthContext,
   event: Event,
-  target: { activityId: string | null; teamId: string | null },
+  target: { sectionId: string | null; teamId: string | null },
 ): Promise<{ view: CallupView; own: Pick<Enrollment, 'id' | 'type'>[] }> {
   const own = a.personId ? await em.find(Enrollment, { person: a.personId, season: event.season.id }, { filters: false, fields: ['type'] }) : [];
   const view = viewOf({
     roles: a.roles,
     enrollments: own.map((e) => ({ type: e.type })),
     canManage: await authz.can(a, 'callups.manage', { eventId: event.id }),
-    season: { id: event.season.id, activityId: target.activityId as string, teamId: target.teamId as string },
+    season: { id: event.season.id, sectionId: target.sectionId, teamId: target.teamId as string },
   });
   return { view, own };
 }

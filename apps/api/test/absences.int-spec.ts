@@ -4,7 +4,7 @@ import { CallupResponseChange } from '../src/entities/callup-response-change.ent
 import { Notification } from '../src/entities/notification.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
 import { localDate } from '../src/events/event.rules';
-import { Environment, startEnvironment } from './helpers';
+import { Environment, startEnvironment, createTeams } from './helpers';
 
 const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
 const slot = (offset: number) => ({ start: `${day(offset)}T16:00:00Z`, end: `${day(offset)}T17:30:00Z` });
@@ -40,9 +40,9 @@ describe('declared absences (rule 10)', () => {
     const c = await t.req('POST', '/club', { token: s.accessToken, body: { name: `Club ${email}`, acceptDpa: true } });
     expect(c.status).toBe(201);
     const admin = c.body.accessToken as string;
-    const act = await post(admin, '/activities', { name: 'Sport', sportProfile: 'football' });
+    const struct = await createTeams(t.req, admin, { sportProfile: 'football' });
     const team = async (name: string) => {
-      const sq = await post(admin, `/activities/${act.id}/teams`, { name });
+      const sq = await struct.team(name);
       const st = await post(admin, `/teams/${sq.id}/seasons`, { name: 'Now', startDate: day(-60), endDate: day(400) });
       return { teamId: sq.id as string, seasonId: st.id as string };
     };

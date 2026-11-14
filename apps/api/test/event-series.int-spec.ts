@@ -4,7 +4,7 @@ import { AttendanceOutcome, CallupResponse, EnrollmentType } from '../src/entiti
 import { Enrollment } from '../src/entities/enrollment.entity';
 import { Event } from '../src/entities/event.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
-import { Environment, startEnvironment } from './helpers';
+import { Environment, startEnvironment, createTeams } from './helpers';
 
 /** Fixed season for the rules that do not depend on the clock. */
 const FIXED = { startDate: '2026-09-01', endDate: '2027-06-30' };
@@ -73,12 +73,9 @@ describe('event series: recurring trainings that create real events', () => {
     });
     expect(c.status).toBe(201);
     const admin = c.body.accessToken as string;
-    const act = await post(admin, '/activities', {
-      name: 'Football',
-      sportProfile: 'football',
-    });
+    const struct = await createTeams(t.req, admin, { sportProfile: 'football' });
     const team = async (name: string) => {
-      const sq = await post(admin, `/activities/${act.id}/teams`, { name });
+      const sq = await struct.team(name);
       const st = await post(admin, `/teams/${sq.id}/seasons`, {
         name: '2026/27',
         ...season,

@@ -1,5 +1,5 @@
 import { SportProfile } from '../src/entities/sport-profile.entity';
-import { Environment, startEnvironment } from './helpers';
+import { Environment, startEnvironment, createTeams } from './helpers';
 
 const DAY = '2026-10-06';
 const slot = (day = DAY, from = '16:00', to = '17:30') => ({ start: `${day}T${from}:00Z`, end: `${day}T${to}:00Z` });
@@ -30,15 +30,15 @@ describe('events: plan trainings and matches for the active season of a team', (
     return { token: acc.body.accessToken as string, userId: u.user.id as string };
   }
 
-  /** Club with one activity, teams T1 and T2 (active seasons 2026-09-01..2027-06-30), a coach of T1, a coach of T2 and a player of T1. */
+  /** Club without sections, teams T1 and T2 (active seasons 2026-09-01..2027-06-30), a coach of T1, a coach of T2 and a player of T1. */
   async function club(email: string) {
     const s = await t.newUser(email);
     const c = await t.req('POST', '/club', { token: s.accessToken, body: { name: `Club ${email}`, acceptDpa: true } });
     expect(c.status).toBe(201);
     const admin = c.body.accessToken as string;
-    const act = await post(admin, '/activities', { name: 'Football', sportProfile: 'football' });
+    const struct = await createTeams(t.req, admin, { sportProfile: 'football' });
     const team = async (name: string) => {
-      const sq = await post(admin, `/activities/${act.id}/teams`, { name });
+      const sq = await struct.team(name);
       const st = await post(admin, `/teams/${sq.id}/seasons`, { name: '2026/27', startDate: '2026-09-01', endDate: '2027-06-30' });
       return { teamId: sq.id as string, seasonId: st.id as string };
     };
@@ -54,7 +54,7 @@ describe('events: plan trainings and matches for the active season of a team', (
     const coach2 = await staff(t2.seasonId, `c2-${email}`, 'staff');
     const player = await staff(t1.seasonId, `p1-${email}`, 'player');
     for (const x of [t1, t2]) expect((await t.req('POST', `/seasons/${x.seasonId}/active`, { token: admin })).status).toBe(200);
-    return { admin, clubId: c.body.activeClub.id as string, activityId: act.id as string, t1, t2, coach1, coach2, player };
+    return { admin, clubId: c.body.activeClub.id as string, struct, t1, t2, coach1, coach2, player };
   }
 
   const match = (extra: object = {}) => ({ type: 'match', ...slot(), opponent: 'ASD Virtus', homeAway: 'home', ...extra });
@@ -101,7 +101,7 @@ describe('events: plan trainings and matches for the active season of a team', (
 
     it('a team without an active season refuses events, a closed one too', async () => {
       const s = await club('ev-4@test.it');
-      const sq = await post(s.admin, `/activities/${s.activityId}/teams`, { name: 'T3' });
+      const sq = await s.struct.team('T3');
       await post(s.admin, `/teams/${sq.id}/seasons`, { name: '2026/27', startDate: '2026-09-01', endDate: '2027-06-30' });
       const draft = await send(s.admin, 'POST', `/teams/${sq.id}/events`, training());
       expect([draft.status, draft.body.code]).toEqual([409, 'NO_ACTIVE_SEASON']);
@@ -173,12 +173,19 @@ describe('events: plan trainings and matches for the active season of a team', (
       expect(c.body.opponent.name).toBe('Città Nord');
     });
 
-    it('opponents belong to the activity, not to the event: both teams of the activity see the same list', async () => {
+    it('opponents belong to the team: another team of the same section does not see them, and has its own with the same name', async () => {
       const s = await club('ev-9@test.it');
-      await send(s.coach1.token, 'POST', `/teams/${s.t1.teamId}/events`, match());
+      const first = await send(s.coach1.token, 'POST', `/teams/${s.t1.teamId}/events`, match());
+      const own = await send(s.coach1.token, 'GET', `/teams/${s.t1.teamId}/opponents`);
+      expect(own.body.map((o: { name: string }) => o.name)).toEqual(['ASD Virtus']);
       const list = await send(s.coach2.token, 'GET', `/teams/${s.t2.teamId}/opponents`);
       expect(list.status).toBe(200);
-      expect(list.body.map((o: { name: string }) => o.name)).toEqual(['ASD Virtus']);
+      expect(list.body).toEqual([]);
+
+      const second = await send(s.coach2.token, 'POST', `/teams/${s.t2.teamId}/events`, match());
+      expect(second.status).toBe(201);
+      expect(second.body.opponent.name).toBe('ASD Virtus');
+      expect(second.body.opponent.id).not.toBe(first.body.opponent.id);
     });
 
     it('two simultaneous events with a new opponent create it once', async () => {

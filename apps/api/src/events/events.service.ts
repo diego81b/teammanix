@@ -100,7 +100,7 @@ export class EventsService {
 
   async create(a: AuthContext, teamId: string, dto: CreateEventDto): Promise<EventDto> {
     await this.authz.request(a, 'events.manage', { teamId });
-    const season = await this.em.findOne(Season, { team: teamId, status: SeasonStatus.ACTIVE }, { populate: ['team.activity'] });
+    const season = await this.em.findOne(Season, { team: teamId, status: SeasonStatus.ACTIVE }, { populate: ['team'] });
     if (!season) throw new ConflictException({ message: 'The team has no active season', code: 'NO_ACTIVE_SEASON' });
 
     const start = parseInstant(dto.start);
@@ -110,7 +110,7 @@ export class EventsService {
     this.check({ type: dto.type, start, end, hasOpponent: !!dto.opponent, homeAway: dto.homeAway ?? null, competition }, season);
 
     const venue = dto.venueId ? await this.catalog.venue(dto.venueId) : null;
-    const opponent = dto.opponent ? await this.catalog.opponent(a.clubId as string, season.team.activity.id, dto.opponent) : null;
+    const opponent = dto.opponent ? await this.catalog.opponent(a.clubId as string, season.team.id, dto.opponent) : null;
     const e = this.em.create(Event, {
       club: a.clubId as string,
       season,
@@ -166,7 +166,7 @@ export class EventsService {
     if (dto.venueId !== undefined) e.venue = dto.venueId === null ? null : await this.catalog.venue(dto.venueId);
     if (fields.type !== EventType.MATCH) e.opponent = null;
     else if (dto.opponent !== undefined) {
-      e.opponent = dto.opponent === null ? null : await this.catalog.opponent(a.clubId as string, e.season.team.activity.id, dto.opponent);
+      e.opponent = dto.opponent === null ? null : await this.catalog.opponent(a.clubId as string, e.season.team.id, dto.opponent);
     }
     e.type = fields.type;
     e.start = start;
@@ -206,7 +206,7 @@ export class EventsService {
     const enrolled = a.personId
       ? (await this.em.find(Enrollment, { person: a.personId, season: seasonId }, { filters: false, fields: ['season'] })).map((i) => i.season.id)
       : [];
-    const season = { id: seasonId, activityId: target.activityId as string, teamId: target.teamId as string };
+    const season = { id: seasonId, sectionId: target.sectionId, teamId: target.teamId as string };
     if (!canReadSeasonEvents(a.roles, enrolled, season)) {
       throw new ForbiddenException({ message: 'You do not have permission for this operation', code: 'PERMISSION_DENIED' });
     }
@@ -221,7 +221,7 @@ export class EventsService {
     const canManage = canPlanEvents(season.status) && (await this.authz.can(a, 'events.manage', { seasonId }));
     const canSuspend = season.status !== SeasonStatus.CLOSED && (await this.authz.can(a, 'suspensions.manage', { seasonId }));
     const own = a.personId ? await this.em.find(Enrollment, { person: a.personId, season: seasonId }, { filters: false, fields: ['type', 'endedAt'] }) : [];
-    const seasonTarget = { id: seasonId, activityId: target.activityId as string, teamId: target.teamId as string };
+    const seasonTarget = { id: seasonId, sectionId: target.sectionId, teamId: target.teamId as string };
     const canSeeStatistics =
       statisticsView({
         isStaff: own.some((e) => e.type === EnrollmentType.STAFF && e.endedAt === null),
@@ -250,7 +250,7 @@ export class EventsService {
   }
 
   private async load(id: string): Promise<Event> {
-    return this.em.findOneOrFail(Event, { id }, { populate: ['season.team.activity', 'venue', 'opponent'] });
+    return this.em.findOneOrFail(Event, { id }, { populate: ['season.team', 'venue', 'opponent'] });
   }
 
   private assertSeasonOpen(e: Event) {

@@ -241,7 +241,7 @@ export class AbsencesService {
 
   private async assertReadsRoster(a: AuthContext, season: Season): Promise<void> {
     const own = a.personId ? await this.em.find(Enrollment, { person: a.personId, season: season.id }, { fields: ['type'] }) : [];
-    const target = { id: season.id, activityId: season.team.activity.id, teamId: season.team.id };
+    const target = { id: season.id, sectionId: season.team.section?.id ?? null, teamId: season.team.id };
     if (!canReadRoster(a.roles, own.map((e) => e.type), target)) throw permissionDenied();
   }
 

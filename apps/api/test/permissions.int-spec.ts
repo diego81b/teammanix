@@ -2,7 +2,7 @@ import { Membership } from '../src/entities/membership.entity';
 import { AuditLog } from '../src/entities/audit-log.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
 import { POLICY } from '../src/permissions/policy';
-import { Environment, startEnvironment } from './helpers';
+import { Environment, startEnvironment, createTeams } from './helpers';
 
 describe('permissions (per-person policy)', () => {
   let t: Environment;
@@ -25,10 +25,10 @@ describe('permissions (per-person policy)', () => {
 
   async function withSeason(email: string) {
     const a = await admin(email);
-    const act = (await t.req('POST', '/activities', { token: a.token, body: { name: 'Football', sportProfile: 'football' } })).body;
-    const sq = (await t.req('POST', `/activities/${act.id}/teams`, { token: a.token, body: { name: 'Under 15' } })).body;
+    const struct = await createTeams(t.req, a.token, { sportProfile: 'football' });
+    const sq = await struct.team('Under 15');
     const st = (await t.req('POST', `/teams/${sq.id}/seasons`, { token: a.token, body: { name: '2026/27', startDate: '2026-09-01', endDate: '2027-06-30' } })).body;
-    return { ...a, seasonId: st.id as string, teamId: sq.id as string, activityId: act.id as string };
+    return { ...a, seasonId: st.id as string, teamId: sq.id as string };
   }
 
   /** Invites `email` as manager or admin and has it accepted. */

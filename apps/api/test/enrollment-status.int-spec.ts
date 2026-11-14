@@ -1,6 +1,6 @@
 import { Enrollment } from '../src/entities/enrollment.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
-import { Environment, startEnvironment } from './helpers';
+import { Environment, startEnvironment, createTeams } from './helpers';
 
 const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
 
@@ -35,9 +35,9 @@ describe('injured state set by staff (#27)', () => {
     const s = await t.newUser(email);
     const c = await t.req('POST', '/club', { token: s.accessToken, body: { name: `Club ${email}`, acceptDpa: true } });
     const admin = c.body.accessToken as string;
-    const act = await post(admin, '/activities', { name: 'Sport', sportProfile: 'football' });
+    const struct = await createTeams(t.req, admin, { sportProfile: 'football' });
     const team = async (name: string) => {
-      const sq = await post(admin, `/activities/${act.id}/teams`, { name });
+      const sq = await struct.team(name);
       const st = await post(admin, `/teams/${sq.id}/seasons`, { name: 'Now', startDate: day(-60), endDate: day(400) });
       return st.id as string;
     };

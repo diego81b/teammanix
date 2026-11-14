@@ -21,6 +21,37 @@ export interface Environment {
   tokenInvitation: (to: string) => string;
 }
 
+/**
+ * The only place where specs create the structure above a season. The endpoints that build it change with the
+ * model, so the specs call this and stay as they are. By default the teams belong to no section; with `section`
+ * the call creates that section and the teams of the call are created in it.
+ */
+export async function createTeams(
+  req: Environment['req'],
+  token: string,
+  options: { sportProfile?: string; section?: string } = {},
+) {
+  let sectionId: string | null = null;
+  if (options.section) {
+    const created = await req('POST', '/sections', { token, body: { name: options.section } });
+    if (created.status !== 201) throw new Error(`section ${created.status} ${JSON.stringify(created.body)}`);
+    sectionId = created.body.id as string;
+  }
+  return {
+    /** Null when the call created no section. */
+    sectionId,
+    /** Creates a team and returns the API body (id, name, ...). */
+    team: async (name: string, extra: object = {}) => {
+      const r = await req('POST', '/teams', {
+        token,
+        body: { name, sportProfile: options.sportProfile ?? 'football', ...(sectionId ? { sectionId } : {}), ...extra },
+      });
+      if (r.status !== 201) throw new Error(`team ${r.status} ${JSON.stringify(r.body)}`);
+      return r.body;
+    },
+  };
+}
+
 export async function startEnvironment(): Promise<Environment> {
   const pg: StartedPostgreSqlContainer = await new PostgreSqlContainer('postgres:16-alpine').start();
   process.env.DATABASE_URL = pg.getConnectionUri();

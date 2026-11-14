@@ -23,7 +23,7 @@ const venueExists = () => new ConflictException({ message: 'A venue with this na
 
 const toVenueDto = (v: Venue): VenueDto => ({ id: v.id, name: v.name, address: v.address });
 
-/** Venues belong to the club, opponents to the activity (unique name). Both are created where they are used. */
+/** Venues belong to the club, opponents to the team (unique name). Both are created where they are used. */
 @Injectable()
 export class CatalogService {
   constructor(
@@ -68,24 +68,23 @@ export class CatalogService {
 
   async opponents(a: AuthContext, teamId: string): Promise<OpponentDto[]> {
     await this.authz.request(a, 'events.manage', { teamId });
-    const target = await this.authz.target(a.clubId as string, { teamId });
-    const rows = await this.em.find(Opponent, { activity: target.activityId as string }, { orderBy: { name: 'asc' } });
+    const rows = await this.em.find(Opponent, { team: teamId }, { orderBy: { name: 'asc' } });
     return rows.map((o) => ({ id: o.id, name: o.name }));
   }
 
   /**
-   * The opponent of the activity with this name (case, accents and spaces ignored), created if missing.
+   * The opponent of the team with this name (case, accents and spaces ignored), created if missing.
    * The DB unique index settles two requests creating it together: the loser reads the winner's row.
    */
-  async opponent(clubId: string, activityId: string, raw: string): Promise<Opponent> {
+  async opponent(clubId: string, teamId: string, raw: string): Promise<Opponent> {
     const name = normalizeName(raw);
     const key = nameKey(name);
-    const find = async () => (await this.em.find(Opponent, { activity: activityId })).find((o) => nameKey(o.name) === key);
+    const find = async () => (await this.em.find(Opponent, { team: teamId })).find((o) => nameKey(o.name) === key);
     const found = await find();
     if (found) return found;
     // A separate unit of work: a failed insert must not leave the request's own one in a broken state.
     const fork = this.em.fork();
-    fork.create(Opponent, { club: clubId, activity: activityId, name });
+    fork.create(Opponent, { club: clubId, team: teamId, name });
     try {
       await fork.flush();
     } catch (e) {

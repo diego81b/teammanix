@@ -6,15 +6,16 @@ import {
   POLICY,
   defaultValue,
   can,
+  sees,
   validateDiff,
   type Target,
   type Source,
 } from './policy';
 
 const CLUB = { type: 'club' } as const;
-const activity = (activityId: string) => ({ type: 'activity', activityId }) as const;
-const team = (teamId: string, activityId: string) => ({ type: 'team', activityId, teamId }) as const;
-const on = (activityId: string | null, teamId: string | null): Target => ({ activityId, teamId });
+const section = (sectionId: string) => ({ type: 'section', sectionId }) as const;
+const team = (teamId: string) => ({ type: 'team', teamId }) as const;
+const on = (sectionId: string | null, teamId: string | null): Target => ({ sectionId, teamId });
 
 describe('default templates (rule 14)', () => {
   it('admin has all policies', () => {
@@ -69,15 +70,15 @@ describe('can', () => {
   });
 
   describe('staff', () => {
-    const coachS1: Source = { role: 'coach', scope: team('s1', 'a1') };
+    const coachS1: Source = { role: 'coach', scope: team('s1') };
 
     it('coach: inside their own team yes', () => {
       expect(can([coachS1], {}, 'events.manage', on('a1', 's1'))).toBe(true);
     });
-    it('coach: in another team, even of the same activity, no', () => {
+    it('coach: in another team, even of the same section, no', () => {
       expect(can([coachS1], {}, 'events.manage', on('a1', 's2'))).toBe(false);
     });
-    it('coach: at club or activity level no', () => {
+    it('coach: at club or section level no', () => {
       expect(can([coachS1], {}, 'people.manage', on(null, null))).toBe(false);
       expect(can([coachS1], {}, 'people.manage', on('a1', null))).toBe(false);
     });
@@ -96,7 +97,7 @@ describe('can', () => {
       expect(can([coachS1], diff, 'attendances.record', on('a1', 's1'))).toBe(true);
     });
     it('trainer: attendances only', () => {
-      const f: Source = { role: 'trainer', scope: team('s1', 'a1') };
+      const f: Source = { role: 'trainer', scope: team('s1') };
       expect(can([f], {}, 'attendances.record', on('a1', 's1'))).toBe(true);
       expect(can([f], {}, 'callups.manage', on('a1', 's1'))).toBe(false);
     });
@@ -109,16 +110,27 @@ describe('can', () => {
     });
     it('with a diff acts within their own scope, never beyond', () => {
       const diff = { 'people.manage': true } as const;
-      const dirActivity: Source = { role: 'manager', scope: activity('a1') };
-      expect(can([dirActivity], diff, 'people.manage', on('a1', 's1'))).toBe(true);
-      expect(can([dirActivity], diff, 'people.manage', on('a1', null))).toBe(true);
-      expect(can([dirActivity], diff, 'people.manage', on('a2', 's9'))).toBe(false);
-      expect(can([dirActivity], diff, 'people.manage', on(null, null))).toBe(false);
+      const dirSection: Source = { role: 'manager', scope: section('a1') };
+      expect(can([dirSection], diff, 'people.manage', on('a1', 's1'))).toBe(true);
+      expect(can([dirSection], diff, 'people.manage', on('a1', null))).toBe(true);
+      expect(can([dirSection], diff, 'people.manage', on('a2', 's9'))).toBe(false);
+      expect(can([dirSection], diff, 'people.manage', on(null, null))).toBe(false);
 
-      const dirTeam: Source = { role: 'manager', scope: team('s1', 'a1') };
+      const dirTeam: Source = { role: 'manager', scope: team('s1') };
       expect(can([dirTeam], diff, 'people.manage', on('a1', 's1'))).toBe(true);
       expect(can([dirTeam], diff, 'people.manage', on('a1', 's2'))).toBe(false);
       expect(can([dirTeam], diff, 'people.manage', on('a1', null))).toBe(false);
+    });
+    it('a team without a section is out of reach of every section manager', () => {
+      const diff = { 'people.manage': true } as const;
+      const dirSection: Source = { role: 'manager', scope: section('a1') };
+      expect(can([dirSection], diff, 'people.manage', on(null, 's1'))).toBe(false);
+      expect(sees([dirSection], on(null, 's1'))).toBe(false);
+    });
+    it('a team without a section is still reached by its own team scope and by the club scope', () => {
+      const diff = { 'people.manage': true } as const;
+      expect(can([{ role: 'manager', scope: team('s1') }], diff, 'people.manage', on(null, 's1'))).toBe(true);
+      expect(can([{ role: 'manager', scope: CLUB }], diff, 'people.manage', on(null, 's1'))).toBe(true);
     });
     it('club manager with a diff acts anywhere, even at club level', () => {
       const f: Source = { role: 'manager', scope: CLUB };
@@ -130,8 +142,8 @@ describe('can', () => {
   describe('multiple sources', () => {
     it('one source covering the target is enough', () => {
       const sources: Source[] = [
-        { role: 'coach', scope: team('s1', 'a1') },
-        { role: 'trainer', scope: team('s2', 'a1') },
+        { role: 'coach', scope: team('s1') },
+        { role: 'trainer', scope: team('s2') },
       ];
       expect(can(sources, {}, 'events.manage', on('a1', 's1'))).toBe(true);
       expect(can(sources, {}, 'events.manage', on('a1', 's2'))).toBe(false);
@@ -139,23 +151,23 @@ describe('can', () => {
     });
     it('the diff applies to every source of the membership', () => {
       const sources: Source[] = [
-        { role: 'coach', scope: team('s1', 'a1') },
-        { role: 'manager', scope: activity('a2') },
+        { role: 'coach', scope: team('s1') },
+        { role: 'manager', scope: section('a2') },
       ];
       const diff = { 'people.manage': true } as const;
       expect(can(sources, diff, 'people.manage', on('a2', 's7'))).toBe(true);
     });
     it('a negative diff removes the policy from all non-admin sources', () => {
       const sources: Source[] = [
-        { role: 'coach', scope: team('s1', 'a1') },
-        { role: 'coach', scope: team('s2', 'a1') },
+        { role: 'coach', scope: team('s1') },
+        { role: 'coach', scope: team('s2') },
       ];
       const diff = { 'events.manage': false } as const;
       expect(can(sources, diff, 'events.manage', on('a1', 's1'))).toBe(false);
       expect(can(sources, diff, 'events.manage', on('a1', 's2'))).toBe(false);
     });
     it('admin plus another source: admin prevails', () => {
-      const sources: Source[] = [{ role: 'coach', scope: team('s1', 'a1') }, adminSource];
+      const sources: Source[] = [{ role: 'coach', scope: team('s1') }, adminSource];
       expect(can(sources, { 'people.disable': false }, 'people.disable', on('a5', 's5'))).toBe(true);
     });
   });

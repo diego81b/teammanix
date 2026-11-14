@@ -5,7 +5,7 @@ import { AuditService } from '../audit/audit.service';
 import { AuthService, SessionDto } from '../auth/auth.service';
 import type { AuthContext } from '../common/auth-context';
 import { appConfig, INVITATION_DAYS } from '../config/app.config';
-import { Activity } from '../entities/activity.entity';
+import { Section } from '../entities/section.entity';
 import { AuditAction, Language, AccessRoleType, InvitationRole, InvitationStatus, ScopeType } from '../entities/enums';
 import { Invitation } from '../entities/invitation.entity';
 import { Person } from '../entities/person.entity';
@@ -27,7 +27,7 @@ export interface InvitationDto {
   email: string;
   role: InvitationRole;
   scope: ScopeType;
-  activityId: string | null;
+  sectionId: string | null;
   teamId: string | null;
   personId: string | null;
   status: InvitationStatus;
@@ -41,7 +41,7 @@ export interface PreviewInvitation {
   scope: ScopeType;
   /** Language chosen by the inviter: the invitation page opens in this one for anyone with no preference yet. */
   language: Language;
-  /** Name of the activity or team, if the invitation has that scope. */
+  /** Name of the section or team, if the invitation has that scope. */
   destination: string | null;
   /** Staff and player: name of the record the account will be linked to. */
   recordName: string | null;
@@ -68,9 +68,9 @@ export class InvitationsService {
       throw new BadRequestException({ message: 'An admin always has club scope', code: 'SCOPE_ADMIN_CLUB' });
     }
     const unrelated =
-      scope === ScopeType.CLUB ? [dto.activityId, dto.teamId] : scope === ScopeType.ACTIVITY ? [dto.teamId] : [dto.activityId];
+      scope === ScopeType.CLUB ? [dto.sectionId, dto.teamId] : scope === ScopeType.SECTION ? [dto.teamId] : [dto.sectionId];
     if (unrelated.some(Boolean)) throw new BadRequestException({ message: 'Scope and destination are inconsistent', code: 'SCOPE_INCONSISTENT' });
-    if (scope === ScopeType.ACTIVITY && !dto.activityId) throw new BadRequestException({ message: 'activityId is required for activity scope', code: 'ACTIVITY_REQUIRED' });
+    if (scope === ScopeType.SECTION && !dto.sectionId) throw new BadRequestException({ message: 'sectionId is required for section scope', code: 'SECTION_REQUIRED' });
     if (scope === ScopeType.TEAM && !dto.teamId) throw new BadRequestException({ message: 'teamId is required for team scope', code: 'TEAM_REQUIRED' });
 
     const staffOrPlayer = dto.role === InvitationRole.STAFF || dto.role === InvitationRole.PLAYER;
@@ -80,10 +80,10 @@ export class InvitationsService {
     if (!staffOrPlayer && (dto.personId || dto.name)) throw new BadRequestException({ message: 'personId and name apply only to staff and players', code: 'RECORD_NOT_ALLOWED' });
 
     // Reads go through the tenant filter: the id of another club is not found.
-    const activity = scope === ScopeType.ACTIVITY ? await this.em.findOne(Activity, dto.activityId as string) : null;
+    const section = scope === ScopeType.SECTION ? await this.em.findOne(Section, dto.sectionId as string) : null;
     const team = scope === ScopeType.TEAM ? await this.em.findOne(Team, dto.teamId as string) : null;
-    if ((scope === ScopeType.ACTIVITY && !activity) || (scope === ScopeType.TEAM && !team)) {
-      throw new BadRequestException({ message: 'Activity or team not found', code: 'DESTINATION_NOT_FOUND' });
+    if ((scope === ScopeType.SECTION && !section) || (scope === ScopeType.TEAM && !team)) {
+      throw new BadRequestException({ message: 'Section or team not found', code: 'DESTINATION_NOT_FOUND' });
     }
     const person = dto.personId ? await this.em.findOne(Person, dto.personId) : null;
     if (dto.personId && (!person || person.user)) {
@@ -99,7 +99,7 @@ export class InvitationsService {
       const open = await tem.find(Invitation, { email: dto.email, role: dto.role, scope, status: InvitationStatus.SENT });
       for (const v of open) {
         const same =
-          (v.activity?.id ?? null) === (activity?.id ?? null) &&
+          (v.section?.id ?? null) === (section?.id ?? null) &&
           (v.team?.id ?? null) === (team?.id ?? null) &&
           (v.person?.id ?? null) === (person?.id ?? null);
         if (same) v.status = InvitationStatus.REVOKED;
@@ -113,7 +113,7 @@ export class InvitationsService {
         email: dto.email,
         role: dto.role,
         scope,
-        activity: activity ? tem.getReference(Activity, activity.id) : null,
+        section: section ? tem.getReference(Section, section.id) : null,
         team: team ? tem.getReference(Team, team.id) : null,
         person: fresh ?? (person ? tem.getReference(Person, person.id) : null),
         tokenHash: hash(token),
@@ -159,7 +159,7 @@ export class InvitationsService {
     const invitation = await this.em.findOne(
       Invitation,
       { tokenHash: hash(token) },
-      { filters: false, populate: ['club', 'activity', 'team', 'person'] },
+      { filters: false, populate: ['club', 'section', 'team', 'person'] },
     );
     if (!invitation || invitation.status !== InvitationStatus.SENT || invitation.expiresAt.getTime() < Date.now()) throw invitationNotValid();
     return {
@@ -167,7 +167,7 @@ export class InvitationsService {
       role: invitation.role,
       scope: invitation.scope,
       language: invitation.language,
-      destination: invitation.team?.name ?? invitation.activity?.name ?? null,
+      destination: invitation.team?.name ?? invitation.section?.name ?? null,
       recordName: invitation.person?.name ?? null,
     };
   }
@@ -201,7 +201,7 @@ export class InvitationsService {
       const invitation = await tem.findOne(
         Invitation,
         { tokenHash: hash(token) },
-        { filters: false, populate: ['club', 'activity', 'team', 'person'] },
+        { filters: false, populate: ['club', 'section', 'team', 'person'] },
       );
       if (!invitation || invitation.status !== InvitationStatus.SENT || invitation.expiresAt.getTime() < Date.now() || invitation.email !== user.email) {
         throw invitationNotValid();
@@ -217,7 +217,7 @@ export class InvitationsService {
             user: userId,
             role: type,
             scope: invitation.scope,
-            activity: invitation.activity?.id ?? null,
+            section: invitation.section?.id ?? null,
             team: invitation.team?.id ?? null,
           },
           { filters: false },
@@ -228,7 +228,7 @@ export class InvitationsService {
             user,
             role: type,
             scope: invitation.scope,
-            activity: invitation.activity,
+            section: invitation.section,
             team: invitation.team,
           });
         }
@@ -256,7 +256,7 @@ export class InvitationsService {
       email: i.email,
       role: i.role,
       scope: i.scope,
-      activityId: i.activity?.id ?? null,
+      sectionId: i.section?.id ?? null,
       teamId: i.team?.id ?? null,
       personId: i.person?.id ?? null,
       status: i.status,

@@ -4,7 +4,7 @@ import type { AccessRoleType, ScopeType } from '../entities/enums';
 export interface CtxRole {
   role: AccessRoleType;
   scope: ScopeType;
-  activityId: string | null;
+  sectionId: string | null;
   teamId: string | null;
 }
 

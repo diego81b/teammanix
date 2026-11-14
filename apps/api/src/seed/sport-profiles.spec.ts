@@ -23,6 +23,10 @@ describe('sport profiles (seed)', () => {
     }
   });
 
+  it('every profile names its team unit with a code: group for fencing, team for the others', () => {
+    for (const p of SPORT_PROFILES) expect(p.unitTerm).toBe(p.code === 'fencing' ? 'group' : 'team');
+  });
+
   it('texts live in the frontend: no Italian label in the seed', () => {
     for (const p of SPORT_PROFILES) {
       expect(p).not.toHaveProperty('name');

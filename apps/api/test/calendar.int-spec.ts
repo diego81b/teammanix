@@ -1,6 +1,6 @@
 import { Enrollment } from '../src/entities/enrollment.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
-import { Environment, startEnvironment } from './helpers';
+import { Environment, startEnvironment, createTeams } from './helpers';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ymd = (offsetDays: number) => new Date(Date.now() + offsetDays * DAY_MS).toISOString().slice(0, 10);
@@ -45,9 +45,9 @@ describe('calendar: team and personal views', () => {
     const c = await t.req('POST', '/club', { token: s.accessToken, body: { name: `Club ${email}`, acceptDpa: true } });
     expect(c.status).toBe(201);
     const admin = c.body.accessToken as string;
-    const act = await post(admin, '/activities', { name: 'Football', sportProfile: 'football' });
+    const struct = await createTeams(t.req, admin, { sportProfile: 'football', section: 'Football' });
     const team = async (name: string) => {
-      const sq = await post(admin, `/activities/${act.id}/teams`, { name });
+      const sq = await struct.team(name);
       const st = await post(admin, `/teams/${sq.id}/seasons`, { name: '2026/27', startDate: ymd(-30), endDate: ymd(365) });
       return { teamId: sq.id as string, seasonId: st.id as string };
     };
@@ -137,6 +137,28 @@ describe('calendar: team and personal views', () => {
       expect([r.status, r.body]).toEqual([200, []]);
     });
 
+    it('a person enrolled as staff in three teams at once sees the events of all three, in order', async () => {
+      const s = await club('cal-staff3@test.it');
+      const third = await post(s.admin, '/teams', { name: 'T3', sportProfile: 'football' });
+      const seasonT3 = await post(s.admin, `/teams/${third.id}/seasons`, { name: '2026/27', startDate: ymd(-30), endDate: ymd(365) });
+      expect((await t.req('POST', `/seasons/${seasonT3.id}/active`, { token: s.admin })).status).toBe(200);
+      const addr = 'trainer-cal-staff3@test.it';
+      const trainer = await post(s.admin, '/people', { name: 'Gino', surname: 'Bianchi', birthDate: '1980-01-02', email: addr });
+      await post(s.admin, '/invitations', { email: addr, role: 'staff', personId: trainer.id });
+      const token = await accept(addr);
+      expect(ids((await get(token, '/calendar/me')).body)).toEqual([]);
+
+      const bulk = await t.req('POST', `/people/${trainer.id}/staff-enrollments`, { token: s.admin, body: { teamIds: [s.t1.teamId, s.t2.teamId, third.id], staffRole: 'trainer' } });
+      expect([bulk.status, bulk.body.length]).toEqual([201, 3]);
+
+      const c = await plan(s.admin, third.id, 7);
+      const b = await plan(s.coach2.token, s.t2.teamId, 5);
+      const a = await plan(s.coach1.token, s.t1.teamId, 3);
+      const r = await get(token, '/calendar/me');
+      expect(ids(r.body)).toEqual([a.id, b.id, c.id]);
+      expect(r.body.map((e: { teamName: string }) => e.teamName)).toEqual(['T1', 'T2', 'T3']);
+    });
+
     it('never mixes clubs: a player sees only the events of their own club', async () => {
       const a = await club('cal-7a@test.it');
       const b = await club('cal-7b@test.it');
@@ -155,7 +177,7 @@ describe('calendar: team and personal views', () => {
       expect(await seasons(s.coach2.token)).toEqual([s.t2.seasonId]);
       expect((await seasons(s.admin)).sort()).toEqual([s.t1.seasonId, s.t2.seasonId].sort());
       const row = (await get(s.coach1.token, '/calendar/teams')).body[0];
-      expect(row).toMatchObject({ seasonId: s.t1.seasonId, seasonName: '2026/27', seasonStatus: 'active', teamId: s.t1.teamId, teamName: 'T1', activityName: 'Football' });
+      expect(row).toMatchObject({ seasonId: s.t1.seasonId, seasonName: '2026/27', seasonStatus: 'active', teamId: s.t1.teamId, teamName: 'T1', sectionName: 'Football' });
     });
 
     it('keeps a closed season in the list for the people enrolled in it', async () => {

@@ -3,7 +3,7 @@ import type { FastifyReply } from 'fastify';
 import type { AuthContext } from '../common/auth-context';
 import { CurrentAuth, AdminOnly } from '../common/decorators';
 import { RegistryService } from './registry.service';
-import { CloneSeasonDto, CreatePersonDto, EnrollmentDto, EditEnrollmentDto, PromoteEnrollmentDto, SearchPeopleDto } from './dto-admin';
+import { CloneSeasonDto, CreatePersonDto, EnrollmentDto, EditEnrollmentDto, PromoteEnrollmentDto, SearchPeopleDto, StaffEnrollmentsDto } from './dto-admin';
 import { CloningService } from './cloning.service';
 import { RosterService } from './roster.service';
 import { ErasureService } from './erasure.service';
@@ -77,6 +77,11 @@ export class RegistryController {
   @Post('seasons/:id/enrollments')
   enroll(@CurrentAuth() a: AuthContext, @Param('id', ParseUUIDPipe) id: string, @Body() dto: EnrollmentDto) {
     return this.roster.enroll(a, id, dto);
+  }
+
+  @Post('people/:id/staff-enrollments')
+  enrollStaff(@CurrentAuth() a: AuthContext, @Param('id', ParseUUIDPipe) id: string, @Body() dto: StaffEnrollmentsDto) {
+    return this.roster.enrollStaff(a, id, dto);
   }
 
   @Post('seasons/:id/clone')

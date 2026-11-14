@@ -5,7 +5,7 @@ import { Event } from '../src/entities/event.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
 import { AuthorizationsService, type Goal } from '../src/permissions/authorizations.service';
 import type { PolicyKey } from '../src/permissions/policy';
-import { Environment, startEnvironment } from './helpers';
+import { Environment, startEnvironment, createTeams } from './helpers';
 
 describe('authorizations: policies applied by scope', () => {
   let t: Environment;
@@ -35,20 +35,20 @@ describe('authorizations: policies applied by scope', () => {
   };
 
   /**
-   * Club with activity A (teams S1 and S2, one season each) and activity B (team SB, one season).
+   * Club with section A (teams S1 and S2, one season each) and section B (team SB, one season).
    * Seasons are drafts: for staff every non-closed season counts.
    */
   async function club(email: string) {
     const a = await admin(email);
-    const actA = await post(a.token, '/activities', { name: 'Calcio A', sportProfile: 'football' });
-    const actB = await post(a.token, '/activities', { name: 'Calcio B', sportProfile: 'football' });
+    const actA = await createTeams(t.req, a.token, { sportProfile: 'football', section: 'Calcio A' });
+    const actB = await createTeams(t.req, a.token, { sportProfile: 'football', section: 'Calcio B' });
     const period = { startDate: '2026-09-01', endDate: '2027-06-30' };
-    const sq = async (activityId: string, name: string) => {
-      const s = await post(a.token, `/activities/${activityId}/teams`, { name });
+    const sq = async (struct: typeof actA, name: string) => {
+      const s = await struct.team(name);
       const st = await post(a.token, `/teams/${s.id}/seasons`, { name: '2026/27', ...period });
       return { teamId: s.id as string, seasonId: st.id as string };
     };
-    return { ...a, activityA: actA.id as string, activityB: actB.id as string, s1: await sq(actA.id, 'S1'), s2: await sq(actA.id, 'S2'), sb: await sq(actB.id, 'SB') };
+    return { ...a, sectionA: actA.sectionId as string, sectionB: actB.sectionId as string, s1: await sq(actA, 'S1'), s2: await sq(actA, 'S2'), sb: await sq(actB, 'SB') };
   }
 
   /** Person with an account: record, enrollment, accepted invitation. Returns user and person. */
@@ -91,21 +91,21 @@ describe('authorizations: policies applied by scope', () => {
 
   it('admin: every policy, at every level', async () => {
     const s = await club('au-1@test.it');
-    for (const on of [{ club: true }, { activityId: s.activityB }, { teamId: s.sb.teamId }, { seasonId: s.s2.seasonId }] as Goal[]) {
+    for (const on of [{ club: true }, { sectionId: s.sectionB }, { teamId: s.sb.teamId }, { seasonId: s.s2.seasonId }] as Goal[]) {
       expect(await outcome(s.userId, s.clubId, 'events.manage', on)).toBe('ok');
       expect(await outcome(s.userId, s.clubId, 'people.disable', on)).toBe('ok');
     }
   });
 
   describe('coach', () => {
-    it('acts only on their own team: the other team, the other activity and the club are rejected', async () => {
+    it('acts only on their own team: the other team, the other section and the club are rejected', async () => {
       const s = await club('au-2@test.it');
       const all = await coach(s, s.s1.seasonId, 'au-2all@test.it');
       expect(await outcome(all.userId, s.clubId, 'events.manage', { seasonId: s.s1.seasonId })).toBe('ok');
       expect(await outcome(all.userId, s.clubId, 'events.manage', { teamId: s.s1.teamId })).toBe('ok');
       expect(await outcome(all.userId, s.clubId, 'events.manage', { seasonId: s.s2.seasonId })).toBe(DENIED);
       expect(await outcome(all.userId, s.clubId, 'events.manage', { teamId: s.sb.teamId })).toBe(DENIED);
-      expect(await outcome(all.userId, s.clubId, 'events.manage', { activityId: s.activityA })).toBe(DENIED);
+      expect(await outcome(all.userId, s.clubId, 'events.manage', { sectionId: s.sectionA })).toBe(DENIED);
       expect(await outcome(all.userId, s.clubId, 'events.manage', { club: true })).toBe(DENIED);
     });
 
@@ -163,18 +163,18 @@ describe('authorizations: policies applied by scope', () => {
   describe('manager', () => {
     it('without granted policies can do nothing, not even within their scope', async () => {
       const s = await club('au-9@test.it');
-      const d = await managerOf(s, 'au-9d@test.it', { scope: 'activity', activityId: s.activityA });
+      const d = await managerOf(s, 'au-9d@test.it', { scope: 'section', sectionId: s.sectionA });
       expect(await outcome(d.userId, s.clubId, 'events.manage', { seasonId: s.s1.seasonId })).toBe(DENIED);
-      expect(await outcome(d.userId, s.clubId, 'people.manage', { activityId: s.activityA })).toBe(DENIED);
+      expect(await outcome(d.userId, s.clubId, 'people.manage', { sectionId: s.sectionA })).toBe(DENIED);
     });
 
     it('with the granted policy it applies only within the role scope', async () => {
       const s = await club('au-10@test.it');
-      const d = await managerOf(s, 'au-10d@test.it', { scope: 'activity', activityId: s.activityA });
+      const d = await managerOf(s, 'au-10d@test.it', { scope: 'section', sectionId: s.sectionA });
       expect((await t.req('PUT', `/permissions/${d.userId}`, { token: s.token, body: { diff: { 'events.manage': true } } })).status).toBe(200);
       expect(await outcome(d.userId, s.clubId, 'events.manage', { seasonId: s.s1.seasonId })).toBe('ok');
       expect(await outcome(d.userId, s.clubId, 'events.manage', { seasonId: s.s2.seasonId })).toBe('ok');
-      expect(await outcome(d.userId, s.clubId, 'events.manage', { activityId: s.activityA })).toBe('ok');
+      expect(await outcome(d.userId, s.clubId, 'events.manage', { sectionId: s.sectionA })).toBe('ok');
       expect(await outcome(d.userId, s.clubId, 'events.manage', { seasonId: s.sb.seasonId })).toBe(DENIED);
       expect(await outcome(d.userId, s.clubId, 'events.manage', { club: true })).toBe(DENIED);
       expect(await outcome(d.userId, s.clubId, 'attendances.record', { seasonId: s.s1.seasonId })).toBe(DENIED);
@@ -186,14 +186,14 @@ describe('authorizations: policies applied by scope', () => {
       await t.req('PUT', `/permissions/${d.userId}`, { token: s.token, body: { diff: { 'events.manage': true } } });
       expect(await outcome(d.userId, s.clubId, 'events.manage', { seasonId: s.s1.seasonId })).toBe('ok');
       expect(await outcome(d.userId, s.clubId, 'events.manage', { seasonId: s.s2.seasonId })).toBe(DENIED);
-      expect(await outcome(d.userId, s.clubId, 'events.manage', { activityId: s.activityA })).toBe(DENIED);
+      expect(await outcome(d.userId, s.clubId, 'events.manage', { sectionId: s.sectionA })).toBe(DENIED);
     });
 
     it('club manager with the policy: anywhere in the club', async () => {
       const s = await club('au-12@test.it');
       const d = await managerOf(s, 'au-12d@test.it', {});
       await t.req('PUT', `/permissions/${d.userId}`, { token: s.token, body: { diff: { 'events.manage': true } } });
-      for (const on of [{ club: true }, { activityId: s.activityB }, { seasonId: s.sb.seasonId }] as Goal[]) {
+      for (const on of [{ club: true }, { sectionId: s.sectionB }, { seasonId: s.sb.seasonId }] as Goal[]) {
         expect(await outcome(d.userId, s.clubId, 'events.manage', on)).toBe('ok');
       }
     });
@@ -216,7 +216,7 @@ describe('authorizations: policies applied by scope', () => {
       const other = { userId: s2.userId, clubId: s2.clubId };
       expect(await outcome(other.userId, other.clubId, 'events.manage', { seasonId: s1.s1.seasonId })).toBe('404:SEASON_NOT_FOUND');
       expect(await outcome(other.userId, other.clubId, 'events.manage', { teamId: s1.s1.teamId })).toBe('404:TEAM_NOT_FOUND');
-      expect(await outcome(other.userId, other.clubId, 'events.manage', { activityId: s1.activityA })).toBe('404:ACTIVITY_NOT_FOUND');
+      expect(await outcome(other.userId, other.clubId, 'events.manage', { sectionId: s1.sectionA })).toBe('404:SECTION_NOT_FOUND');
     });
 
     it('an enrollment resolves to its team', async () => {

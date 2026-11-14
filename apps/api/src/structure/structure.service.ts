@@ -1,18 +1,20 @@
-import { UniqueConstraintViolationException } from '@mikro-orm/core';
+import { ForeignKeyConstraintViolationException, UniqueConstraintViolationException } from '@mikro-orm/core';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import type { AuthContext } from '../common/auth-context';
-import { Activity } from '../entities/activity.entity';
-import { AuditAction, SeasonStatus } from '../entities/enums';
+import { AccessRole } from '../entities/access-role.entity';
+import { AuditAction, InvitationStatus, SeasonStatus } from '../entities/enums';
+import { Invitation } from '../entities/invitation.entity';
+import { Section } from '../entities/section.entity';
 import { SportProfile } from '../entities/sport-profile.entity';
 import { Team } from '../entities/team.entity';
 import { Season } from '../entities/season.entity';
 import type {
-  CreateActivityDto,
+  CreateSectionDto,
   CreateTeamDto,
   CreateSeasonDto,
-  EditActivityDto,
+  EditSectionDto,
   EditTeamDto,
   EditSeasonDto,
 } from './dto';
@@ -25,19 +27,22 @@ export interface SportProfileDto {
   starterBench: boolean;
   maxStarters: number | null;
   modulesAvailable: string[];
+  /** 'team' or 'group': which word the frontend uses for the unit. */
+  unitTerm: 'team' | 'group';
 }
 
-export interface ActivityDto {
+export interface SectionDto {
   id: string;
   name: string;
-  sportProfile: string;
-  modulesActive: string[];
 }
 
 export interface TeamDto {
   id: string;
-  activityId: string;
+  /** Null for a team outside any section. */
+  sectionId: string | null;
   name: string;
+  sportProfile: string;
+  modulesActive: string[];
   category: string | null;
   gender: string | null;
 }
@@ -67,7 +72,11 @@ export function toSeasonDto(s: Season): SeasonDto {
   };
 }
 
-export type StructureTree = (ActivityDto & { teams: (TeamDto & { seasons: SeasonDto[] })[] })[];
+/** Flat: the client groups the teams by sectionId, and a club without sections shows only the teams. */
+export interface StructureTree {
+  sections: SectionDto[];
+  teams: (TeamDto & { seasons: SeasonDto[] })[];
+}
 
 @Injectable()
 export class StructureService {
@@ -84,74 +93,87 @@ export class StructureService {
       starterBench: p.starterBench,
       maxStarters: p.maxStarters,
       modulesAvailable: p.modulesAvailable,
+      unitTerm: p.unitTerm,
     }));
   }
 
   async tree(): Promise<StructureTree> {
-    const [activity, teams, seasons] = await Promise.all([
-      this.em.find(Activity, {}, { populate: ['sportProfile'], orderBy: { name: 'asc' } }),
-      this.em.find(Team, {}, { orderBy: { name: 'asc' } }),
+    const [sections, teams, seasons] = await Promise.all([
+      this.em.find(Section, {}, { orderBy: { name: 'asc' } }),
+      this.em.find(Team, {}, { populate: ['sportProfile'], orderBy: { name: 'asc' } }),
       this.em.find(Season, {}, { orderBy: { startDate: 'desc' } }),
     ]);
-    return activity.map((a) => ({
-      ...this.activityDto(a),
-      teams: teams
-        .filter((s) => s.activity.id === a.id)
-        .map((s) => ({
-          ...this.teamDto(s),
-          seasons: seasons.filter((st) => st.team.id === s.id).map((st) => this.seasonDto(st)),
-        })),
-    }));
+    return {
+      sections: sections.map((s) => this.sectionDto(s)),
+      teams: teams.map((s) => ({
+        ...this.teamDto(s),
+        seasons: seasons.filter((st) => st.team.id === s.id).map((st) => this.seasonDto(st)),
+      })),
+    };
   }
 
-  async createActivity(a: AuthContext, dto: CreateActivityDto): Promise<ActivityDto> {
+  async createSection(a: AuthContext, dto: CreateSectionDto): Promise<SectionDto> {
+    const sec = this.em.create(Section, { club: a.clubId as string, name: dto.name });
+    await this.save({ message: 'A section with this name already exists', code: 'SECTION_EXISTS' });
+    return this.sectionDto(sec);
+  }
+
+  async editSection(id: string, dto: EditSectionDto): Promise<SectionDto> {
+    const sec = await this.section(id);
+    if (dto.name) sec.name = dto.name;
+    await this.save({ message: 'A section with this name already exists', code: 'SECTION_EXISTS' });
+    return this.sectionDto(sec);
+  }
+
+  /**
+   * The teams stay, outside any section (the foreign key sets the column to null). Refused while a role or a pending
+   * invitation points to the section: the admin removes those first. Invitations already used or revoked go with it.
+   */
+  async removeSection(id: string): Promise<void> {
+    const sec = await this.section(id);
+    const inUse =
+      (await this.em.count(AccessRole, { section: sec.id })) + (await this.em.count(Invitation, { section: sec.id, status: InvitationStatus.SENT }));
+    if (inUse > 0) throw this.sectionInUse();
+    try {
+      await this.em.nativeDelete(Section, { id: sec.id });
+    } catch (e) {
+      // A role created between the check and the delete: the foreign key refuses it.
+      if (e instanceof ForeignKeyConstraintViolationException) throw this.sectionInUse();
+      throw e;
+    }
+  }
+
+  async createTeam(a: AuthContext, dto: CreateTeamDto): Promise<TeamDto> {
+    const sec = dto.sectionId ? await this.section(dto.sectionId) : null;
     const profile = await this.em.findOne(SportProfile, { code: dto.sportProfile });
     if (!profile) throw new BadRequestException({ message: 'Invalid sport profile', code: 'INVALID_SPORT_PROFILE' });
     const modules = dto.modulesActive ?? profile.modulesAvailable;
     this.checkModules(modules, profile);
-    const act = this.em.create(Activity, {
+    const sq = this.em.create(Team, {
       club: a.clubId as string,
+      section: sec,
       name: dto.name,
       sportProfile: profile,
       modulesActive: modules,
-    });
-    await this.save({ message: 'An activity with this name already exists', code: 'ACTIVITY_EXISTS' });
-    return this.activityDto(act);
-  }
-
-  async editActivity(id: string, dto: EditActivityDto): Promise<ActivityDto> {
-    const act = await this.em.findOne(Activity, id, { populate: ['sportProfile'] });
-    if (!act) throw new NotFoundException({ message: 'Activity not found', code: 'ACTIVITY_NOT_FOUND' });
-    if (dto.modulesActive) {
-      this.checkModules(dto.modulesActive, act.sportProfile);
-      act.modulesActive = dto.modulesActive;
-    }
-    if (dto.name) act.name = dto.name;
-    await this.save({ message: 'An activity with this name already exists', code: 'ACTIVITY_EXISTS' });
-    return this.activityDto(act);
-  }
-
-  async createTeam(a: AuthContext, activityId: string, dto: CreateTeamDto): Promise<TeamDto> {
-    const act = await this.em.findOne(Activity, activityId);
-    if (!act) throw new NotFoundException({ message: 'Activity not found', code: 'ACTIVITY_NOT_FOUND' });
-    const sq = this.em.create(Team, {
-      club: a.clubId as string,
-      activity: act,
-      name: dto.name,
       category: dto.category ?? null,
       gender: dto.gender ?? null,
     });
-    await this.save({ message: 'A team with this name already exists in this activity', code: 'TEAM_EXISTS' });
+    await this.save({ message: 'A team with this name already exists in this section', code: 'TEAM_EXISTS' });
     return this.teamDto(sq);
   }
 
   async editTeam(id: string, dto: EditTeamDto): Promise<TeamDto> {
-    const sq = await this.em.findOne(Team, id);
+    const sq = await this.em.findOne(Team, id, { populate: ['sportProfile'] });
     if (!sq) throw new NotFoundException({ message: 'Team not found', code: 'TEAM_NOT_FOUND' });
+    if (dto.modulesActive) {
+      this.checkModules(dto.modulesActive, sq.sportProfile);
+      sq.modulesActive = dto.modulesActive;
+    }
+    if (dto.sectionId !== undefined) sq.section = dto.sectionId === null ? null : await this.section(dto.sectionId);
     if (dto.name) sq.name = dto.name;
     if (dto.category !== undefined) sq.category = dto.category;
     if (dto.gender !== undefined) sq.gender = dto.gender;
-    await this.save({ message: 'A team with this name already exists in this activity', code: 'TEAM_EXISTS' });
+    await this.save({ message: 'A team with this name already exists in this section', code: 'TEAM_EXISTS' });
     return this.teamDto(sq);
   }
 
@@ -217,6 +239,16 @@ export class StructureService {
     return this.seasonDto(st);
   }
 
+  private async section(id: string): Promise<Section> {
+    const sec = await this.em.findOne(Section, id);
+    if (!sec) throw new NotFoundException({ message: 'Section not found', code: 'SECTION_NOT_FOUND' });
+    return sec;
+  }
+
+  private sectionInUse() {
+    return new ConflictException({ message: 'Roles or invitations still point to this section', code: 'SECTION_IN_USE' });
+  }
+
   private async season(id: string): Promise<Season> {
     const st = await this.em.findOne(Season, id);
     if (!st) throw new NotFoundException({ message: 'Season not found', code: 'SEASON_NOT_FOUND' });
@@ -243,11 +275,19 @@ export class StructureService {
     }
   }
 
-  private activityDto(a: Activity): ActivityDto {
-    return { id: a.id, name: a.name, sportProfile: a.sportProfile.code, modulesActive: a.modulesActive };
+  private sectionDto(s: Section): SectionDto {
+    return { id: s.id, name: s.name };
   }
   private teamDto(s: Team): TeamDto {
-    return { id: s.id, activityId: s.activity.id, name: s.name, category: s.category, gender: s.gender };
+    return {
+      id: s.id,
+      sectionId: s.section?.id ?? null,
+      name: s.name,
+      sportProfile: s.sportProfile.code,
+      modulesActive: s.modulesActive,
+      category: s.category,
+      gender: s.gender,
+    };
   }
   private seasonDto(s: Season): SeasonDto {
     return toSeasonDto(s);

@@ -28,8 +28,8 @@ export type RolePolicy =
 
 export type PolicyScope =
   | { type: 'club' }
-  | { type: 'activity'; activityId: string }
-  | { type: 'team'; activityId: string; teamId: string };
+  | { type: 'section'; sectionId: string }
+  | { type: 'team'; teamId: string };
 
 /** A role exercised in a scope: a membership has one or more. */
 export interface Source {
@@ -37,9 +37,12 @@ export interface Source {
   scope: PolicyScope;
 }
 
-/** Where the action falls: null means the top level (club if both are null). */
+/**
+ * Where the action falls: null means the top level (club if both are null). A team may have no section: its
+ * sectionId is null and no section scope covers it.
+ */
 export interface Target {
-  activityId: string | null;
+  sectionId: string | null;
   teamId: string | null;
 }
 
@@ -69,8 +72,8 @@ export function covers(scope: PolicyScope, target: Target): boolean {
   switch (scope.type) {
     case 'club':
       return true;
-    case 'activity':
-      return target.activityId === scope.activityId;
+    case 'section':
+      return target.sectionId !== null && target.sectionId === scope.sectionId;
     case 'team':
       return target.teamId === scope.teamId;
   }

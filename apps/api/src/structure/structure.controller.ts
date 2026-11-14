@@ -1,11 +1,11 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
 import type { AuthContext } from '../common/auth-context';
 import { CurrentAuth, AdminOnly } from '../common/decorators';
 import {
-  CreateActivityDto,
+  CreateSectionDto,
   CreateTeamDto,
   CreateSeasonDto,
-  EditActivityDto,
+  EditSectionDto,
   EditTeamDto,
   EditSeasonDto,
 } from './dto';
@@ -27,19 +27,26 @@ export class StructureController {
     return this.structure.tree();
   }
 
-  @Post('activities')
-  createActivity(@CurrentAuth() a: AuthContext, @Body() dto: CreateActivityDto) {
-    return this.structure.createActivity(a, dto);
+  @Post('sections')
+  createSection(@CurrentAuth() a: AuthContext, @Body() dto: CreateSectionDto) {
+    return this.structure.createSection(a, dto);
   }
 
-  @Patch('activities/:id')
-  editActivity(@Param('id', ParseUUIDPipe) id: string, @Body() dto: EditActivityDto) {
-    return this.structure.editActivity(id, dto);
+  @Patch('sections/:id')
+  editSection(@Param('id', ParseUUIDPipe) id: string, @Body() dto: EditSectionDto) {
+    return this.structure.editSection(id, dto);
   }
 
-  @Post('activities/:id/teams')
-  createTeam(@CurrentAuth() a: AuthContext, @Param('id', ParseUUIDPipe) id: string, @Body() dto: CreateTeamDto) {
-    return this.structure.createTeam(a, id, dto);
+  /** The teams of the section stay, without a section. Refused while roles or invitations point to it. */
+  @Delete('sections/:id')
+  @HttpCode(204)
+  removeSection(@Param('id', ParseUUIDPipe) id: string) {
+    return this.structure.removeSection(id);
+  }
+
+  @Post('teams')
+  createTeam(@CurrentAuth() a: AuthContext, @Body() dto: CreateTeamDto) {
+    return this.structure.createTeam(a, dto);
   }
 
   @Patch('teams/:id')

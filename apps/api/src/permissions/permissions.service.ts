@@ -14,7 +14,7 @@ import { effective, defaultValue, validateDiff, type PolicyKey, type DiffPolicy,
 export interface PermissionDtoRole {
   role: RolePolicy;
   scope: ScopeType;
-  /** Activity or team the role is limited to. */
+  /** Section or team the role is limited to. */
   destination: string | null;
   /** Season of the enrollment, staff only. */
   season: string | null;
@@ -48,7 +48,7 @@ export class PermissionsService {
   /** Accounts with at least one management role: admin, manager or staff in a non-closed season. Excludes disabled people. */
   async list(): Promise<PermissionDto[]> {
     const [roles, enrollments, memberships, disabled] = await Promise.all([
-      this.em.find(AccessRole, {}, { populate: ['user', 'activity', 'team'] }),
+      this.em.find(AccessRole, {}, { populate: ['user', 'section', 'team'] }),
       this.em.find(
         Enrollment,
         {
@@ -72,7 +72,7 @@ export class PermissionsService {
     };
     for (const r of roles) {
       if (outside.has(r.user.id)) continue;
-      item(r.user).roles.push({ role: r.role, scope: r.scope, destination: r.team?.name ?? r.activity?.name ?? null, season: null });
+      item(r.user).roles.push({ role: r.role, scope: r.scope, destination: r.team?.name ?? r.section?.name ?? null, season: null });
     }
     for (const i of enrollments) {
       const u = i.person.user as User;

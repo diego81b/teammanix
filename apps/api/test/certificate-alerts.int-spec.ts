@@ -2,7 +2,7 @@ import { CertificateAlertsService } from '../src/certificates/certificate-alerts
 import { NotificationType } from '../src/entities/enums';
 import { Notification } from '../src/entities/notification.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
-import { Environment, startEnvironment } from './helpers';
+import { Environment, startEnvironment, createTeams } from './helpers';
 
 const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
 /** The moment the job runs, `offset` days from now. */
@@ -35,8 +35,8 @@ describe('certificate alerts job', () => {
     expect(c.status).toBe(201);
     const admin = c.body.accessToken as string;
     const adminUserId = s.user.id as string;
-    const act = await post(admin, '/activities', { name: 'Sport', sportProfile: 'football' });
-    const team = await post(admin, `/activities/${act.id}/teams`, { name: 'T1' });
+    const struct = await createTeams(t.req, admin, { sportProfile: 'football', section: 'Sport' });
+    const team = await struct.team('T1');
     const season = await post(admin, `/teams/${team.id}/seasons`, { name: 'Now', startDate: day(-60), endDate: day(400) });
     const member = async (name: string, type: 'player' | 'staff', opts: { account?: boolean; staffRole?: string } = {}) => {
       const email = `${name}-${tag}@test.it`;
@@ -57,13 +57,13 @@ describe('certificate alerts job', () => {
     expect((await t.req('POST', `/seasons/${season.id}/active`, { token: admin })).status).toBe(200);
     /** Adds a certificate that expires `expiry` days from now. */
     const certificate = (personId: string, expiry: number) => post(admin, `/people/${personId}/certificates`, { type: 'competitive', issueDate: day(Math.min(expiry, 0) - 300), expiryDate: day(expiry) });
-    return { admin, adminUserId, activityId: act.id as string, seasonId: season.id as string, clubId: c.body.activeClub.id as string, coach, trainer, anna, bea, carl, certificate };
+    return { admin, adminUserId, struct, sectionId: struct.sectionId, seasonId: season.id as string, clubId: c.body.activeClub.id as string, coach, trainer, anna, bea, carl, certificate };
   }
   type Scenario = Awaited<ReturnType<typeof club>>;
 
-  /** A second team in the same activity, with a season not yet active. */
+  /** A second team in the same section, with a season not yet active. */
   async function secondTeam(s: Scenario, name: string) {
-    const team = await post(s.admin, `/activities/${s.activityId}/teams`, { name });
+    const team = await s.struct.team(name);
     const season = await post(s.admin, `/teams/${team.id}/seasons`, { name: 'Now', startDate: day(-60), endDate: day(400) });
     const enroll = (personId: string, type: 'player' | 'staff') =>
       post(s.admin, `/seasons/${season.id}/enrollments`, { personId, type, ...(type === 'staff' ? { staffRole: 'coach' } : {}) });
@@ -263,10 +263,10 @@ describe('certificate alerts job', () => {
         }
       });
 
-      it('a manager granted the permission over the activity gets a digest for each team with people due', async () => {
+      it('a manager granted the permission over the section gets a digest for each team with people due', async () => {
         const { s, t2, dora } = await twoTeams('p6');
         const email = 'manager-p6@test.it';
-        await post(s.admin, '/invitations', { email, role: 'manager', scope: 'activity', activityId: s.activityId });
+        await post(s.admin, '/invitations', { email, role: 'manager', scope: 'section', sectionId: s.sectionId });
         const u = await t.newUser(email);
         expect((await t.req('POST', '/invitations/accept', { token: u.accessToken, body: { token: t.tokenInvitation(email) } })).status).toBe(200);
         expect((await t.req('PUT', `/permissions/${u.user.id}`, { token: s.admin, body: { diff: { 'certificates.status': true } } })).status).toBe(200);

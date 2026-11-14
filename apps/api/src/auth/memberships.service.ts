@@ -18,7 +18,7 @@ export interface Membership {
 const ctxRole = (r: AccessRole): CtxRole => ({
   role: r.role,
   scope: r.scope,
-  activityId: r.activity?.id ?? null,
+  sectionId: r.section?.id ?? null,
   teamId: r.team?.id ?? null,
 });
 

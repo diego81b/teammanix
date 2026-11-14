@@ -1,15 +1,33 @@
 import { Transform } from 'class-transformer';
-import { ArrayUnique, IsArray, IsEnum, IsOptional, IsString, Length, MaxLength } from 'class-validator';
+import { ArrayUnique, IsArray, IsEnum, IsOptional, IsString, IsUUID, Length, MaxLength } from 'class-validator';
 import { TeamGender } from '../entities/enums';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
-export class CreateActivityDto {
+export class CreateSectionDto {
+  @Transform(trim)
+  @Length(1, 100)
+  name!: string;
+}
+
+export class EditSectionDto {
+  @IsOptional()
+  @Transform(trim)
+  @Length(1, 100)
+  name?: string;
+}
+
+export class CreateTeamDto {
   @Transform(trim)
   @Length(1, 100)
   name!: string;
 
-  /** Stable code of the sport profile (for example 'calcio'). */
+  /** Optional grouping. A team can be created without any section. */
+  @IsOptional()
+  @IsUUID()
+  sectionId?: string;
+
+  /** Stable code of the sport profile (for example 'football'). Not editable afterwards. */
   @IsString()
   @MaxLength(40)
   sportProfile!: string;
@@ -20,25 +38,6 @@ export class CreateActivityDto {
   @ArrayUnique()
   @IsString({ each: true })
   modulesActive?: string[];
-}
-
-export class EditActivityDto {
-  @IsOptional()
-  @Transform(trim)
-  @Length(1, 100)
-  name?: string;
-
-  @IsOptional()
-  @IsArray()
-  @ArrayUnique()
-  @IsString({ each: true })
-  modulesActive?: string[];
-}
-
-export class CreateTeamDto {
-  @Transform(trim)
-  @Length(1, 100)
-  name!: string;
 
   @IsOptional()
   @Transform(trim)
@@ -55,6 +54,17 @@ export class EditTeamDto {
   @Transform(trim)
   @Length(1, 100)
   name?: string;
+
+  /** A section id moves the team into it, null takes it out of its section, absent leaves it as it is. */
+  @IsOptional()
+  @IsUUID()
+  sectionId?: string | null;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsString({ each: true })
+  modulesActive?: string[];
 
   @IsOptional()
   @Transform(trim)

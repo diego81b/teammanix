@@ -21,7 +21,7 @@ import {
 
 const ctx = { eventType: EventType.TRAINING, blockCertificate: true };
 const fit: Candidate = { status: EnrollmentStatus.AVAILABLE, certificate: 'valid' };
-const role = (r: Partial<CtxRole> & Pick<CtxRole, 'role' | 'scope'>): CtxRole => ({ activityId: null, teamId: null, ...r });
+const role = (r: Partial<CtxRole> & Pick<CtxRole, 'role' | 'scope'>): CtxRole => ({ sectionId: null, teamId: null, ...r });
 
 describe('reasons from the status and the certificate', () => {
   it('a fit player has no reason', () => {
@@ -121,7 +121,7 @@ describe('partition', () => {
 });
 
 describe('viewOf: who sees what of the call-up', () => {
-  const season = { id: 's1', activityId: 'a1', teamId: 't1' };
+  const season = { id: 's1', sectionId: 'a1', teamId: 't1' };
   const input = (over: Partial<Parameters<typeof viewOf>[0]> = {}) => ({
     roles: [] as CtxRole[],
     enrollments: [] as { type: 'player' | 'staff' }[],

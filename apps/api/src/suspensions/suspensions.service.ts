@@ -120,7 +120,7 @@ export class SuspensionsService {
   /** Everybody who reads the team's suspensions: the staff of the season, managers in scope and the admin. Not players. */
   async ofSeason(a: AuthContext, seasonId: string): Promise<SeasonSuspensionOut[]> {
     const target = await this.authz.target(a.clubId as string, { seasonId }); // 404 SEASON_NOT_FOUND
-    await this.assertReads(a, { id: seasonId, activityId: target.activityId as string, teamId: target.teamId as string });
+    await this.assertReads(a, { id: seasonId, sectionId: target.sectionId, teamId: target.teamId as string });
     const enrollments = await this.em.find(Enrollment, { season: seasonId }, { populate: ['person'] });
     const grouped = await loadSuspensions(this.em, enrollments.map((e) => e.id));
     const matches = await loadMatches(this.em, seasonId);
@@ -138,7 +138,7 @@ export class SuspensionsService {
    */
   async context(a: AuthContext, seasonId: string): Promise<SuspensionContext> {
     const target = await this.authz.target(a.clubId as string, { seasonId }); // 404 SEASON_NOT_FOUND
-    await this.assertReads(a, { id: seasonId, activityId: target.activityId as string, teamId: target.teamId as string });
+    await this.assertReads(a, { id: seasonId, sectionId: target.sectionId, teamId: target.teamId as string });
     const season = await this.em.findOneOrFail(Season, { id: seasonId }, { populate: ['team'] });
     const canManage = season.status !== SeasonStatus.CLOSED && (await this.authz.can(a, 'suspensions.manage', { seasonId }));
     const enrollments = await this.em.find(Enrollment, { season: seasonId, endedAt: null, person: { disabledAt: null } }, { populate: ['person'] });
@@ -154,7 +154,7 @@ export class SuspensionsService {
     const enrollment = await this.em.findOne(Enrollment, { id: enrollmentId }, { populate: ['person', 'season.team'] });
     if (!enrollment) throw enrollmentNotFound();
     if (a.personId !== enrollment.person.id) {
-      await this.assertReads(a, { id: enrollment.season.id, activityId: enrollment.season.team.activity.id, teamId: enrollment.season.team.id });
+      await this.assertReads(a, { id: enrollment.season.id, sectionId: enrollment.season.team.section?.id ?? null, teamId: enrollment.season.team.id });
     }
     const grouped = await loadSuspensions(this.em, [enrollment.id]);
     const matches = await loadMatches(this.em, enrollment.season.id);
@@ -231,7 +231,7 @@ export class SuspensionsService {
   }
 
   /** Staff of the season, managers in scope and the admin. Players and the staff of other teams are refused. */
-  private async assertReads(a: AuthContext, season: { id: string; activityId: string; teamId: string }): Promise<void> {
+  private async assertReads(a: AuthContext, season: { id: string; sectionId: string | null; teamId: string }): Promise<void> {
     const own = a.personId ? await this.em.find(Enrollment, { person: a.personId, season: season.id }, { fields: ['type'] }) : [];
     if (own.some((e) => e.type === EnrollmentType.STAFF) || canReadSeasonEvents(a.roles, [], season)) return;
     throw permissionDenied();

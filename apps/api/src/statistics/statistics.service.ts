@@ -74,7 +74,7 @@ export class StatisticsService {
     const view = statisticsView({
       isStaff: own.some((e) => e.type === EnrollmentType.STAFF && e.endedAt === null),
       isAdmin: a.isAdmin,
-      readsSeason: a.isAdmin || canReadSeasonEvents(a.roles, [], { id: season.id, activityId: season.team.activity.id, teamId: season.team.id }),
+      readsSeason: a.isAdmin || canReadSeasonEvents(a.roles, [], { id: season.id, sectionId: season.team.section?.id ?? null, teamId: season.team.id }),
       isPlayer: own.some((e) => e.type === EnrollmentType.PLAYER),
     });
     if (view === 'none') throw permissionDenied();
@@ -132,7 +132,7 @@ export class StatisticsService {
   }
 
   private async season(id: string): Promise<Season> {
-    const season = await this.em.findOne(Season, { id }, { populate: ['team.activity'] });
+    const season = await this.em.findOne(Season, { id }, { populate: ['team'] });
     if (!season) throw seasonNotFound();
     return season;
   }

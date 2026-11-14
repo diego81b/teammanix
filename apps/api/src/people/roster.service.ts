@@ -10,12 +10,13 @@ import { AuditAction, SeasonStatus, StaffRole, EnrollmentStatus, EnrollmentType 
 import { Enrollment } from '../entities/enrollment.entity';
 import { Person } from '../entities/person.entity';
 import { Season } from '../entities/season.entity';
+import { Team } from '../entities/team.entity';
 import { canReadRoster, canReadSeasonEvents } from '../events/visibility';
 import { editable } from '../structure/season.rules';
 import { consumeExpected, currentByPerson } from './expected-injury.loader';
 import type { ExpectedPeriod } from './expected-injury.rules';
-import type { EnrollmentDto, EditEnrollmentDto, EnrollmentStatusDto } from './dto-admin';
-import { type EnrollmentData, type EnrollmentError, allowedPosition, validateEnrollment } from './enrollment.rules';
+import type { EnrollmentDto, EditEnrollmentDto, EnrollmentStatusDto, StaffEnrollmentsDto } from './dto-admin';
+import { type EnrollmentData, type EnrollmentError, allowedPosition, seasonToEnroll, validateEnrollment } from './enrollment.rules';
 
 export interface RosterRow {
   id: string;
@@ -72,10 +73,10 @@ export const ERRORS: Record<EnrollmentError, { message: string; code: string }> 
   INVALID_POSITION: { message: 'The position is not provided by the sport profile', code: 'INVALID_POSITION' },
 };
 
-/** Positions allowed by the sport profile of the activity the season belongs to. */
+/** Positions allowed by the sport profile of the team the season belongs to. */
 export async function allowedPositions(em: EntityManager, seasonId: string): Promise<string[]> {
-  const st = await em.findOneOrFail(Season, seasonId, { populate: ['team.activity.sportProfile'] });
-  return st.team.activity.sportProfile.positions;
+  const st = await em.findOneOrFail(Season, seasonId, { populate: ['team.sportProfile'] });
+  return st.team.sportProfile.positions;
 }
 
 /** Enrollment as it is today, with season and end date. Also used by cloning and promotion. */
@@ -133,7 +134,7 @@ export class RosterService {
     const target = await this.authz.target(a.clubId as string, { seasonId }); // 404 SEASON_NOT_FOUND
     const season = await this.em.findOneOrFail(Season, { id: seasonId, club: a.clubId as string }, { filters: false, populate: ['team'] });
     const own = a.personId ? await this.em.find(Enrollment, { person: a.personId, season: seasonId }, { filters: false, fields: ['type'] }) : [];
-    const scope = { id: seasonId, activityId: target.activityId as string, teamId: target.teamId as string };
+    const scope = { id: seasonId, sectionId: target.sectionId, teamId: target.teamId as string };
     if (!canReadRoster(a.roles, own.map((e) => e.type), scope)) {
       if (!canReadSeasonEvents(a.roles, own.length ? [seasonId] : [], scope)) {
         throw new NotFoundException({ message: 'Season not found', code: 'SEASON_NOT_FOUND' });
@@ -187,6 +188,51 @@ export class RosterService {
       throw e;
     }
     return this.outComplete(i);
+  }
+
+  /**
+   * Enrolls one person as staff in the open season of each chosen team (the active one, else the draft), in the order of
+   * `teamIds`. All or nothing: a team without an open season or a person already staff in one of the seasons refuses
+   * the whole request, so nothing is left half done.
+   */
+  async enrollStaff(a: AuthContext, personId: string, dto: StaffEnrollmentsDto): Promise<EnrollmentOut[]> {
+    const person = await this.em.findOne(Person, personId);
+    if (!person) throw new NotFoundException({ message: 'Person not found', code: 'PERSON_NOT_FOUND' });
+    if (person.disabledAt) throw new ConflictException({ message: 'The person is disabled', code: 'PERSON_DISABLED' });
+    const teams = await this.em.count(Team, { id: { $in: dto.teamIds } });
+    if (teams !== dto.teamIds.length) throw new NotFoundException({ message: 'Team not found', code: 'TEAM_NOT_FOUND' });
+
+    const seasons = await this.em.find(Season, { team: { $in: dto.teamIds } });
+    const targets = dto.teamIds.map((teamId) => {
+      const id = seasonToEnroll(seasons.filter((s) => s.team.id === teamId));
+      if (!id) throw new ConflictException({ message: 'The team has no open season', code: 'NO_OPEN_SEASON' });
+      return seasons.find((s) => s.id === id) as Season;
+    });
+    const exists = await this.em.count(Enrollment, { person: person.id, type: EnrollmentType.STAFF, season: { $in: targets.map((s) => s.id) } });
+    if (exists > 0) throw new ConflictException({ message: 'The person is already enrolled', code: 'ENROLLMENT_EXISTS' });
+
+    const created = targets.map((season) =>
+      this.em.create(Enrollment, {
+        club: a.clubId as string,
+        season,
+        person,
+        type: EnrollmentType.STAFF,
+        staffRole: dto.staffRole,
+        position: null,
+        jerseyNumber: null,
+        status: EnrollmentStatus.AVAILABLE,
+      }),
+    );
+    try {
+      await this.em.flush();
+    } catch (e) {
+      // Two simultaneous requests: the unique constraint settles the race, nothing was written.
+      if (e instanceof UniqueConstraintViolationException) {
+        throw new ConflictException({ message: 'The person is already enrolled', code: 'ENROLLMENT_EXISTS' });
+      }
+      throw e;
+    }
+    return created.map((i) => this.outComplete(i));
   }
 
   async edit(a: AuthContext, id: string, dto: EditEnrollmentDto): Promise<EnrollmentOut> {

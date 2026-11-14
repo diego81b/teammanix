@@ -14,19 +14,23 @@ export function enrollmentCovers(endedAt: string | null, eventStart: Date): bool
 }
 
 /** The seasons a person reads through a role, without being enrolled. */
-export type SeasonScope = { all: true } | { all: false; activityIds: string[]; teamIds: string[] };
+export type SeasonScope = { all: true } | { all: false; sectionIds: string[]; teamIds: string[] };
 
 export function seasonScope(roles: readonly CtxRole[]): SeasonScope {
   if (roles.some((r) => r.scope === ScopeType.CLUB)) return { all: true };
-  const activityIds = new Set<string>();
+  const sectionIds = new Set<string>();
   const teamIds = new Set<string>();
   for (const r of roles) {
-    if (r.scope === ScopeType.ACTIVITY && r.activityId) activityIds.add(r.activityId);
+    if (r.scope === ScopeType.SECTION && r.sectionId) sectionIds.add(r.sectionId);
     if (r.scope === ScopeType.TEAM && r.teamId) teamIds.add(r.teamId);
   }
-  return { all: false, activityIds: [...activityIds], teamIds: [...teamIds] };
+  return { all: false, sectionIds: [...sectionIds], teamIds: [...teamIds] };
 }
 
-export function seasonVisible(scope: SeasonScope, season: { activityId: string; teamId: string }): boolean {
-  return scope.all || scope.activityIds.includes(season.activityId) || scope.teamIds.includes(season.teamId);
+export function seasonVisible(scope: SeasonScope, season: { sectionId: string | null; teamId: string }): boolean {
+  return (
+    scope.all ||
+    (season.sectionId !== null && scope.sectionIds.includes(season.sectionId)) ||
+    scope.teamIds.includes(season.teamId)
+  );
 }

@@ -1,6 +1,8 @@
 import { Entity, Property } from '@mikro-orm/core';
 import { BaseEntity } from './base.entity';
 
+export type UnitTerm = 'team' | 'group';
+
 /**
  * Sport configuration, populated by seed. Shared by all clubs: no tenant.
  * The data schema is the same for every sport, the profile only changes optional features.
@@ -24,7 +26,11 @@ export class SportProfile extends BaseEntity {
   @Property({ type: 'int', nullable: true })
   maxStarters: number | null = null;
 
-  /** Modules that can be enabled for activities with this profile. */
+  /** Modules that can be enabled for teams with this profile. */
   @Property({ type: 'json' })
   modulesAvailable: string[] = [];
+
+  /** Code of the word for the team unit: the frontend says "squadra" or "gruppo" from it. */
+  @Property({ length: 10, default: 'team' })
+  unitTerm: UnitTerm = 'team';
 }

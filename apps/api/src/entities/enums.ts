@@ -2,7 +2,7 @@
 
 export enum ScopeType {
   CLUB = 'club',
-  ACTIVITY = 'activity',
+  SECTION = 'section',
   TEAM = 'team',
 }
 
@@ -130,7 +130,7 @@ export enum ReasonDecline {
   NOT_AVAILABLE = 'not_available',
 }
 
-/** Active only if the activity's SportProfile has starterBench = true. Staff and managers only. */
+/** Active only if the team's SportProfile has starterBench = true. Staff and managers only. */
 export enum Placement {
   STARTER = 'starter',
   BENCH = 'bench',

@@ -1,6 +1,6 @@
 import { AuditLog } from '../src/entities/audit-log.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
-import { Environment, startEnvironment } from './helpers';
+import { Environment, startEnvironment, createTeams } from './helpers';
 
 /** ISO date `days` from today (UTC, like the service). */
 const between = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
@@ -21,8 +21,8 @@ describe('medical certificates (data)', () => {
     const s = await t.newUser(email);
     const c = await t.req('POST', '/club', { token: s.accessToken, body: { name: `Club ${email}`, acceptDpa: true } });
     const token = c.body.accessToken as string;
-    const act = (await t.req('POST', '/activities', { token, body: { name: 'Football', sportProfile: 'football' } })).body;
-    const sq = (await t.req('POST', `/activities/${act.id}/teams`, { token, body: { name: 'Under 15' } })).body;
+    const struct = await createTeams(t.req, token, { sportProfile: 'football' });
+    const sq = await struct.team('Under 15');
     const st = (await t.req('POST', `/teams/${sq.id}/seasons`, { token, body: { name: '2026/27', startDate: '2026-09-01', endDate: '2027-06-30' } })).body;
     return { token, seasonId: st.id as string };
   }

@@ -17,7 +17,7 @@ export class Club extends BaseEntity<'theme' | 'blockCertificateExpired' | 'cert
 
   /**
    * Expired or missing certificate.
-   * true = player not callable, false = callable with a warning. Applies to all activities.
+   * true = player not callable, false = callable with a warning. Applies to all sections.
    */
   @Property({ default: true })
   blockCertificateExpired: boolean = true;

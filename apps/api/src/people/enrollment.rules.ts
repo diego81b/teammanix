@@ -1,4 +1,4 @@
-import { StaffRole, EnrollmentType } from '../entities/enums';
+import { StaffRole, EnrollmentType, SeasonStatus } from '../entities/enums';
 import type { RolePolicy } from '../permissions/policy';
 
 export interface EnrollmentData {
@@ -27,7 +27,7 @@ export function validateEnrollment(d: EnrollmentData): EnrollmentError | null {
   return null;
 }
 
-/** Position is optional. If present, it must be a code of the activity's sport profile; a profile without positions rejects all of them. */
+/** Position is optional. If present, it must be a code of the team's sport profile; a profile without positions rejects all of them. */
 export function allowedPosition(position: string | null | undefined, allowed: readonly string[]): boolean {
   return position === null || position === undefined || allowed.includes(position);
 }
@@ -41,4 +41,9 @@ export function positionInherited(position: string | null, allowed: readonly str
 export function rolePolicyFrom(i: { type: EnrollmentType; staffRole: StaffRole | null }): RolePolicy {
   if (i.type === EnrollmentType.PLAYER) return 'player';
   return i.staffRole ?? 'other';
+}
+
+/** The season of a team to enroll into: the active one, else the draft. A team with only closed seasons, or none, has none. */
+export function seasonToEnroll(seasons: readonly { id: string; status: SeasonStatus }[]): string | null {
+  return (seasons.find((s) => s.status === SeasonStatus.ACTIVE) ?? seasons.find((s) => s.status === SeasonStatus.DRAFT))?.id ?? null;
 }

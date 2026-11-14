@@ -51,7 +51,7 @@ export class CreateEventDto {
   @Length(1, 2000)
   note?: string;
 
-  /** Opponent name: an existing one of the activity is reused, a new one is created. */
+  /** Opponent name: an existing one of the team is reused, a new one is created. */
   @IsOptional()
   @Transform(trim)
   @Length(1, 150)

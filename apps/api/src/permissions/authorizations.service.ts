@@ -2,20 +2,20 @@ import { EntityManager } from '@mikro-orm/postgresql';
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type { AuthContext } from '../common/auth-context';
 import { Membership } from '../entities/membership.entity';
-import { Activity } from '../entities/activity.entity';
+import { Section } from '../entities/section.entity';
 import { SeasonStatus, EnrollmentType } from '../entities/enums';
 import { Enrollment } from '../entities/enrollment.entity';
 import { Event } from '../entities/event.entity';
 import { EventSeries } from '../entities/event-series.entity';
 import { Team } from '../entities/team.entity';
 import { Season } from '../entities/season.entity';
-import { targetFromActivity, targetFromClub, targetFromTeam, sourcesFrom } from './sources';
+import { targetFromSection, targetFromClub, targetFromTeam, sourcesFrom } from './sources';
 import { can, sees as seesTarget, type Target, type PolicyKey } from './policy';
 
-/** Where the action falls, as the route states it: the club, an activity, a team, a season or an enrollment. */
+/** Where the action falls, as the route states it: the club, a section, a team, a season or an enrollment. */
 export type Goal =
   | { club: true }
-  | { activityId: string }
+  | { sectionId: string }
   | { teamId: string }
   | { seasonId: string }
   | { enrollmentId: string }
@@ -61,38 +61,38 @@ export class AuthorizationsService {
     return seesTarget(sourcesFrom(a.roles, staff), target);
   }
 
-  /** Activity and team the target belongs to, only inside the club. */
+  /** Section (if any) and team the target belongs to, only inside the club. */
   async target(clubId: string, on: Goal): Promise<Target> {
     const options = { filters: false } as const;
     if ('club' in on) return targetFromClub();
-    if ('activityId' in on) {
-      const act = await this.em.findOne(Activity, { id: on.activityId, club: clubId }, options);
-      if (!act) throw new NotFoundException({ message: 'Activity not found', code: 'ACTIVITY_NOT_FOUND' });
-      return targetFromActivity(act.id);
+    if ('sectionId' in on) {
+      const sec = await this.em.findOne(Section, { id: on.sectionId, club: clubId }, options);
+      if (!sec) throw new NotFoundException({ message: 'Section not found', code: 'SECTION_NOT_FOUND' });
+      return targetFromSection(sec.id);
     }
     if ('teamId' in on) {
-      const sq = await this.em.findOne(Team, { id: on.teamId, club: clubId }, { ...options, populate: ['activity'] });
+      const sq = await this.em.findOne(Team, { id: on.teamId, club: clubId }, options);
       if (!sq) throw new NotFoundException({ message: 'Team not found', code: 'TEAM_NOT_FOUND' });
-      return targetFromTeam(sq.activity.id, sq.id);
+      return targetFromTeam(sq.section?.id ?? null, sq.id);
     }
     if ('seasonId' in on) {
-      const st = await this.em.findOne(Season, { id: on.seasonId, club: clubId }, { ...options, populate: ['team.activity'] });
+      const st = await this.em.findOne(Season, { id: on.seasonId, club: clubId }, { ...options, populate: ['team'] });
       if (!st) throw new NotFoundException({ message: 'Season not found', code: 'SEASON_NOT_FOUND' });
-      return targetFromTeam(st.team.activity.id, st.team.id);
+      return targetFromTeam(st.team.section?.id ?? null, st.team.id);
     }
     if ('eventId' in on) {
-      const ev = await this.em.findOne(Event, { id: on.eventId, club: clubId }, { ...options, populate: ['season.team.activity'] });
+      const ev = await this.em.findOne(Event, { id: on.eventId, club: clubId }, { ...options, populate: ['season.team'] });
       if (!ev) throw new NotFoundException({ message: 'Event not found', code: 'EVENT_NOT_FOUND' });
-      return targetFromTeam(ev.season.team.activity.id, ev.season.team.id);
+      return targetFromTeam(ev.season.team.section?.id ?? null, ev.season.team.id);
     }
     if ('seriesId' in on) {
-      const sr = await this.em.findOne(EventSeries, { id: on.seriesId, club: clubId }, { ...options, populate: ['season.team.activity'] });
+      const sr = await this.em.findOne(EventSeries, { id: on.seriesId, club: clubId }, { ...options, populate: ['season.team'] });
       if (!sr) throw new NotFoundException({ message: 'Series not found', code: 'SERIES_NOT_FOUND' });
-      return targetFromTeam(sr.season.team.activity.id, sr.season.team.id);
+      return targetFromTeam(sr.season.team.section?.id ?? null, sr.season.team.id);
     }
-    const i = await this.em.findOne(Enrollment, { id: on.enrollmentId, club: clubId }, { ...options, populate: ['season.team.activity'] });
+    const i = await this.em.findOne(Enrollment, { id: on.enrollmentId, club: clubId }, { ...options, populate: ['season.team'] });
     if (!i) throw new NotFoundException({ message: 'Enrollment not found', code: 'ENROLLMENT_NOT_FOUND' });
-    return targetFromTeam(i.season.team.activity.id, i.season.team.id);
+    return targetFromTeam(i.season.team.section?.id ?? null, i.season.team.id);
   }
 
   /** Open staff enrollments in non-closed seasons of the person linked to the account. The player has none. */
@@ -107,8 +107,8 @@ export class AuthorizationsService {
         endedAt: null,
         season: { status: { $ne: SeasonStatus.CLOSED } },
       },
-      { filters: false, populate: ['season.team.activity'] },
+      { filters: false, populate: ['season.team'] },
     );
-    return rows.map((i) => ({ staffRole: i.staffRole, activityId: i.season.team.activity.id, teamId: i.season.team.id }));
+    return rows.map((i) => ({ staffRole: i.staffRole, teamId: i.season.team.id }));
   }
 }

@@ -1,5 +1,5 @@
-import { StaffRole, EnrollmentType } from '../entities/enums';
-import { allowedPosition, positionInherited, rolePolicyFrom, validateEnrollment } from './enrollment.rules';
+import { StaffRole, EnrollmentType, SeasonStatus } from '../entities/enums';
+import { allowedPosition, positionInherited, rolePolicyFrom, seasonToEnroll, validateEnrollment } from './enrollment.rules';
 
 const G = EnrollmentType.PLAYER;
 const S = EnrollmentType.STAFF;
@@ -65,5 +65,22 @@ describe('rolePolicyFrom', () => {
   });
   it('staff without a role: inconsistent data, role without permissions', () => {
     expect(rolePolicyFrom({ type: S, staffRole: null })).toBe('other');
+  });
+});
+
+describe('seasonToEnroll', () => {
+  const season = (id: string, status: SeasonStatus) => ({ id, status });
+
+  it('the active season wins over a draft of the same team', () => {
+    expect(seasonToEnroll([season('d', SeasonStatus.DRAFT), season('a', SeasonStatus.ACTIVE)])).toBe('a');
+  });
+
+  it('without an active season the draft is used', () => {
+    expect(seasonToEnroll([season('c', SeasonStatus.CLOSED), season('d', SeasonStatus.DRAFT)])).toBe('d');
+  });
+
+  it('a team with only closed seasons, or none, has nothing to enroll into', () => {
+    expect(seasonToEnroll([season('c', SeasonStatus.CLOSED)])).toBeNull();
+    expect(seasonToEnroll([])).toBeNull();
   });
 });

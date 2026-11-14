@@ -1,7 +1,7 @@
 import { Check, Entity, Enum, ManyToOne, type Rel } from '@mikro-orm/core';
 import { TenantEntity } from './tenant.entity';
 import { User } from './user.entity';
-import { Activity } from './activity.entity';
+import { Section } from './section.entity';
 import { Team } from './team.entity';
 import { AccessRoleType, ScopeType } from './enums';
 import { CHECK_ADMIN_CLUB, CHECK_SCOPE } from './scope';
@@ -24,8 +24,8 @@ export class AccessRole extends TenantEntity {
   @Enum({ items: () => ScopeType, length: 20 })
   scope!: ScopeType;
 
-  @ManyToOne(() => Activity, { nullable: true, deleteRule: 'cascade' })
-  activity: Rel<Activity> | null = null;
+  @ManyToOne(() => Section, { nullable: true, deleteRule: 'no action' })
+  section: Rel<Section> | null = null;
 
   @ManyToOne(() => Team, { nullable: true, deleteRule: 'cascade' })
   team: Rel<Team> | null = null;

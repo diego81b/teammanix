@@ -1,7 +1,7 @@
 import { NotificationType } from '../src/entities/enums';
 import { Notification } from '../src/entities/notification.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
-import { Environment, startEnvironment } from './helpers';
+import { Environment, startEnvironment, createTeams } from './helpers';
 
 const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
 const slot = (offset: number) => ({ start: `${day(offset)}T16:00:00Z`, end: `${day(offset)}T17:30:00Z` });
@@ -33,8 +33,8 @@ describe('who gets notified by call-ups and event changes', () => {
     const c = await t.req('POST', '/club', { token: s.accessToken, body: { name: `Club ${tag}`, acceptDpa: true } });
     expect(c.status).toBe(201);
     const admin = c.body.accessToken as string;
-    const act = await post(admin, '/activities', { name: 'Sport', sportProfile: 'football' });
-    const team = await post(admin, `/activities/${act.id}/teams`, { name: 'T1' });
+    const struct = await createTeams(t.req, admin, { sportProfile: 'football' });
+    const team = await struct.team('T1');
     const season = await post(admin, `/teams/${team.id}/seasons`, { name: 'Now', startDate: day(-60), endDate: day(400) });
     const member = async (name: string, type: 'player' | 'staff', account = true) => {
       const email = `${name}-${tag}@test.it`;

@@ -26,7 +26,7 @@ export class CreateInvitationDto {
 
   @IsOptional()
   @IsUUID()
-  activityId?: string;
+  sectionId?: string;
 
   @IsOptional()
   @IsUUID()

@@ -308,13 +308,13 @@
           "comment": null,
           "enumItems": [
             "club",
-            "activity",
+            "section",
             "team"
           ],
           "mappedType": "enum"
         },
-        "activity_id": {
-          "name": "activity_id",
+        "section_id": {
+          "name": "section_id",
           "type": "uuid",
           "unsigned": false,
           "autoincrement": false,
@@ -390,24 +390,11 @@
         {
           "name": "access_scope_consistent_roles",
           "columnName": "scope",
-          "definition": "CHECK ((((scope = 'club'::text) AND (activity_id IS NULL) AND (team_id IS NULL)) OR ((scope = 'activity'::text) AND (activity_id IS NOT NULL) AND (team_id IS NULL)) OR ((scope = 'team'::text) AND (team_id IS NOT NULL))))",
-          "expression": "((scope = 'club'::text) AND (activity_id IS NULL) AND (team_id IS NULL)) OR ((scope = 'activity'::text) AND (activity_id IS NOT NULL) AND (team_id IS NULL)) OR ((scope = 'team'::text) AND (team_id IS NOT NULL))"
+          "definition": "CHECK ((((scope = 'club'::text) AND (section_id IS NULL) AND (team_id IS NULL)) OR ((scope = 'section'::text) AND (section_id IS NOT NULL) AND (team_id IS NULL)) OR ((scope = 'team'::text) AND (team_id IS NOT NULL))))",
+          "expression": "((scope = 'club'::text) AND (section_id IS NULL) AND (team_id IS NULL)) OR ((scope = 'section'::text) AND (section_id IS NOT NULL) AND (team_id IS NULL)) OR ((scope = 'team'::text) AND (team_id IS NOT NULL))"
         }
       ],
       "foreignKeys": {
-        "access_roles_activity_id_foreign": {
-          "columnNames": [
-            "activity_id"
-          ],
-          "constraintName": "access_roles_activity_id_foreign",
-          "localTableName": "public.access_roles",
-          "referencedTableName": "public.activities",
-          "referencedColumnNames": [
-            "id"
-          ],
-          "updateRule": "cascade",
-          "deleteRule": "cascade"
-        },
         "access_roles_club_id_foreign": {
           "columnNames": [
             "club_id"
@@ -420,6 +407,19 @@
           ],
           "updateRule": "cascade",
           "deleteRule": "cascade"
+        },
+        "access_roles_section_id_foreign": {
+          "columnNames": [
+            "section_id"
+          ],
+          "constraintName": "access_roles_section_id_foreign",
+          "localTableName": "public.access_roles",
+          "referencedTableName": "public.sections",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "no action"
         },
         "access_roles_team_id_foreign": {
           "columnNames": [
@@ -446,188 +446,6 @@
           ],
           "updateRule": "cascade",
           "deleteRule": "cascade"
-        }
-      },
-      "nativeEnums": {},
-      "comment": null
-    },
-    {
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": true,
-          "nullable": false,
-          "unique": false,
-          "length": null,
-          "precision": null,
-          "scale": null,
-          "default": "gen_random_uuid()",
-          "comment": null,
-          "enumItems": [],
-          "mappedType": "uuid"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamptz(6)",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "unique": false,
-          "length": 6,
-          "precision": null,
-          "scale": null,
-          "default": null,
-          "comment": null,
-          "enumItems": [],
-          "mappedType": "datetime"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamptz(6)",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "unique": false,
-          "length": 6,
-          "precision": null,
-          "scale": null,
-          "default": null,
-          "comment": null,
-          "enumItems": [],
-          "mappedType": "datetime"
-        },
-        "club_id": {
-          "name": "club_id",
-          "type": "uuid",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "unique": true,
-          "length": null,
-          "precision": null,
-          "scale": null,
-          "default": null,
-          "comment": null,
-          "enumItems": [],
-          "mappedType": "uuid"
-        },
-        "name": {
-          "name": "name",
-          "type": "varchar(100)",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "unique": false,
-          "length": 100,
-          "precision": null,
-          "scale": null,
-          "default": null,
-          "comment": null,
-          "enumItems": [],
-          "mappedType": "string"
-        },
-        "sport_profile_id": {
-          "name": "sport_profile_id",
-          "type": "uuid",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "unique": false,
-          "length": null,
-          "precision": null,
-          "scale": null,
-          "default": null,
-          "comment": null,
-          "enumItems": [],
-          "mappedType": "uuid"
-        },
-        "modules_active": {
-          "name": "modules_active",
-          "type": "jsonb",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "unique": false,
-          "length": null,
-          "precision": null,
-          "scale": null,
-          "default": null,
-          "comment": null,
-          "enumItems": [],
-          "mappedType": "json"
-        }
-      },
-      "name": "activities",
-      "schema": "public",
-      "indexes": [
-        {
-          "columnNames": [
-            "club_id"
-          ],
-          "composite": false,
-          "constraint": false,
-          "keyName": "activities_club_id_index",
-          "unique": false,
-          "primary": false
-        },
-        {
-          "columnNames": [
-            "club_id",
-            "name"
-          ],
-          "composite": true,
-          "constraint": true,
-          "keyName": "activities_club_id_name_unique",
-          "unique": true,
-          "primary": false
-        },
-        {
-          "columnNames": [
-            "id"
-          ],
-          "composite": false,
-          "constraint": false,
-          "keyName": "activities_pkey",
-          "unique": true,
-          "primary": true
-        }
-      ],
-      "checks": [],
-      "foreignKeys": {
-        "activities_club_id_foreign": {
-          "columnNames": [
-            "club_id"
-          ],
-          "constraintName": "activities_club_id_foreign",
-          "localTableName": "public.activities",
-          "referencedTableName": "public.clubs",
-          "referencedColumnNames": [
-            "id"
-          ],
-          "updateRule": "cascade",
-          "deleteRule": "cascade"
-        },
-        "activities_sport_profile_id_foreign": {
-          "columnNames": [
-            "sport_profile_id"
-          ],
-          "constraintName": "activities_sport_profile_id_foreign",
-          "localTableName": "public.activities",
-          "referencedTableName": "public.sport_profiles",
-          "referencedColumnNames": [
-            "id"
-          ],
-          "updateRule": "cascade",
-          "deleteRule": "no action"
         }
       },
       "nativeEnums": {},
@@ -1016,7 +834,12 @@
             "suspension_cancelled",
             "attendance_recorded",
             "attendance_modified",
-            "attendance_cleared"
+            "attendance_cleared",
+            "statistics_read",
+            "expected_injury_created",
+            "expected_injury_modified",
+            "expected_injury_ended",
+            "expected_injury_read"
           ],
           "mappedType": "enum"
         },
@@ -3417,7 +3240,7 @@
         },
         {
           "name": "events_fields_only_match",
-          "columnName": "opponent_id",
+          "columnName": "type",
           "definition": "CHECK (((type = 'match'::text) OR ((opponent_id IS NULL) AND (home_away IS NULL) AND (own_score IS NULL) AND (opponent_score IS NULL))))",
           "expression": "(type = 'match'::text) OR ((opponent_id IS NULL) AND (home_away IS NULL) AND (own_score IS NULL) AND (opponent_score IS NULL))"
         }
@@ -3487,6 +3310,194 @@
           ],
           "updateRule": "cascade",
           "deleteRule": "set null"
+        }
+      },
+      "nativeEnums": {},
+      "comment": null
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "gen_random_uuid()",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "enrollment_id": {
+          "name": "enrollment_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": true,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 0,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "date"
+        },
+        "return_date": {
+          "name": "return_date",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 0,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "date"
+        }
+      },
+      "name": "expected_injuries",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "club_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "expected_injuries_club_id_index",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "enrollment_id"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "expected_injuries_enrollment_id_unique",
+          "unique": true,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "expected_injuries_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [
+        {
+          "name": "expected_injuries_dates",
+          "columnName": "start_date",
+          "definition": "CHECK ((return_date > start_date))",
+          "expression": "return_date > start_date"
+        }
+      ],
+      "foreignKeys": {
+        "expected_injuries_club_id_foreign": {
+          "columnNames": [
+            "club_id"
+          ],
+          "constraintName": "expected_injuries_club_id_foreign",
+          "localTableName": "public.expected_injuries",
+          "referencedTableName": "public.clubs",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
+        },
+        "expected_injuries_enrollment_id_foreign": {
+          "columnNames": [
+            "enrollment_id"
+          ],
+          "constraintName": "expected_injuries_enrollment_id_foreign",
+          "localTableName": "public.expected_injuries",
+          "referencedTableName": "public.enrollments",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
         }
       },
       "nativeEnums": {},
@@ -3836,13 +3847,13 @@
           "comment": null,
           "enumItems": [
             "club",
-            "activity",
+            "section",
             "team"
           ],
           "mappedType": "enum"
         },
-        "activity_id": {
-          "name": "activity_id",
+        "section_id": {
+          "name": "section_id",
           "type": "uuid",
           "unsigned": false,
           "autoincrement": false,
@@ -4043,15 +4054,15 @@
       "checks": [
         {
           "name": "invitations_admin_only_club",
-          "columnName": "scope",
+          "columnName": "role",
           "definition": "CHECK (((role <> 'admin'::text) OR (scope = 'club'::text)))",
           "expression": "(role <> 'admin'::text) OR (scope = 'club'::text)"
         },
         {
           "name": "invitations_scope_consistent",
-          "columnName": "activity_id",
-          "definition": "CHECK ((((scope = 'club'::text) AND (activity_id IS NULL) AND (team_id IS NULL)) OR ((scope = 'activity'::text) AND (activity_id IS NOT NULL) AND (team_id IS NULL)) OR ((scope = 'team'::text) AND (team_id IS NOT NULL))))",
-          "expression": "((scope = 'club'::text) AND (activity_id IS NULL) AND (team_id IS NULL)) OR ((scope = 'activity'::text) AND (activity_id IS NOT NULL) AND (team_id IS NULL)) OR ((scope = 'team'::text) AND (team_id IS NOT NULL))"
+          "columnName": "team_id",
+          "definition": "CHECK ((((scope = 'club'::text) AND (section_id IS NULL) AND (team_id IS NULL)) OR ((scope = 'section'::text) AND (section_id IS NOT NULL) AND (team_id IS NULL)) OR ((scope = 'team'::text) AND (team_id IS NOT NULL))))",
+          "expression": "((scope = 'club'::text) AND (section_id IS NULL) AND (team_id IS NULL)) OR ((scope = 'section'::text) AND (section_id IS NOT NULL) AND (team_id IS NULL)) OR ((scope = 'team'::text) AND (team_id IS NOT NULL))"
         }
       ],
       "foreignKeys": {
@@ -4067,19 +4078,6 @@
           ],
           "updateRule": "cascade",
           "deleteRule": "set null"
-        },
-        "invitations_activity_id_foreign": {
-          "columnNames": [
-            "activity_id"
-          ],
-          "constraintName": "invitations_activity_id_foreign",
-          "localTableName": "public.invitations",
-          "referencedTableName": "public.activities",
-          "referencedColumnNames": [
-            "id"
-          ],
-          "updateRule": "cascade",
-          "deleteRule": "cascade"
         },
         "invitations_club_id_foreign": {
           "columnNames": [
@@ -4119,6 +4117,19 @@
           ],
           "updateRule": "cascade",
           "deleteRule": "set null"
+        },
+        "invitations_section_id_foreign": {
+          "columnNames": [
+            "section_id"
+          ],
+          "constraintName": "invitations_section_id_foreign",
+          "localTableName": "public.invitations",
+          "referencedTableName": "public.sections",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
         },
         "invitations_team_id_foreign": {
           "columnNames": [
@@ -5123,8 +5134,8 @@
           "enumItems": [],
           "mappedType": "uuid"
         },
-        "activity_id": {
-          "name": "activity_id",
+        "team_id": {
+          "name": "team_id",
           "type": "uuid",
           "unsigned": false,
           "autoincrement": false,
@@ -5161,17 +5172,6 @@
       "indexes": [
         {
           "columnNames": [
-            "activity_id",
-            "name"
-          ],
-          "composite": true,
-          "constraint": true,
-          "keyName": "opponents_activity_id_name_unique",
-          "unique": true,
-          "primary": false
-        },
-        {
-          "columnNames": [
             "club_id"
           ],
           "composite": false,
@@ -5189,23 +5189,21 @@
           "keyName": "opponents_pkey",
           "unique": true,
           "primary": true
+        },
+        {
+          "columnNames": [
+            "team_id",
+            "name"
+          ],
+          "composite": true,
+          "constraint": true,
+          "keyName": "opponents_team_id_name_unique",
+          "unique": true,
+          "primary": false
         }
       ],
       "checks": [],
       "foreignKeys": {
-        "opponents_activity_id_foreign": {
-          "columnNames": [
-            "activity_id"
-          ],
-          "constraintName": "opponents_activity_id_foreign",
-          "localTableName": "public.opponents",
-          "referencedTableName": "public.activities",
-          "referencedColumnNames": [
-            "id"
-          ],
-          "updateRule": "cascade",
-          "deleteRule": "cascade"
-        },
         "opponents_club_id_foreign": {
           "columnNames": [
             "club_id"
@@ -5213,6 +5211,19 @@
           "constraintName": "opponents_club_id_foreign",
           "localTableName": "public.opponents",
           "referencedTableName": "public.clubs",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
+        },
+        "opponents_team_id_foreign": {
+          "columnNames": [
+            "team_id"
+          ],
+          "constraintName": "opponents_team_id_foreign",
+          "localTableName": "public.opponents",
+          "referencedTableName": "public.teams",
           "referencedColumnNames": [
             "id"
           ],
@@ -5432,6 +5443,22 @@
           "comment": null,
           "enumItems": [],
           "mappedType": "uuid"
+        },
+        "anonymized_at": {
+          "name": "anonymized_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
         }
       },
       "name": "people",
@@ -5493,16 +5520,16 @@
       ],
       "checks": [
         {
-          "name": "people_check",
-          "columnName": "phone",
-          "definition": "CHECK (((email IS NOT NULL) OR (phone IS NOT NULL)))",
-          "expression": "(email IS NOT NULL) OR (phone IS NOT NULL)"
-        },
-        {
           "name": "people_complete_consistent",
           "columnName": "birth_date",
           "definition": "CHECK (((completed_at IS NULL) OR ((surname IS NOT NULL) AND (birth_date IS NOT NULL))))",
           "expression": "(completed_at IS NULL) OR ((surname IS NOT NULL) AND (birth_date IS NOT NULL))"
+        },
+        {
+          "name": "people_contact",
+          "columnName": "email",
+          "definition": "CHECK (((email IS NOT NULL) OR (phone IS NOT NULL) OR (anonymized_at IS NOT NULL)))",
+          "expression": "(email IS NOT NULL) OR (phone IS NOT NULL) OR (anonymized_at IS NOT NULL)"
         }
       ],
       "foreignKeys": {
@@ -6049,6 +6076,143 @@
           "enumItems": [],
           "mappedType": "datetime"
         },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": true,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 100,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        }
+      },
+      "name": "sections",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "club_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "sections_club_id_index",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "club_id",
+            "name"
+          ],
+          "composite": true,
+          "constraint": true,
+          "keyName": "sections_club_id_name_unique",
+          "unique": true,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "sections_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {
+        "sections_club_id_foreign": {
+          "columnNames": [
+            "club_id"
+          ],
+          "constraintName": "sections_club_id_foreign",
+          "localTableName": "public.sections",
+          "referencedTableName": "public.clubs",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
+        }
+      },
+      "nativeEnums": {},
+      "comment": null
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "gen_random_uuid()",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
         "code": {
           "name": "code",
           "type": "varchar(40)",
@@ -6128,6 +6292,22 @@
           "comment": null,
           "enumItems": [],
           "mappedType": "json"
+        },
+        "unit_term": {
+          "name": "unit_term",
+          "type": "varchar(10)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 10,
+          "precision": null,
+          "scale": null,
+          "default": "'team'",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
         }
       },
       "name": "sport_profiles",
@@ -6378,7 +6558,7 @@
       "checks": [
         {
           "name": "suspensions_shape",
-          "columnName": "start_date",
+          "columnName": "end_date",
           "definition": "CHECK ((((form = 'matches'::text) AND (match_count >= 1) AND (end_date IS NULL)) OR ((form = 'period'::text) AND (match_count IS NULL) AND (end_date IS NOT NULL) AND (end_date >= start_date) AND (cardinality(competitions) = 0))))",
           "expression": "((form = 'matches'::text) AND (match_count >= 1) AND (end_date IS NULL)) OR ((form = 'period'::text) AND (match_count IS NULL) AND (end_date IS NOT NULL) AND (end_date >= start_date) AND (cardinality(competitions) = 0))"
         }
@@ -6484,22 +6664,6 @@
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "unique": false,
-          "length": null,
-          "precision": null,
-          "scale": null,
-          "default": null,
-          "comment": null,
-          "enumItems": [],
-          "mappedType": "uuid"
-        },
-        "activity_id": {
-          "name": "activity_id",
-          "type": "uuid",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
           "unique": true,
           "length": null,
           "precision": null,
@@ -6576,32 +6740,59 @@
           "comment": null,
           "enumItems": [],
           "mappedType": "text"
+        },
+        "sport_profile_id": {
+          "name": "sport_profile_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "modules_active": {
+          "name": "modules_active",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "json"
+        },
+        "section_id": {
+          "name": "section_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
         }
       },
       "name": "teams",
       "schema": "public",
       "indexes": [
-        {
-          "columnNames": [
-            "activity_id"
-          ],
-          "composite": false,
-          "constraint": false,
-          "keyName": "teams_activity_id_index",
-          "unique": false,
-          "primary": false
-        },
-        {
-          "columnNames": [
-            "activity_id",
-            "name"
-          ],
-          "composite": true,
-          "constraint": true,
-          "keyName": "teams_activity_id_name_unique",
-          "unique": true,
-          "primary": false
-        },
         {
           "columnNames": [
             "club_id"
@@ -6614,6 +6805,18 @@
         },
         {
           "columnNames": [
+            "club_id",
+            "section_id",
+            "name"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "teams_club_section_name_uq",
+          "unique": true,
+          "primary": false
+        },
+        {
+          "columnNames": [
             "id"
           ],
           "composite": false,
@@ -6621,23 +6824,20 @@
           "keyName": "teams_pkey",
           "unique": true,
           "primary": true
+        },
+        {
+          "columnNames": [
+            "section_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "teams_section_id_index",
+          "unique": false,
+          "primary": false
         }
       ],
       "checks": [],
       "foreignKeys": {
-        "teams_activity_id_foreign": {
-          "columnNames": [
-            "activity_id"
-          ],
-          "constraintName": "teams_activity_id_foreign",
-          "localTableName": "public.teams",
-          "referencedTableName": "public.activities",
-          "referencedColumnNames": [
-            "id"
-          ],
-          "updateRule": "cascade",
-          "deleteRule": "cascade"
-        },
         "teams_club_id_foreign": {
           "columnNames": [
             "club_id"
@@ -6650,6 +6850,32 @@
           ],
           "updateRule": "cascade",
           "deleteRule": "cascade"
+        },
+        "teams_section_id_foreign": {
+          "columnNames": [
+            "section_id"
+          ],
+          "constraintName": "teams_section_id_foreign",
+          "localTableName": "public.teams",
+          "referencedTableName": "public.sections",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "set null"
+        },
+        "teams_sport_profile_id_foreign": {
+          "columnNames": [
+            "sport_profile_id"
+          ],
+          "constraintName": "teams_sport_profile_id_foreign",
+          "localTableName": "public.teams",
+          "referencedTableName": "public.sport_profiles",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "no action"
         }
       },
       "nativeEnums": {},

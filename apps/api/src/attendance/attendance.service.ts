@@ -57,7 +57,7 @@ export class AttendanceService {
     const target = await this.authz.target(a.clubId as string, { eventId }); // 404 EVENT_NOT_FOUND
     const event = await loadEvent(this.em, eventId);
     const own = a.personId ? await this.em.find(Enrollment, { person: a.personId, season: event.season.id }, { filters: false, fields: ['type'] }) : [];
-    const season = { id: event.season.id, activityId: target.activityId as string, teamId: target.teamId as string };
+    const season = { id: event.season.id, sectionId: target.sectionId, teamId: target.teamId as string };
     const view = viewOf({
       canRecord: await this.authz.can(a, 'attendances.record', { eventId }),
       isStaff: own.some((e) => e.type === EnrollmentType.STAFF),

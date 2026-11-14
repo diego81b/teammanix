@@ -26,6 +26,7 @@ describe('database: migrations and seed', () => {
     await seedSportProfiles(orm.em.fork());
     const before = await orm.em.fork().findOneOrFail(SportProfile, { code: 'football' });
     await orm.em.fork().nativeUpdate(SportProfile, { code: 'football' }, { positions: [], maxStarters: 99 });
+    await orm.em.fork().nativeUpdate(SportProfile, { code: 'fencing' }, { unitTerm: 'team' });
     await seedSportProfiles(orm.em.fork());
 
     const em = orm.em.fork();
@@ -34,5 +35,7 @@ describe('database: migrations and seed', () => {
     expect(after).toMatchObject({ id: before.id, positions: ['goalkeeper', 'defender', 'midfielder', 'forward'], maxStarters: 11, starterBench: true });
     expect(after.createdAt.getTime()).toBe(before.createdAt.getTime());
     expect((await em.findOneOrFail(SportProfile, { code: 'fencing' })).starterBench).toBe(false);
+    expect((await em.findOneOrFail(SportProfile, { code: 'fencing' })).unitTerm).toBe('group');
+    expect(after.unitTerm).toBe('team');
   });
 });
