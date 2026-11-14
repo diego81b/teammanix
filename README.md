@@ -1,6 +1,6 @@
 # TeamManix
 
-Multi-tenant PWA for sports clubs. A club registers itself, creates its structure (activities, teams, seasons), registers people and invites staff, managers and players with scoped access roles. Coaches plan trainings and matches, call players up and track attendance.
+Multi-tenant PWA for sports clubs. A club registers itself, creates its structure (optional sections, teams, seasons), registers people and invites staff, managers and players with scoped access roles. Coaches plan trainings and matches, call players up and track attendance.
 
 > Status: early development. Club, structure, people, roster, invitations, roles, permissions and medical certificates are implemented. Events, call-ups, attendance and notifications come next (see [Roadmap](#roadmap)).
 
@@ -8,9 +8,9 @@ Multi-tenant PWA for sports clubs. A club registers itself, creates its structur
 ## Features
 
 - **Self-service clubs.** Whoever creates a club becomes its admin. Registration with email verification, password reset and login. The UI is available in Italian, English and French.
-- **Structure.** Club, activities (a sport each), teams and seasons. One active season and one draft per team. A season can be closed, cloned into a draft with a chosen roster, or promoted to another team.
+- **Structure.** Club, optional sections that group teams, teams (a sport profile each) and seasons. One active season and one draft per team. A season can be closed, cloned into a draft with a chosen roster, or promoted to another team.
 - **People and roster.** A person (player or staff) is a registry record, separate from a user account. It is linked to an account when an invitation is accepted.
-- **Access roles with scope.** Roles apply to the whole club, one activity or one team. Fine-grained permissions can be adjusted per person. The last admin of a club can never be removed.
+- **Access roles with scope.** Roles apply to the whole club, one section or one team. Fine-grained permissions can be adjusted per person. The last admin of a club can never be removed.
 - **Invitations by email.** Invite, resend, revoke, accept. Links expire.
 - **Medical certificates.** Health data (GDPR art. 9): type, issue and expiry by default, optional encrypted file upload per club. Every read is audited.
 - **Strict tenant isolation.** Every club-owned entity carries a tenant filter that fails closed.

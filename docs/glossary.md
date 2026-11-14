@@ -5,8 +5,9 @@ Code is in English. Italian stays only in user-facing texts (i18n locales, email
 | Italiano | English (code) | Note |
 |---|---|---|
 | società | club | table `clubs`, route `/club` |
-| attività | activity | route `/activities` |
-| squadra | team | |
+| settore | section | optional grouping of teams, route `/sections` |
+| squadra | team | carries the sport profile; for some disciplines the word is "gruppo" (`group`), see unit term |
+| squadra o gruppo | unit term | `unitTerm` of the sport profile, `team` or `group` (fencing); the frontend picks the word |
 | stagione | season | status `draft`, `active`, `closed` |
 | persona | person | table `people`; registry record, distinct from `User` |
 | utente | user | account |
@@ -14,7 +15,7 @@ Code is in English. Italian stays only in user-facing texts (i18n locales, email
 | rosa | roster | |
 | tesserato | registered member | |
 | appartenenza | membership | user in a club |
-| ruolo di accesso | access role | scope `club`, `activity`, `team` |
+| ruolo di accesso | access role | scope `club`, `section`, `team` |
 | ambito | scope | |
 | permessi | permissions | policy keys like `callups.manage` |
 | invito | invitation | |
@@ -49,7 +50,7 @@ Code is in English. Italian stays only in user-facing texts (i18n locales, email
 ## Rules
 
 - A new error code is an uppercase English literal (`code: 'INVALID_DATA'`), translated in the three locales under `errors.codes.<CODE>`.
-- Routes are English and plural for collections (`/activities`, `/seasons`, `/people`).
+- Routes are English and plural for collections (`/sections`, `/seasons`, `/people`).
 - DB tables are plural snake_case, columns snake_case.
 - Web URLs are English (`/people`, `/seasons`, `/verify-email`).
 - Comments, test titles, commit messages, issues and PRs are English.
