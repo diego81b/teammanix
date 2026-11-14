@@ -15,7 +15,7 @@
 
     <USeparator :label="$t('welcome.or')" />
 
-    <section class="space-y-3" aria-labelledby="t-invito">
+    <section class="space-y-3" aria-labelledby="t-invitation">
       <h2 id="t-invitation" class="text-base font-semibold">{{ $t('welcome.hasInvitation') }}</h2>
       <p class="text-sm text-muted">
         {{ $t('welcome.hasInvitationText') }}

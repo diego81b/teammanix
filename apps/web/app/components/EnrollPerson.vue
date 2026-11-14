@@ -23,26 +23,29 @@
         </div>
 
         <template v-if="!fresh">
-          <UFormField name="person" :label="$t('person.search')">
+          <!-- The search box has no field name: leaving it must not validate the choice, or the error would shift the list under the pointer and swallow the click on a result. -->
+          <UFormField :label="$t('person.search')">
             <UInput v-model="search" type="search" size="xl" class="w-full" icon="i-tm-search" :placeholder="$t('person.searchPlaceholder')" />
           </UFormField>
-          <p v-if="loading" class="text-sm text-muted" role="status">{{ $t('common.loading') }}</p>
-          <p v-else-if="found.length === 0" class="text-sm text-muted">{{ $t('common.noResult') }}</p>
-          <ul v-else class="max-h-56 divide-y divide-default overflow-y-auto rounded-md border border-default">
-            <li v-for="p in found" :key="p.id">
-              <button
-                type="button"
-                class="flex min-h-11 w-full items-center gap-2 px-3 py-2 text-left hover:bg-muted"
-                :class="status.personId === p.id ? 'bg-primary/10 font-semibold' : ''"
-                :aria-pressed="status.personId === p.id"
-                @click="status.personId = p.id"
-              >
-                <UIcon :name="status.personId === p.id ? 'i-tm-check-circle' : 'i-tm-user'" class="size-5 shrink-0" aria-hidden="true" />
-                <span class="min-w-0 flex-1 truncate">{{ [p.name, p.surname].filter(Boolean).join(' ') }}</span>
-                <span v-if="p.email" class="hidden truncate text-sm text-muted sm:block">{{ p.email }}</span>
-              </button>
-            </li>
-          </ul>
+          <UFormField name="person">
+            <p v-if="loading" class="text-sm text-muted" role="status">{{ $t('common.loading') }}</p>
+            <p v-else-if="found.length === 0" class="text-sm text-muted">{{ $t('common.noResult') }}</p>
+            <ul v-else class="max-h-56 divide-y divide-default overflow-y-auto rounded-md border border-default">
+              <li v-for="p in found" :key="p.id">
+                <button
+                  type="button"
+                  class="flex min-h-11 w-full items-center gap-2 px-3 py-2 text-left hover:bg-muted"
+                  :class="status.personId === p.id ? 'bg-primary/10 font-semibold' : ''"
+                  :aria-pressed="status.personId === p.id"
+                  @click="status.personId = p.id"
+                >
+                  <UIcon :name="status.personId === p.id ? 'i-tm-check-circle' : 'i-tm-user'" class="size-5 shrink-0" aria-hidden="true" />
+                  <span class="min-w-0 flex-1 truncate">{{ [p.name, p.surname].filter(Boolean).join(' ') }}</span>
+                  <span v-if="p.email" class="hidden truncate text-sm text-muted sm:block">{{ p.email }}</span>
+                </button>
+              </li>
+            </ul>
+          </UFormField>
         </template>
         <PersonFields v-else v-model="fields" />
 

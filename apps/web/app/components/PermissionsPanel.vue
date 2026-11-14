@@ -1,5 +1,5 @@
 <template>
-  <section class="space-y-4" aria-labelledby="titolo-permessi">
+  <section class="space-y-4" aria-labelledby="title-permissions">
     <div>
       <h2 id="title-permissions" class="text-lg font-semibold">{{ $t('permissions.title') }}</h2>
       <p class="text-sm text-muted">{{ $t('permissions.text') }}</p>

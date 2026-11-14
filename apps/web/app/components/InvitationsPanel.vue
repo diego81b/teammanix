@@ -1,5 +1,5 @@
 <template>
-  <section class="space-y-4" aria-labelledby="titolo-inviti">
+  <section class="space-y-4" aria-labelledby="title-invitations">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h2 id="title-invitations" class="text-lg font-semibold">{{ $t('invitation.listTitle') }}</h2>
       <UButton icon="i-tm-user-plus" size="lg" class="min-h-11" :label="$t('invitation.new')" @click="fresh = true" />

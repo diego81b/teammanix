@@ -44,7 +44,7 @@
 
         <UAlert v-if="errorAction" color="error" variant="subtle" icon="i-tm-error" :title="errorAction" />
 
-        <section v-if="step === 0" class="space-y-4" aria-labelledby="titolo-passo">
+        <section v-if="step === 0" class="space-y-4" aria-labelledby="title-step">
           <div>
             <h2 id="title-step" class="text-lg font-semibold">{{ $t('season.stepPeople') }}</h2>
             <p class="text-sm text-muted">{{ $t('season.stepPeopleText') }}</p>
@@ -74,7 +74,7 @@
           </template>
         </section>
 
-        <section v-else-if="step === 1" class="space-y-4" aria-labelledby="titolo-passo">
+        <section v-else-if="step === 1" class="space-y-4" aria-labelledby="title-step">
           <div>
             <h2 id="title-step" class="text-lg font-semibold">{{ $t('season.stepData') }}</h2>
             <p class="text-sm text-muted">{{ $t('season.stepDataText') }}</p>
@@ -97,7 +97,7 @@
           </UForm>
         </section>
 
-        <section v-else class="space-y-4" aria-labelledby="titolo-passo">
+        <section v-else class="space-y-4" aria-labelledby="title-step">
           <div>
             <h2 id="title-step" class="text-lg font-semibold">{{ $t('season.stepSummary') }}</h2>
             <p class="text-sm text-muted">{{ $t('season.stepSummaryText') }}</p>

@@ -1,5 +1,5 @@
 <template>
-  <section class="space-y-4" aria-labelledby="titolo-ruoli">
+  <section class="space-y-4" aria-labelledby="title-roles">
     <div>
       <h2 id="title-roles" class="text-lg font-semibold">{{ $t('roles.title') }}</h2>
       <p class="text-sm text-muted">{{ $t('roles.text') }}</p>

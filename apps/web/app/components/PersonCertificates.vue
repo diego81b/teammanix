@@ -1,5 +1,5 @@
 <template>
-  <section class="space-y-4" aria-labelledby="titolo-certificati">
+  <section class="space-y-4" aria-labelledby="title-certificates">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h2 id="title-certificates" class="text-lg font-semibold">{{ $t('certificate.title') }}</h2>

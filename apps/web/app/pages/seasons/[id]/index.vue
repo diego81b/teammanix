@@ -87,7 +87,7 @@
         <UAlert v-if="errorAction" color="error" variant="subtle" icon="i-tm-error" :title="errorAction" />
       </div>
 
-      <section class="space-y-4" aria-labelledby="titolo-rosa">
+      <section class="space-y-4" aria-labelledby="title-roster">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 id="title-roster" class="text-lg font-semibold">{{ $t('season.roster') }}</h2>

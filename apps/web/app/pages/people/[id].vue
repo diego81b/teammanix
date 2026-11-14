@@ -37,7 +37,7 @@
         <UAlert v-if="errorAction" color="error" variant="subtle" icon="i-tm-error" :title="errorAction" />
       </div>
 
-      <section class="space-y-3" aria-labelledby="titolo-anagrafica">
+      <section class="space-y-3" aria-labelledby="title-registry">
         <h2 id="title-registry" class="text-lg font-semibold">{{ $t('person.registry') }}</h2>
         <dl class="grid gap-3 rounded-lg border border-default bg-elevated p-4 text-sm sm:grid-cols-2">
           <div>
@@ -55,7 +55,7 @@
         </dl>
       </section>
 
-      <section class="space-y-3" aria-labelledby="titolo-iscrizioni">
+      <section class="space-y-3" aria-labelledby="title-enrollments">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <h2 id="title-enrollments" class="text-lg font-semibold">{{ $t('person.enrollments') }}</h2>
           <UButton
