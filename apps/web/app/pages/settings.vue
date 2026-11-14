@@ -26,32 +26,16 @@
             @update:model-value="(v: boolean) => change(s.key, { [s.key]: v })"
           />
         </li>
-        <li v-if="data.warnNoCoachAvailable" class="p-4">
-          <fieldset class="space-y-3" :aria-describedby="saveErrorRoles ? 'coach-roles-error' : undefined">
-            <legend class="font-medium">{{ $t('settings.coachRoles.label') }}</legend>
-            <p class="text-sm text-muted">{{ $t('settings.coachRoles.text') }}</p>
-            <div class="flex flex-wrap gap-x-6 gap-y-2">
-              <UCheckbox
-                v-for="r in COACH_ROLE_CHOICES"
-                :key="r"
-                :model-value="data.coachRoles.includes(r)"
-                :disabled="saving !== null"
-                :label="$t(`staffRole.${r}`)"
-                class="min-h-11"
-                @update:model-value="() => toggleRole(r)"
-              />
-            </div>
-            <p v-if="saveErrorRoles" id="coach-roles-error" class="text-sm text-error" role="alert">{{ $t('settings.coachRoles.atLeastOne') }}</p>
-          </fieldset>
-        </li>
       </ul>
     </template>
+
+    <StaffRolesPanel />
   </div>
 </template>
 
 <script setup lang="ts">
-import type { ClubSettings, StaffRole } from '~/types/api'
-import { BOOLEAN_SETTINGS, COACH_ROLE_CHOICES, toggleCoachRole } from '~/utils/club-settings'
+import type { ClubSettings } from '~/types/api'
+import { BOOLEAN_SETTINGS } from '~/utils/club-settings'
 
 const { t } = useI18n()
 useHead({ title: () => `${t('settings.title')} · TeamManix` })
@@ -61,13 +45,11 @@ const toast = useToast()
 const { data, loading, error, reload: load } = useLoad(() => club.read())
 const saving = ref<string | null>(null)
 const saveError = ref<string | null>(null)
-const saveErrorRoles = ref(false)
 
 /** One PATCH per change; on failure the control returns to the stored value (the state only changes with the response). */
 async function change(key: string, patch: Partial<ClubSettings>) {
   saving.value = key
   saveError.value = null
-  saveErrorRoles.value = false
   try {
     data.value = await club.edit(patch)
     toast.add({ title: t('settings.saved'), color: 'success' })
@@ -78,17 +60,6 @@ async function change(key: string, patch: Partial<ClubSettings>) {
   finally {
     saving.value = null
   }
-}
-
-function toggleRole(role: StaffRole) {
-  if (!data.value) return
-  const next = toggleCoachRole(data.value.coachRoles, role)
-  if (!next) {
-    saveError.value = null
-    saveErrorRoles.value = true
-    return
-  }
-  void change('coachRoles', { coachRoles: next })
 }
 
 onMounted(load)

@@ -51,8 +51,8 @@
           <UFormField name="type" :label="$t('season.type')" required>
             <USelect v-model="status.type" :items="types" size="xl" class="w-full" />
           </UFormField>
-          <UFormField v-if="status.type === 'staff'" name="staffRole" :label="$t('season.staffRole')" required>
-            <USelect v-model="status.staffRole" :items="staffRoles" size="xl" class="w-full" />
+          <UFormField v-if="status.type === 'staff'" name="staffRoleId" :label="$t('season.staffRole')" required>
+            <USelect v-model="status.staffRoleId" :items="staffRoles" size="xl" class="w-full" />
           </UFormField>
           <template v-else>
             <UFormField v-if="positions.length" name="position" :label="$t('season.position')" :hint="$t('common.optional')">
@@ -74,20 +74,22 @@
 
 <script setup lang="ts">
 import type { FormError } from '@nuxt/ui'
-import type { PersonDto, StaffRole, EnrollmentType } from '~/types/api'
+import type { PersonDto, EnrollmentType } from '~/types/api'
 import { personData, validatePerson, type PersonFields } from '~/utils/person'
 import { positionOptions } from '~/utils/sport'
+import { startingRole } from '~/utils/staff-role'
 
 const props = defineProps<{ seasonId: string, positions: string[] }>()
 const emit = defineEmits<{ enrolled: [] }>()
 const open = defineModel<boolean>('open', { default: false })
 const { t } = useI18n()
 const people = usePeople()
+const catalog = useStaffRoleChoices()
 
 /** The select does not allow an empty value: "no position" is its own value, never sent to the API. */
 const NO = 'no'
 const empty = (): PersonFields => ({ name: '', surname: '', birthDate: '', email: '', phone: '' })
-const status = reactive({ personId: '', type: 'player' as EnrollmentType, staffRole: 'coach' as StaffRole, position: NO, jerseyNumber: '' })
+const status = reactive({ personId: '', type: 'player' as EnrollmentType, staffRoleId: '', position: NO, jerseyNumber: '' })
 const fields = ref<PersonFields>(empty())
 const fresh = ref(false)
 const search = ref('')
@@ -100,7 +102,7 @@ let createdId: string | null = null
 
 const types = computed(() => (['player', 'staff'] as EnrollmentType[]).map(x => ({ label: t(`enrollmentType.${x}`), value: x })))
 const positionsOptions = computed(() => [{ label: t('common.none'), value: NO }, ...positionOptions(props.positions, t)])
-const staffRoles = computed(() => (['coach', 'assistant_coach', 'trainer', 'escort', 'other'] as StaffRole[]).map(r => ({ label: t(`staffRole.${r}`), value: r })))
+const staffRoles = computed(() => catalog.choices())
 
 async function runSearch() {
   loading.value = true
@@ -125,7 +127,10 @@ onBeforeUnmount(() => clearTimeout(timer))
 watch(open, (v) => {
   error.value = ''
   if (!v) return
-  Object.assign(status, { personId: '', type: 'player', staffRole: 'coach', position: NO, jerseyNumber: '' })
+  Object.assign(status, { personId: '', type: 'player', staffRoleId: '', position: NO, jerseyNumber: '' })
+  void catalog.load().then(() => {
+    status.staffRoleId = startingRole(catalog.roles.value, null)
+  })
   fields.value = empty()
   fresh.value = false
   search.value = ''
@@ -139,6 +144,7 @@ function validate(s: typeof status): FormError[] {
     for (const e of validatePerson(fields.value)) err.push({ name: e.field, message: t(e.key, { min: 1, max: 100 }) })
   }
   else if (!s.personId) err.push({ name: 'person', message: t('season.choosePerson') })
+  if (s.type === 'staff' && !s.staffRoleId) err.push({ name: 'staffRoleId', message: t('staffRoles.required') })
   const m = s.jerseyNumber === '' ? null : Number(s.jerseyNumber)
   if (s.type === 'player' && m !== null && (!Number.isInteger(m) || m < 0 || m > 999)) err.push({ name: 'jerseyNumber', message: t('season.jerseyNotValid') })
   return err
@@ -157,7 +163,7 @@ async function send() {
       personId,
       type: status.type,
       ...(status.type === 'staff'
-        ? { staffRole: status.staffRole }
+        ? { staffRoleId: status.staffRoleId }
         : {
             ...(status.position !== NO ? { position: status.position } : {}),
             ...(status.jerseyNumber !== '' ? { jerseyNumber: Number(status.jerseyNumber) } : {}),

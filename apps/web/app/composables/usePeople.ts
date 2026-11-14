@@ -1,5 +1,5 @@
 import type {
-  EnrollmentOut, ExpectedPeriod, PersonDetail, PersonDto, RosterRow, StaffRole, EnrollmentStatus, EnrollmentType, TeamRoster,
+  EnrollmentOut, ExpectedPeriod, PersonDetail, PersonDto, RosterRow, EnrollmentStatus, EnrollmentType, TeamRoster,
 } from '../types/api'
 
 export interface PersonData {
@@ -13,7 +13,7 @@ export interface PersonData {
 export interface EnrollmentData {
   personId: string
   type: EnrollmentType
-  staffRole?: StaffRole
+  staffRoleId?: string
   position?: string
   jerseyNumber?: number
 }
@@ -36,9 +36,9 @@ export function usePeople() {
     enroll: (seasonId: string, data: EnrollmentData) =>
       api<EnrollmentOut>(`/seasons/${seasonId}/enrollments`, { method: 'POST', body: { ...data } }),
     /** One person as staff in several teams, all or nothing: the API uses each team's active season, else its draft. */
-    enrollStaffInTeams: (personId: string, teamIds: string[], staffRole: StaffRole) =>
-      api<EnrollmentOut[]>(`/people/${personId}/staff-enrollments`, { method: 'POST', body: { teamIds, staffRole } }),
-    editEnrollment: (id: string, data: { staffRole?: StaffRole, position?: string, jerseyNumber?: number, status?: EnrollmentStatus }) =>
+    enrollStaffInTeams: (personId: string, teamIds: string[], staffRoleId: string) =>
+      api<EnrollmentOut[]>(`/people/${personId}/staff-enrollments`, { method: 'POST', body: { teamIds, staffRoleId } }),
+    editEnrollment: (id: string, data: { staffRoleId?: string, position?: string, jerseyNumber?: number, status?: EnrollmentStatus }) =>
       api<EnrollmentOut>(`/enrollments/${id}`, { method: 'PATCH', body: { ...data } }),
     /** Status only, for staff with `people.manage` in the team. The API shares it across the person's teams. */
     setStatus: (id: string, status: EnrollmentStatus) =>
@@ -48,7 +48,7 @@ export function usePeople() {
       api<ExpectedPeriod & { enrollmentId: string }>(`/enrollments/${id}/expected-injury`, { method: 'PUT', body: { ...period } }),
     endExpectedInjury: (id: string) => api<void>(`/enrollments/${id}/expected-injury`, { method: 'DELETE' }),
     closeEnrollment: (id: string) => api<EnrollmentOut>(`/enrollments/${id}/close`, { method: 'POST', body: {} }),
-    promote: (id: string, data: { seasonId: string, closeSource?: boolean, staffRole?: StaffRole, position?: string, jerseyNumber?: number }) =>
+    promote: (id: string, data: { seasonId: string, closeSource?: boolean, staffRoleId?: string, position?: string, jerseyNumber?: number }) =>
       api<EnrollmentOut>(`/enrollments/${id}/promote`, { method: 'POST', body: { ...data } }),
   }
 }

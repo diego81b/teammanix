@@ -74,7 +74,7 @@ useHead({ title: () => `${t('teamAbsences.title')} · TeamManix` })
 const season = computed(() => data.value?.seasons.find(s => s.seasonId === seasonId.value) ?? null)
 const groups = computed(() => splitTeamAbsences(data.value?.rows ?? [], todayDay()))
 
-const role = (r: SeasonAbsences) => (r.type === 'staff' ? t(`staffRole.${r.staffRole ?? 'other'}`) : t('enrollmentType.player'))
+const role = (r: SeasonAbsences) => (r.type === 'staff' ? (r.staffRole?.name ?? '') : t('enrollmentType.player'))
 const period = (a: { startDate: string, endDate: string | null }) => a.endDate
   ? t('absences.period', { from: formatDate(a.startDate, locale.value), to: formatDate(a.endDate, locale.value) })
   : t('absences.periodOpen', { from: formatDate(a.startDate, locale.value) })

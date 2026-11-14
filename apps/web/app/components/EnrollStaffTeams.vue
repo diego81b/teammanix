@@ -3,8 +3,8 @@
     <template #body>
       <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error" class="mb-4" />
       <UForm id="form-staff-teams" :state="status" :validate="validate" :validate-on="['change']" class="space-y-5" @submit="send">
-        <UFormField name="staffRole" :label="$t('season.staffRole')" required>
-          <USelect v-model="status.staffRole" :items="staffRoles" size="xl" class="w-full" />
+        <UFormField name="staffRoleId" :label="$t('season.staffRole')" required>
+          <USelect v-model="status.staffRoleId" :items="staffRoles" size="xl" class="w-full" />
         </UFormField>
         <UFormField v-if="tree.sections.length" name="sectionId" :label="$t('structure.section')">
           <USelect v-model="status.sectionId" :items="sectionItems" size="xl" class="w-full" />
@@ -24,7 +24,8 @@
 
 <script setup lang="ts">
 import type { FormError } from '@nuxt/ui'
-import type { EnrollmentPersonDto, StaffRole, StructureTree, UnitTerm } from '~/types/api'
+import type { EnrollmentPersonDto, StructureTree, UnitTerm } from '~/types/api'
+import { startingRole } from '~/utils/staff-role'
 import { filterChoices, NONE, staffTeamChoices } from '~/utils/structure'
 
 const props = defineProps<{ personId: string, enrollments: EnrollmentPersonDto[], tree: StructureTree, term: UnitTerm }>()
@@ -32,13 +33,14 @@ const emit = defineEmits<{ enrolled: [] }>()
 const open = defineModel<boolean>('open', { default: false })
 const { t } = useI18n()
 const people = usePeople()
+const catalog = useStaffRoleChoices()
 const toast = useToast()
 
-const status = reactive({ staffRole: 'coach' as StaffRole, sectionId: NONE, teamIds: [] as string[] })
+const status = reactive({ staffRoleId: '', sectionId: NONE, teamIds: [] as string[] })
 const submit = ref(false)
 const error = ref('')
 
-const staffRoles = computed(() => (['coach', 'assistant_coach', 'trainer', 'escort', 'other'] as StaffRole[]).map(r => ({ label: t(`staffRole.${r}`), value: r })))
+const staffRoles = computed(() => catalog.choices())
 const sectionItems = computed(() => [{ label: t('structure.allSections'), value: NONE }, ...props.tree.sections.map(s => ({ label: s.name, value: s.id }))])
 const visible = computed(() => filterChoices(staffTeamChoices(props.tree, props.enrollments), status.sectionId))
 const items = computed(() => visible.value.map(c => ({
@@ -50,7 +52,11 @@ const items = computed(() => visible.value.map(c => ({
 
 watch(open, (v) => {
   error.value = ''
-  if (v) Object.assign(status, { staffRole: 'coach', sectionId: NONE, teamIds: [] })
+  if (!v) return
+  Object.assign(status, { staffRoleId: '', sectionId: NONE, teamIds: [] })
+  void catalog.load().then(() => {
+    status.staffRoleId = startingRole(catalog.roles.value, null)
+  })
 })
 // A team that the filter hides is not part of the choice any more.
 watch(() => status.sectionId, () => {
@@ -58,14 +64,16 @@ watch(() => status.sectionId, () => {
   status.teamIds = status.teamIds.filter(id => shown.has(id))
 })
 
-const validate = (s: typeof status): FormError[] =>
-  s.teamIds.length ? [] : [{ name: 'teamIds', message: t(`structure.unit.${props.term}.staffTeamsRequired`) }]
+const validate = (s: typeof status): FormError[] => [
+  ...(s.staffRoleId ? [] : [{ name: 'staffRoleId', message: t('staffRoles.required') }]),
+  ...(s.teamIds.length ? [] : [{ name: 'teamIds', message: t(`structure.unit.${props.term}.staffTeamsRequired`) }]),
+]
 
 async function send() {
   submit.value = true
   error.value = ''
   try {
-    const created = await people.enrollStaffInTeams(props.personId, status.teamIds, status.staffRole)
+    const created = await people.enrollStaffInTeams(props.personId, status.teamIds, status.staffRoleId)
     toast.add({ title: t('structure.staffTeamsEnrolled', { count: created.length }), color: 'success' })
     open.value = false
     emit('enrolled')

@@ -76,7 +76,23 @@ export interface RecordDto {
 
 export type SeasonStatus = 'draft' | 'active' | 'closed'
 export type EnrollmentType = 'player' | 'staff'
-export type StaffRole = 'coach' | 'assistant_coach' | 'trainer' | 'escort' | 'other'
+/** Permission model of a staff role of the club (rule 14). */
+export type StaffPolicyModel = 'coach' | 'assistant_coach' | 'trainer' | 'none'
+/** A role of the club's catalog, as the screens that show an enrollment get it. */
+export interface StaffRoleRef {
+  id: string
+  name: string
+}
+
+/** An entry of the club's catalog of staff roles (`GET /staff-roles`). */
+export interface StaffRoleItem {
+  id: string
+  name: string
+  policyModel: StaffPolicyModel
+  mustBeAvailable: boolean
+  archived: boolean
+}
+
 export type EnrollmentStatus = 'available' | 'injured'
 export type CertificateStatus = 'missing' | 'valid' | 'expiring' | 'expired'
 export type CertificateType = 'competitive' | 'not_competitive'
@@ -140,7 +156,7 @@ export interface RosterRow {
   name: string
   surname: string | null
   type: EnrollmentType
-  staffRole: StaffRole | null
+  staffRole: StaffRoleRef | null
   position: string | null
   jerseyNumber: number | null
   status: EnrollmentStatus
@@ -168,7 +184,7 @@ export interface EnrollmentOut {
   id: string
   personId: string
   type: EnrollmentType
-  staffRole: StaffRole | null
+  staffRole: StaffRoleRef | null
   position: string | null
   jerseyNumber: number | null
   status: EnrollmentStatus
@@ -196,7 +212,7 @@ export interface EnrollmentPersonDto {
   /** Null for a team outside any section. */
   section: string | null
   type: EnrollmentType
-  staffRole: StaffRole | null
+  staffRole: StaffRoleRef | null
   position: string | null
   jerseyNumber: number | null
   status: EnrollmentStatus
@@ -227,7 +243,6 @@ export interface ClubSettings {
   certificatesWithFile: boolean
   blockCertificateExpired: boolean
   warnNoCoachAvailable: boolean
-  coachRoles: StaffRole[]
 }
 
 export interface InvitationDto {
@@ -266,11 +281,13 @@ export type PolicyKey =
   | 'certificates.status'
   | 'certificates.file'
 
-export type RolePolicy = AccessRole | StaffRole | 'player'
+export type RolePolicy = AccessRole | StaffPolicyModel | 'player'
 export type DiffPolicy = Partial<Record<PolicyKey, boolean>>
 
 export interface PermissionDtoRole {
   role: RolePolicy
+  /** Name of the club's staff role, staff enrollments only. */
+  staffRoleName: string | null
   scope: ScopeType
   destination: string | null
   season: string | null
@@ -428,7 +445,7 @@ export interface StaffAnswerRow {
   enrollmentId: string
   name: string
   surname: string | null
-  staffRole: StaffRole | null
+  staffRole: StaffRoleRef | null
   response: CallupResponse | null
   mine: boolean
   /** Only on the viewer's own row: the declared absence that covers the event (`until` null: no end). */
@@ -441,7 +458,7 @@ export interface AvailableStaff {
   enrollmentId: string
   name: string
   surname: string | null
-  staffRole: StaffRole | null
+  staffRole: StaffRoleRef | null
 }
 
 export interface AnswerResult {
@@ -525,7 +542,7 @@ export interface SeasonAbsences {
   name: string
   surname: string | null
   type: EnrollmentType
-  staffRole: StaffRole | null
+  staffRole: StaffRoleRef | null
   absences: { startDate: string, endDate: string | null }[]
 }
 
@@ -602,7 +619,7 @@ export interface AttendanceSummary {
 export interface AttendanceRow {
   enrollmentId: string
   type: EnrollmentType
-  staffRole: StaffRole | null
+  staffRole: StaffRoleRef | null
   jerseyNumber: number | null
   name: string | null
   surname: string | null
@@ -617,7 +634,7 @@ export type AttendanceDto =
     view: 'player'
     event: EventDto
     mine: { enrollmentId: string, outcome: AttendanceOutcome | null } | null
-    staffPresent: { enrollmentId: string, name: string | null, surname: string | null, staffRole: StaffRole | null }[]
+    staffPresent: { enrollmentId: string, name: string | null, surname: string | null, staffRole: StaffRoleRef | null }[]
   }
 
 /** Counts of the outcomes recorded plus the days and matches missed, for one player or for the whole team. `injured` is a count only. */

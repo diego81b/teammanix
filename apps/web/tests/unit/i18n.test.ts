@@ -132,7 +132,8 @@ describe('sport profiles (API seed)', () => {
 // Keys built at runtime (`roles.${value}`): every value of the unions in app/types/api.ts must have a text.
 const KEYS_DYNAMIC: Record<string, string[]> = {
   roles: ['admin', 'manager', 'player'],
-  staffRole: ['coach', 'assistant_coach', 'trainer', 'escort', 'other'],
+  'staffRoles.model': ['coach', 'assistant_coach', 'trainer', 'none'],
+  'staffRoles.modelText': ['coach', 'assistant_coach', 'trainer', 'none'],
   scope: ['club', 'section', 'team'],
   enrollmentType: ['player', 'staff'],
   access: ['invitations', 'roles', 'permissions'],

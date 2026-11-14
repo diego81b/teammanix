@@ -11,7 +11,7 @@ const roster = [
   row({ id: '1', name: 'Mario', surname: 'Rossi', jerseyNumber: 9 }),
   row({ id: '2', name: 'Luca', surname: 'Bianchi', status: 'injured', certificate: { status: 'expired', expiry: '2025-01-01' } }),
   row({ id: '3', name: 'Anna', surname: null, certificate: { status: 'missing', expiry: null } }),
-  row({ id: '4', name: 'Paolo', surname: 'Verdi', type: 'staff', staffRole: 'coach', certificate: null }),
+  row({ id: '4', name: 'Paolo', surname: 'Verdi', type: 'staff', staffRole: { id: 'r1', name: 'Allenatore' }, certificate: null }),
 ]
 
 describe('fullName', () => {
@@ -47,7 +47,7 @@ describe('statusAction', () => {
     expect(statusAction(row({ status: 'available' }), true)).toBe('injured')
     expect(statusAction(row({ status: 'injured' }), true)).toBe('available')
     expect(statusAction(row({ status: 'available' }), false)).toBeNull()
-    expect(statusAction(row({ type: 'staff', staffRole: 'coach' }), true)).toBeNull()
+    expect(statusAction(row({ type: 'staff', staffRole: { id: 'r1', name: 'Allenatore' } }), true)).toBeNull()
   })
 })
 

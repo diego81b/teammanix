@@ -201,7 +201,7 @@ watch([context, roster], () => {
   Object.assign(formData, proposeNewSeason(context.value.season))
 }, { immediate: true })
 
-const roleRow = (r: RosterRow) => (r.type === 'staff' ? t(`staffRole.${r.staffRole ?? 'other'}`) : (labelPosition(r.position, te, t) ?? t('enrollmentType.player')))
+const roleRow = (r: RosterRow) => (r.type === 'staff' ? (r.staffRole?.name ?? '') : (labelPosition(r.position, te, t) ?? t('enrollmentType.player')))
 
 function validate(s: typeof formData): FormError[] {
   const err: FormError[] = []

@@ -12,6 +12,14 @@ export async function go(page: Page, url: string) {
 /** Unique email per run: the development database is not cleaned. */
 export const uniqueEmail = (prefix: string) => `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1e4)}@e2e.test`
 
+/** Id of a role of the club's catalog, by name (a new club gets the Italian defaults: Allenatore, Preparatore, ...). */
+export async function staffRoleId(admin: string, name: string): Promise<string> {
+  const r = await fetch(`${API}/staff-roles`, { headers: { Authorization: `Bearer ${admin}` } })
+  const role = ((await r.json()) as Array<{ id: string, name: string }>).find(x => x.name === name)
+  if (!role) throw new Error(`no staff role named ${name}`)
+  return role.id
+}
+
 /** First link in the last mail received by `to`. Retries until the mail arrives. */
 export async function linkFromMail(to: string, subject = ''): Promise<string> {
   let link: string | undefined

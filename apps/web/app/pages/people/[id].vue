@@ -157,7 +157,7 @@ const errorAction = ref('')
 const reenabling = ref(false)
 
 const enrollmentRole = (i: EnrollmentPersonDto) =>
-  i.type === 'staff' ? t(`staffRole.${i.staffRole ?? 'other'}`) : [labelPosition(i.position, te, t) ?? t('enrollmentType.player'), i.jerseyNumber !== null ? `#${i.jerseyNumber}` : ''].filter(Boolean).join(' ')
+  i.type === 'staff' ? (i.staffRole?.name ?? '') : [labelPosition(i.position, te, t) ?? t('enrollmentType.player'), i.jerseyNumber !== null ? `#${i.jerseyNumber}` : ''].filter(Boolean).join(' ')
 
 async function reenable() {
   reenabling.value = true

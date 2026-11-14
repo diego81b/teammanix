@@ -121,7 +121,7 @@ describe('answering', () => {
 })
 
 describe('staff availability', () => {
-  const s = (enrollmentId: string, response: StaffAnswerRow['response']): StaffAnswerRow => ({ enrollmentId, name: enrollmentId, surname: null, staffRole: 'coach', response, mine: false })
+  const s = (enrollmentId: string, response: StaffAnswerRow['response']): StaffAnswerRow => ({ enrollmentId, name: enrollmentId, surname: null, staffRole: { id: 'r1', name: 'Allenatore' }, response, mine: false })
 
   it('groups staff by answer, keeping the order', () => {
     const g = groupStaff([s('a', 'declined'), s('b', 'confirmed'), s('c', null), s('d', 'confirmed'), s('e', 'pending')])

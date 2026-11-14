@@ -72,7 +72,7 @@
         <ul v-else class="space-y-2">
           <li v-for="s in data.staff" :key="s.enrollmentId" class="flex items-center gap-3 rounded-lg border border-default bg-elevated p-3">
             <span class="min-w-0 flex-1 truncate font-medium">{{ personName(s) }}</span>
-            <span v-if="s.staffRole" class="text-sm text-muted">{{ $t(`staffRole.${s.staffRole}`) }}</span>
+            <span v-if="s.staffRole" class="text-sm text-muted">{{ s.staffRole.name }}</span>
           </li>
         </ul>
       </section>
@@ -254,7 +254,7 @@
             <li v-for="s in staffRows" :key="s.enrollmentId" class="flex flex-wrap items-center gap-3 rounded-lg border border-default bg-elevated p-3">
               <div class="min-w-0 flex-1">
                 <p class="truncate font-medium">{{ personName(s) }}</p>
-                <p v-if="s.staffRole" class="text-sm text-muted">{{ $t(`staffRole.${s.staffRole}`) }}</p>
+                <p v-if="s.staffRole" class="text-sm text-muted">{{ s.staffRole.name }}</p>
               </div>
               <UBadge :color="STAFF_COLOR[staffState(s)]" variant="subtle" :label="$t(`callup.${STAFF_LABEL[staffState(s)]}`)" />
               <UButton

@@ -90,7 +90,7 @@ function choose(p: PermissionDto) {
 }
 
 const roleName = (r: PermissionDtoRole) =>
-  (['admin', 'manager', 'player'].includes(r.role) ? t(`roles.${r.role}`) : t(`staffRole.${r.role}`))
+  (['admin', 'manager', 'player'].includes(r.role) ? t(`roles.${r.role}`) : (r.staffRoleName ?? ''))
 // Scope and target: "Dirigente, Under 15" or "Allenatore, Under 15 (2025/2026)"; for the whole club only the role.
 const roleLabel = (r: PermissionDtoRole) => {
   if (r.scope === 'club' || !r.destination) return roleName(r)

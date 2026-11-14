@@ -34,7 +34,7 @@
         <ul v-else class="space-y-2">
           <li v-for="s in data.staffPresent" :key="s.enrollmentId" class="flex items-center gap-3 rounded-lg border border-default bg-elevated p-3">
             <span class="min-w-0 flex-1 truncate font-medium">{{ rowName({ name: s.name, surname: s.surname, disabled: false }, key => t(key)) }}</span>
-            <span v-if="s.staffRole" class="text-sm text-muted">{{ $t(`staffRole.${s.staffRole}`) }}</span>
+            <span v-if="s.staffRole" class="text-sm text-muted">{{ s.staffRole.name }}</span>
           </li>
         </ul>
       </section>
@@ -73,7 +73,7 @@
                     <span v-if="r.jerseyNumber !== null" class="text-sm font-normal text-muted">#{{ r.jerseyNumber }}</span>
                     <UBadge v-if="r.disabled && r.name" color="neutral" variant="outline" class="ml-1" :label="$t('attendance.disabledPerson')" />
                   </p>
-                  <span v-if="r.staffRole" class="text-sm text-muted">{{ $t(`staffRole.${r.staffRole}`) }}</span>
+                  <span v-if="r.staffRole" class="text-sm text-muted">{{ r.staffRole.name }}</span>
                   <UBadge v-if="!data.canRecord && r.outcome" :color="OUTCOME_COLOR[r.outcome]" variant="subtle" :label="$t(`attendance.outcome.${r.outcome}`)" />
                 </div>
                 <!-- Five buttons from a closed list, one tap each. Tapping the one already set clears it. -->

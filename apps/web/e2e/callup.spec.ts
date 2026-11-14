@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { go, login, PASSWORD, uniqueEmail } from './helpers'
+import { go, login, PASSWORD, staffRoleId, uniqueEmail } from './helpers'
 
 const API = process.env.E2E_API_URL ?? 'http://localhost:3001/api'
 const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10)
@@ -85,7 +85,7 @@ test('a trainer who also plays answers the call-up as player and declares availa
   const dualEmail = `dual-${email}`
   const user = await verifiedSession(dualEmail, 'Dora')
   const person = await call<{ id: string }>('POST', '/people', admin, { name: 'Dora', surname: 'Neri', birthDate: '1990-01-01', email: dualEmail })
-  await call('POST', `/seasons/${seasonId}/enrollments`, admin, { personId: person.id, type: 'staff', staffRole: 'trainer' })
+  await call('POST', `/seasons/${seasonId}/enrollments`, admin, { personId: person.id, type: 'staff', staffRoleId: await staffRoleId(admin, 'Preparatore') })
   const player = await call<{ id: string }>('POST', `/seasons/${seasonId}/enrollments`, admin, { personId: person.id, type: 'player' })
   await call('POST', `/people/${person.id}/certificates`, admin, { type: 'competitive', issueDate: day(-5), expiryDate: day(300) })
   await call('POST', '/invitations', admin, { email: dualEmail, role: 'staff', personId: person.id })

@@ -3,8 +3,8 @@
     <template #body>
       <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error" class="mb-4" />
       <UForm id="form-enrollment" :state="status" :validate="validate" :validate-on="['change']" class="space-y-4" @submit="send">
-        <UFormField v-if="row?.type === 'staff'" name="staffRole" :label="$t('season.staffRole')" required>
-          <USelect v-model="status.staffRole" :items="staffRoles" size="xl" class="w-full" />
+        <UFormField v-if="row?.type === 'staff'" name="staffRoleId" :label="$t('season.staffRole')" required>
+          <USelect v-model="status.staffRoleId" :items="staffRoles" size="xl" class="w-full" />
         </UFormField>
         <template v-else>
           <UFormField v-if="positions.length" name="position" :label="$t('season.position')" :hint="$t('common.optional')">
@@ -28,22 +28,24 @@
 
 <script setup lang="ts">
 import type { FormError } from '@nuxt/ui'
-import type { RosterRow, StaffRole, EnrollmentStatus } from '~/types/api'
+import type { RosterRow, EnrollmentStatus } from '~/types/api'
 import { fullName } from '~/utils/roster'
 import { positionOptions } from '~/utils/sport'
+import { startingRole } from '~/utils/staff-role'
 
 const props = defineProps<{ row: RosterRow | null, positions: string[] }>()
 const emit = defineEmits<{ saved: [] }>()
 const open = defineModel<boolean>('open', { default: false })
 const { t } = useI18n()
 const people = usePeople()
+const catalog = useStaffRoleChoices()
 
 /** The select does not allow an empty value. The API does not clear a position: "none" is offered only to those who have none. */
 const NO = 'no'
-const status = reactive({ staffRole: 'coach' as StaffRole, position: NO, jerseyNumber: '', status: 'available' as EnrollmentStatus })
+const status = reactive({ staffRoleId: '', position: NO, jerseyNumber: '', status: 'available' as EnrollmentStatus })
 const submit = ref(false)
 const error = ref('')
-const staffRoles = computed(() => (['coach', 'assistant_coach', 'trainer', 'escort', 'other'] as StaffRole[]).map(r => ({ label: t(`staffRole.${r}`), value: r })))
+const staffRoles = computed(() => catalog.choices(props.row?.staffRole?.id))
 const positionsOptions = computed(() => [
   ...(props.row?.position ? [] : [{ label: t('common.none'), value: NO }]),
   ...positionOptions(props.positions, t),
@@ -53,8 +55,11 @@ const states = computed(() => (['available', 'injured'] as EnrollmentStatus[]).m
 watch(open, (v) => {
   error.value = ''
   if (v && props.row) {
+    void catalog.load().then(() => {
+      if (!status.staffRoleId) status.staffRoleId = startingRole(catalog.roles.value, props.row?.staffRole?.id)
+    })
     Object.assign(status, {
-      staffRole: props.row.staffRole ?? 'coach',
+      staffRoleId: props.row.staffRole?.id ?? '',
       position: props.row.position ?? NO,
       jerseyNumber: String(props.row.jerseyNumber ?? ''),
       status: props.row.status,
@@ -63,6 +68,7 @@ watch(open, (v) => {
 })
 
 function validate(s: typeof status): FormError[] {
+  if (props.row?.type === 'staff') return s.staffRoleId ? [] : [{ name: 'staffRoleId', message: t('staffRoles.required') }]
   const m = s.jerseyNumber === '' ? null : Number(s.jerseyNumber)
   if (m !== null && (!Number.isInteger(m) || m < 0 || m > 999)) return [{ name: 'jerseyNumber', message: t('season.jerseyNotValid') }]
   return []
@@ -74,7 +80,7 @@ async function send() {
   error.value = ''
   try {
     const data = props.row.type === 'staff'
-      ? { staffRole: status.staffRole }
+      ? { staffRoleId: status.staffRoleId }
       : {
           status: status.status,
           ...(status.position !== NO ? { position: status.position } : {}),

@@ -7,6 +7,7 @@ import { usePeople } from '../../app/composables/usePeople'
 import { useCertificates } from '../../app/composables/useCertificates'
 import { useAccess } from '../../app/composables/useAccess'
 import { useClubSettings } from '../../app/composables/useClubSettings'
+import { useStaffRoles } from '../../app/composables/useStaffRoles'
 
 beforeEach(() => {
   baseApiRelative()
@@ -157,9 +158,9 @@ describe('usePeople', () => {
   })
   it('enrolls one person as staff in several teams with a single call', async () => {
     endpoint('/people/p1/staff-enrollments', [{ id: 'i1' }, { id: 'i2' }])
-    const r = await usePeople().enrollStaffInTeams('p1', ['t1', 't2'], 'coach')
+    const r = await usePeople().enrollStaffInTeams('p1', ['t1', 't2'], 'role-1')
     expect(r).toEqual([{ id: 'i1' }, { id: 'i2' }])
-    expect(last['POST /people/p1/staff-enrollments']?.body).toEqual({ teamIds: ['t1', 't2'], staffRole: 'coach' })
+    expect(last['POST /people/p1/staff-enrollments']?.body).toEqual({ teamIds: ['t1', 't2'], staffRoleId: 'role-1' })
   })
 })
 
@@ -254,11 +255,32 @@ describe('useAccess', () => {
 
 describe('useClubSettings', () => {
   it('reads every setting and saves one change at a time', async () => {
-    const all = { certificatesWithFile: false, blockCertificateExpired: true, warnNoCoachAvailable: true, coachRoles: ['coach'] }
+    const all = { certificatesWithFile: false, blockCertificateExpired: true, warnNoCoachAvailable: true }
     endpoint('/club/current/settings', all)
     const c = useClubSettings()
     expect(await c.read()).toEqual(all)
-    await c.edit({ coachRoles: ['coach', 'assistant_coach'] })
-    expect(last['PATCH /club/current/settings']?.body).toEqual({ coachRoles: ['coach', 'assistant_coach'] })
+    await c.edit({ warnNoCoachAvailable: false })
+    expect(last['PATCH /club/current/settings']?.body).toEqual({ warnNoCoachAvailable: false })
+  })
+})
+
+describe('useStaffRoles', () => {
+  const role = { id: 'r1', name: 'Allenatore', policyModel: 'coach', mustBeAvailable: true, archived: false }
+  it('reads the catalog, creates, edits and removes a role', async () => {
+    endpoint('/staff-roles', [role])
+    const c = useStaffRoles()
+    expect(await c.list()).toEqual([role])
+    await c.create({ name: 'Massaggiatore', policyModel: 'none', mustBeAvailable: false })
+    expect(last['POST /staff-roles']?.body).toEqual({ name: 'Massaggiatore', policyModel: 'none', mustBeAvailable: false })
+    endpoint('/staff-roles/r1', role)
+    await c.edit('r1', { archived: true })
+    expect(last['PATCH /staff-roles/r1']?.body).toEqual({ archived: true })
+    await c.remove('r1')
+    expect(last['DELETE /staff-roles/r1']?.method).toBe('DELETE')
+  })
+  it('enrolls with the id of the role', async () => {
+    endpoint('/enrollments/i1', { id: 'i1' })
+    await usePeople().editEnrollment('i1', { staffRoleId: 'r1' })
+    expect(last['PATCH /enrollments/i1']?.body).toEqual({ staffRoleId: 'r1' })
   })
 })

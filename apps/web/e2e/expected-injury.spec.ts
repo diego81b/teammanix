@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { go, login, PASSWORD, uniqueEmail } from './helpers'
+import { go, login, PASSWORD, staffRoleId, uniqueEmail } from './helpers'
 
 const API = process.env.E2E_API_URL ?? 'http://localhost:3001/api'
 const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10)
@@ -46,7 +46,7 @@ async function setup() {
     const mail = `${name.toLowerCase()}-${email}`
     const user = await verifiedSession(mail, name)
     const person = await call<{ id: string }>('POST', '/people', admin, { name, surname, birthDate: '1990-01-01', email: mail })
-    await call('POST', `/seasons/${season.id}/enrollments`, admin, { personId: person.id, type, ...(type === 'staff' ? { staffRole: 'coach' } : {}) })
+    await call('POST', `/seasons/${season.id}/enrollments`, admin, { personId: person.id, type, ...(type === 'staff' ? { staffRoleId: await staffRoleId(admin, 'Allenatore') } : {}) })
     if (type === 'player') await call('POST', `/people/${person.id}/certificates`, admin, { type: 'competitive', issueDate: day(-5), expiryDate: day(300) })
     await call('POST', '/invitations', admin, { email: mail, role: type, personId: person.id })
     await call('POST', '/invitations/accept', user.accessToken, { token: await tokenFromOutbox(mail) })

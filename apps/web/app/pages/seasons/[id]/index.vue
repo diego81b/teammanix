@@ -234,7 +234,7 @@ const certificateOptions = computed(() => [
   ...(['valid', 'expiring', 'expired', 'missing'] as CertificateStatus[]).map(s => ({ label: t(`status.certificate.${s}`), value: s })),
 ])
 
-const roleRow = (r: RosterRow) => (r.type === 'staff' ? t(`staffRole.${r.staffRole ?? 'other'}`) : (labelPosition(r.position, te, t) ?? t('enrollmentType.player')))
+const roleRow = (r: RosterRow) => (r.type === 'staff' ? (r.staffRole?.name ?? '') : (labelPosition(r.position, te, t) ?? t('enrollmentType.player')))
 
 const open = reactive({ enroll: false, edit: false, disable: false, close: false, closeSeason: false })
 const choiceRow = ref<RosterRow | null>(null)

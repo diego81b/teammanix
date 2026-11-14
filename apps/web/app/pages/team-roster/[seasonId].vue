@@ -83,7 +83,7 @@ const { data, loading, error, reload: load } = useLoad(() => people.teamRoster(s
 useHead({ title: () => `${t('teamRoster.title')} · TeamManix` })
 
 const count = computed(() => countRoster(data.value?.rows ?? []))
-const roleRow = (r: RosterRow) => (r.type === 'staff' ? t(`staffRole.${r.staffRole ?? 'other'}`) : (labelPosition(r.position, te, t) ?? t('enrollmentType.player')))
+const roleRow = (r: RosterRow) => (r.type === 'staff' ? (r.staffRole?.name ?? '') : (labelPosition(r.position, te, t) ?? t('enrollmentType.player')))
 
 type Row = RosterRow & { expectedInjury: ExpectedPeriod | null }
 
