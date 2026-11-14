@@ -1,4 +1,5 @@
-import type { ActivityTree, ActivityDto, TeamGender, SportProfileDto, TeamDto, SeasonDto } from '../types/api'
+import type { StructureTree, SectionDto, SportProfileDto, TeamDto, SeasonDto } from '../types/api'
+import type { TeamCreateBody, TeamEditBody } from '../utils/structure'
 
 export interface SeasonData {
   name: string
@@ -7,26 +8,18 @@ export interface SeasonData {
   league?: string
 }
 
-export interface TeamData {
-  name: string
-  category?: string
-  gender?: TeamGender
-}
-
-/** Activities, teams and seasons (screens 27 and 28). Admin only. */
+/** Sections, teams and seasons (screens 27 and 28). Admin only. */
 export function useStructure() {
   const api = useApi()
   return {
-    tree: () => api<ActivityTree[]>('/structure'),
+    tree: () => api<StructureTree>('/structure'),
     profiles: () => api<SportProfileDto[]>('/sport-profiles'),
-    createActivity: (data: { name: string, sportProfile: string, modulesActive?: string[] }) =>
-      api<ActivityDto>('/activities', { method: 'POST', body: data }),
-    editActivity: (id: string, data: { name?: string, modulesActive?: string[] }) =>
-      api<ActivityDto>(`/activities/${id}`, { method: 'PATCH', body: data }),
-    createTeam: (activityId: string, data: TeamData) =>
-      api<TeamDto>(`/activities/${activityId}/teams`, { method: 'POST', body: { ...data } }),
-    editTeam: (id: string, data: Partial<TeamData>) =>
-      api<TeamDto>(`/teams/${id}`, { method: 'PATCH', body: { ...data } }),
+    createSection: (data: { name: string }) => api<SectionDto>('/sections', { method: 'POST', body: data }),
+    editSection: (id: string, data: { name: string }) => api<SectionDto>(`/sections/${id}`, { method: 'PATCH', body: data }),
+    /** The teams of the section stay, outside any section. The API refuses while roles or invitations point to it. */
+    removeSection: (id: string) => api<void>(`/sections/${id}`, { method: 'DELETE' }),
+    createTeam: (data: TeamCreateBody) => api<TeamDto>('/teams', { method: 'POST', body: { ...data } }),
+    editTeam: (id: string, data: TeamEditBody) => api<TeamDto>(`/teams/${id}`, { method: 'PATCH', body: { ...data } }),
     createSeason: (teamId: string, data: SeasonData) =>
       api<SeasonDto>(`/teams/${teamId}/seasons`, { method: 'POST', body: { ...data } }),
     editSeason: (id: string, data: Partial<SeasonData>) =>

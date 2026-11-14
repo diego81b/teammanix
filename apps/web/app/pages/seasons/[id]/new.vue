@@ -14,7 +14,7 @@
           {{ context.season.name }}
         </NuxtLink>
         <h1 class="text-2xl font-bold">{{ $t('season.newTitle') }}</h1>
-        <p class="text-sm text-muted">{{ context.activity.name }} · {{ context.team.name }}</p>
+        <p class="text-sm text-muted">{{ [context.section?.name, context.team.name].filter(Boolean).join(' · ') }}</p>
       </div>
 
       <UAlert
@@ -166,6 +166,7 @@ import { formatDate } from '~/utils/date'
 import { fullName } from '~/utils/roster'
 import { labelPosition } from '~/utils/sport'
 import { toggleSelection, proposeNewSeason, selectionInitial, validatePeriod } from '~/utils/season'
+import { seasonContext } from '~/utils/structure'
 
 const { t, te, locale } = useI18n()
 const route = useRoute()
@@ -179,15 +180,7 @@ const { data, loading, error, reload: load } = useLoad(async () => {
   return { tree, roster }
 })
 
-const context = computed(() => {
-  for (const a of data.value?.tree ?? []) {
-    for (const team of a.teams) {
-      const season = team.seasons.find(s => s.id === id.value)
-      if (season) return { activity: a, team, season, hasDraft: team.seasons.some(s => s.status === 'draft') }
-    }
-  }
-  return null
-})
+const context = computed(() => (data.value ? seasonContext(data.value.tree, id.value) : null))
 const roster = computed<RosterRow[]>(() => data.value?.roster ?? [])
 // A draft cannot be cloned; with a draft already present the team does not accept another.
 const possible = computed(() => !!context.value && context.value.season.status !== 'draft' && !context.value.hasDraft)

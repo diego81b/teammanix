@@ -1,8 +1,11 @@
 <template>
-  <UModal v-model:open="open" :title="$t('structure.newTeam')" :description="$t('structure.newTeamText', { activity: activity?.name ?? '' })">
+  <UModal v-model:open="open" :title="$t(`structure.unit.${shown}.newTeam`)" :description="$t(`structure.unit.${shown}.newTeamText`)">
     <template #body>
       <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error" class="mb-4" />
       <UForm id="form-team" :state="status" :validate="validate" :validate-on="['change']" class="space-y-4" @submit="send">
+        <UFormField name="sportProfile" :label="$t('structure.sport')" required>
+          <USelect v-model="status.sportProfile" :items="sports" size="xl" class="w-full" :placeholder="$t('structure.chooseSport')" />
+        </UFormField>
         <UFormField name="name" :label="$t('structure.teamName')" required>
           <UInput v-model="status.name" size="xl" class="w-full" autofocus :placeholder="$t('structure.teamNameExample')" />
         </UFormField>
@@ -11,6 +14,9 @@
         </UFormField>
         <UFormField name="gender" :label="$t('structure.gender')" :hint="$t('common.optional')">
           <USelect v-model="status.gender" :items="genders" size="xl" class="w-full" />
+        </UFormField>
+        <UFormField v-if="sections.length" name="sectionId" :label="$t('structure.section')" :hint="$t('common.optional')">
+          <USelect v-model="status.sectionId" :items="sectionItems" size="xl" class="w-full" />
         </UFormField>
       </UForm>
     </template>
@@ -23,45 +29,43 @@
 
 <script setup lang="ts">
 import type { FormError } from '@nuxt/ui'
-import type { ActivityDto, TeamGender } from '~/types/api'
+import type { SectionDto, SportProfileDto, TeamGender, UnitTerm } from '~/types/api'
+import { sortProfiles } from '~/utils/sport'
+import { NONE, teamCreateBody, unitTermOf, validateTeam, type TeamFields } from '~/utils/structure'
 
-const props = defineProps<{ activity: ActivityDto | null }>()
+const props = defineProps<{ term: UnitTerm, profiles: SportProfileDto[], sections: SectionDto[] }>()
 const emit = defineEmits<{ created: [] }>()
 const open = defineModel<boolean>('open', { default: false })
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const structure = useStructure()
 
-const NONE = 'none'
-const status = reactive({ name: '', category: '', gender: NONE })
+const empty = (): TeamFields => ({
+  name: '', sportProfile: props.profiles.length === 1 ? props.profiles[0]!.code : '', category: '', gender: NONE, sectionId: NONE, modulesActive: [],
+})
+const status = reactive<TeamFields>(empty())
 const submit = ref(false)
 const error = ref('')
+/** Once the sport is chosen the dialog speaks its word (squadra or gruppo), before that the club's. */
+const shown = computed(() => (status.sportProfile ? unitTermOf(props.profiles, status.sportProfile) : props.term))
+const sports = computed(() => sortProfiles(props.profiles, t, locale.value).map(p => ({ label: t(`sport.${p.code}`), value: p.code })))
 const genders = computed(() => [
   { label: t('common.none'), value: NONE },
   ...(['male', 'female', 'mixed'] as TeamGender[]).map(g => ({ label: t(`gender.${g}`), value: g })),
 ])
+const sectionItems = computed(() => [{ label: t('structure.noSection'), value: NONE }, ...props.sections.map(s => ({ label: s.name, value: s.id }))])
 
 watch(open, (v) => {
-  if (v) Object.assign(status, { name: '', category: '', gender: NONE })
+  if (v) Object.assign(status, empty())
   error.value = ''
 })
 
-function validate(s: typeof status): FormError[] {
-  const err: FormError[] = []
-  if (s.name.trim().length < 1 || s.name.trim().length > 100) err.push({ name: 'name', message: t('validation.length', { min: 1, max: 100 }) })
-  if (s.category.trim().length > 60) err.push({ name: 'category', message: t('validation.length', { min: 1, max: 60 }) })
-  return err
-}
+const validate = (s: TeamFields): FormError[] => validateTeam(s, 'create').map(e => ({ name: e.field, message: t(e.key, e.params ?? {}) }))
 
 async function send() {
-  if (!props.activity) return
   submit.value = true
   error.value = ''
   try {
-    await structure.createTeam(props.activity.id, {
-      name: status.name.trim(),
-      ...(status.category.trim() ? { category: status.category.trim() } : {}),
-      ...(status.gender !== NONE ? { gender: status.gender as TeamGender } : {}),
-    })
+    await structure.createTeam(teamCreateBody(status))
     open.value = false
     emit('created')
   }

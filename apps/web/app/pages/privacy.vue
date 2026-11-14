@@ -28,7 +28,7 @@
     <p><strong>Dati dei tesserati (titolare: la società; la Piattaforma è responsabile)</strong></p>
     <ul>
       <li>Anagrafica minima: nome, cognome, data di nascita, email, telefono. Non vengono richiesti sesso, codice fiscale, peso o altezza.</li>
-      <li>Appartenenza a squadre e attività, ruolo, convocazioni, risposte, presenze.</li>
+      <li>Appartenenza a squadre e settori, ruolo, convocazioni, risposte, presenze.</li>
       <li>Sanzioni e squalifiche, visibili solo all'interessato, a staff, dirigenti e amministratori.</li>
       <li>Assenze dichiarate: solo le date, senza motivo e senza testo libero.</li>
       <li>Certificato medico: tipo, data di emissione e scadenza. Il file allegato è facoltativo e attivabile dalla società. È un dato sanitario, a visibilità ristretta e con accessi al file tracciati. Lo stato "infortunato" è anch'esso un dato sanitario: senza diagnosi, durata o parte del corpo.</li>

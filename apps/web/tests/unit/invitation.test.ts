@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { invitationData, invitationStatus, validateInvitation, type InvitationFields } from '../../app/utils/invitation'
+import { invitationData, invitationStatus, scopeOptions, validateInvitation, type InvitationFields } from '../../app/utils/invitation'
 
 const base = (o: Partial<InvitationFields> = {}): InvitationFields => ({
   email: 'a@b.it',
   role: 'admin',
   scope: 'club',
-  activityId: '',
+  sectionId: '',
   teamId: '',
   record: 'new',
   personId: '',
@@ -19,8 +19,8 @@ describe('validateInvitation', () => {
   it('invalid email', () => {
     expect(validateInvitation(base({ email: 'boh' }))).toContainEqual({ field: 'email', key: 'validation.email' })
   })
-  it('activity manager without activity', () => {
-    expect(validateInvitation(base({ role: 'manager', scope: 'activity' }))).toContainEqual({ field: 'activityId', key: 'invitation.destinationRequired' })
+  it('section manager without section', () => {
+    expect(validateInvitation(base({ role: 'manager', scope: 'section' }))).toContainEqual({ field: 'sectionId', key: 'invitation.destinationRequired' })
   })
   it('team manager without team', () => {
     expect(validateInvitation(base({ role: 'manager', scope: 'team' }))).toContainEqual({ field: 'teamId', key: 'invitation.destinationRequired' })
@@ -46,18 +46,18 @@ describe('invitationData', () => {
   it('admin: only email, role and language', () => {
     expect(invitationData(base({ email: ' a@b.it ', scope: 'team', teamId: 's1', name: 'x' }))).toEqual({ email: 'a@b.it', role: 'admin', language: 'it' })
   })
-  it('activity manager', () => {
-    expect(invitationData(base({ role: 'manager', scope: 'activity', activityId: 'a1', teamId: 's1' }))).toEqual({
-      email: 'a@b.it', role: 'manager', language: 'it', scope: 'activity', activityId: 'a1',
+  it('section manager', () => {
+    expect(invitationData(base({ role: 'manager', scope: 'section', sectionId: 'a1', teamId: 's1' }))).toEqual({
+      email: 'a@b.it', role: 'manager', language: 'it', scope: 'section', sectionId: 'a1',
     })
   })
   it('team manager', () => {
-    expect(invitationData(base({ role: 'manager', scope: 'team', teamId: 's1', activityId: 'a1' }))).toEqual({
+    expect(invitationData(base({ role: 'manager', scope: 'team', teamId: 's1', sectionId: 'a1' }))).toEqual({
       email: 'a@b.it', role: 'manager', language: 'it', scope: 'team', teamId: 's1',
     })
   })
   it('club manager: no destination', () => {
-    expect(invitationData(base({ role: 'manager', activityId: 'a1' }))).toEqual({ email: 'a@b.it', role: 'manager', language: 'it', scope: 'club' })
+    expect(invitationData(base({ role: 'manager', sectionId: 'a1' }))).toEqual({ email: 'a@b.it', role: 'manager', language: 'it', scope: 'club' })
   })
   it('staff with a new record', () => {
     expect(invitationData(base({ role: 'staff', name: ' Luca ', personId: 'p1', language: 'en' }))).toEqual({ email: 'a@b.it', role: 'staff', language: 'en', name: 'Luca' })
@@ -78,5 +78,14 @@ describe('invitationStatus', () => {
   it('accepted and revoked do not change', () => {
     expect(invitationStatus({ status: 'accepted', expiresAt: '2026-11-01T10:00:00Z' }, now)).toBe('accepted')
     expect(invitationStatus({ status: 'revoked', expiresAt: '2026-11-01T10:00:00Z' }, now)).toBe('revoked')
+  })
+})
+
+describe('scopeOptions', () => {
+  it('a club with sections offers club, section and team', () => {
+    expect(scopeOptions(true)).toEqual(['club', 'section', 'team'])
+  })
+  it('a club without sections has no section scope to choose', () => {
+    expect(scopeOptions(false)).toEqual(['club', 'team'])
   })
 })

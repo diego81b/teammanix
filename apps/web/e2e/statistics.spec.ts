@@ -39,8 +39,7 @@ async function setup() {
   const session = await verifiedSession(email, 'Ada')
   const club = await call<{ accessToken: string }>('POST', '/club', session.accessToken, { name: 'ASD Stats', acceptDpa: true })
   const admin = club.accessToken
-  const activity = await call<{ id: string }>('POST', '/activities', admin, { name: 'Calcio', sportProfile: 'football' })
-  const team = await call<{ id: string }>('POST', `/activities/${activity.id}/teams`, admin, { name: 'Under 12' })
+  const team = await call<{ id: string }>('POST', '/teams', admin, { name: 'Under 12', sportProfile: 'football' })
   const season = await call<{ id: string }>('POST', `/teams/${team.id}/seasons`, admin, { name: 'Ora', startDate: day(-30), endDate: day(300) })
 
   const withAccount = async (name: string, surname: string, type: 'player' | 'staff') => {

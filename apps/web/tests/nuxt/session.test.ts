@@ -9,7 +9,7 @@ mockNuxtImport('navigateTo', () => navigateToMock)
 const adminClub: Membership = {
   clubId: 's1',
   name: 'ASD Test',
-  roles: [{ role: 'admin', scope: 'club', activityId: null, teamId: null }],
+  roles: [{ role: 'admin', scope: 'club', sectionId: null, teamId: null }],
   linkedToPerson: false,
   recordToComplete: false,
 }
@@ -17,7 +17,7 @@ const manager: Membership = {
   ...adminClub,
   clubId: 's2',
   name: 'Other',
-  roles: [{ role: 'manager', scope: 'team', activityId: 'a1', teamId: 'q1' }],
+  roles: [{ role: 'manager', scope: 'team', sectionId: 's1', teamId: 'q1' }],
 }
 const session = (over: Partial<SessionDto> = {}): SessionDto => ({
   accessToken: 'tok',

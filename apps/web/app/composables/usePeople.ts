@@ -35,6 +35,9 @@ export function usePeople() {
     teamRoster: (seasonId: string) => api<TeamRoster>(`/seasons/${seasonId}/team-roster`),
     enroll: (seasonId: string, data: EnrollmentData) =>
       api<EnrollmentOut>(`/seasons/${seasonId}/enrollments`, { method: 'POST', body: { ...data } }),
+    /** One person as staff in several teams, all or nothing: the API uses each team's active season, else its draft. */
+    enrollStaffInTeams: (personId: string, teamIds: string[], staffRole: StaffRole) =>
+      api<EnrollmentOut[]>(`/people/${personId}/staff-enrollments`, { method: 'POST', body: { teamIds, staffRole } }),
     editEnrollment: (id: string, data: { staffRole?: StaffRole, position?: string, jerseyNumber?: number, status?: EnrollmentStatus }) =>
       api<EnrollmentOut>(`/enrollments/${id}`, { method: 'PATCH', body: { ...data } }),
     /** Status only, for staff with `people.manage` in the team. The API shares it across the person's teams. */

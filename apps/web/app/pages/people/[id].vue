@@ -56,7 +56,18 @@
       </section>
 
       <section class="space-y-3" aria-labelledby="titolo-iscrizioni">
-        <h2 id="title-enrollments" class="text-lg font-semibold">{{ $t('person.enrollments') }}</h2>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="title-enrollments" class="text-lg font-semibold">{{ $t('person.enrollments') }}</h2>
+          <UButton
+            v-if="tree && tree.teams.length && !person.disabled"
+            color="neutral"
+            variant="outline"
+            icon="i-tm-plus"
+            class="min-h-11"
+            :label="$t(`structure.unit.${term}.staffTeams`)"
+            @click="open.staffTeams = true"
+          />
+        </div>
         <p v-if="person.enrollments.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">
           {{ $t('person.noEnrollment') }}
         </p>
@@ -76,7 +87,7 @@
                 <th scope="row" class="py-3 pr-3 font-medium">
                   <NuxtLink :to="`/seasons/${i.seasonId}`" class="hover:underline">{{ i.season }}</NuxtLink>
                 </th>
-                <td class="px-3 py-3">{{ i.activity }} · {{ i.team }}</td>
+                <td class="px-3 py-3">{{ teamLabel(i.section, i.team) }}</td>
                 <td class="px-3 py-3">{{ enrollmentRole(i) }}</td>
                 <td class="px-3 py-3">
                   <UBadge v-if="i.endedAt" color="neutral" variant="subtle" :label="$t('person.closedEnrollment')" />
@@ -89,7 +100,7 @@
           <ul class="space-y-2 md:hidden">
             <li v-for="i in person.enrollments" :key="i.id" class="space-y-1 rounded-lg border border-default bg-elevated p-3">
               <NuxtLink :to="`/seasons/${i.seasonId}`" class="block font-semibold">{{ i.season }}</NuxtLink>
-              <p class="text-sm text-muted">{{ i.activity }} · {{ i.team }}</p>
+              <p class="text-sm text-muted">{{ teamLabel(i.section, i.team) }}</p>
               <p class="flex flex-wrap items-center gap-2 text-sm">
                 {{ enrollmentRole(i) }}
                 <UBadge v-if="i.endedAt" color="neutral" variant="subtle" :label="$t('person.closedEnrollment')" />
@@ -104,16 +115,27 @@
 
       <PersonSuspensions :person="person" />
 
+      <EnrollStaffTeams
+        v-if="tree"
+        v-model:open="open.staffTeams"
+        :person-id="person.id"
+        :enrollments="person.enrollments"
+        :tree="tree"
+        :term="term"
+        @enrolled="load"
+      />
+
       <DisablePerson v-model:open="open.disable" :person="{ id: person.id, name: fullName(person) }" @done="load" />
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { EnrollmentPersonDto } from '~/types/api'
+import type { EnrollmentPersonDto, SportProfileDto, StructureTree } from '~/types/api'
 import { formatDate } from '~/utils/date'
 import { fullName } from '~/utils/roster'
 import { labelPosition } from '~/utils/sport'
+import { clubUnitTerm, teamLabel } from '~/utils/structure'
 
 const { t, te, locale } = useI18n()
 const route = useRoute()
@@ -124,7 +146,13 @@ const toast = useToast()
 const { data: person, loading, error, reload: load } = useLoad(() => people.detail(id.value))
 useHead({ title: () => `${person.value ? fullName(person.value) : t('person.title')} · TeamManix` })
 
-const open = reactive({ disable: false })
+const open = reactive({ disable: false, staffTeams: false })
+
+// Structure and profiles only serve the multi-team action: without them the action is hidden.
+const structure = useStructure()
+const tree = ref<StructureTree | null>(null)
+const profiles = ref<SportProfileDto[]>([])
+const term = computed(() => clubUnitTerm(profiles.value, tree.value?.teams ?? []))
 const errorAction = ref('')
 const reenabling = ref(false)
 
@@ -147,5 +175,13 @@ async function reenable() {
   }
 }
 
-onMounted(load)
+onMounted(async () => {
+  await load()
+  try {
+    const [t, p] = await Promise.all([structure.tree(), structure.profiles()])
+    tree.value = t
+    profiles.value = p
+  }
+  catch { /* the action stays hidden */ }
+})
 </script>

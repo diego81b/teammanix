@@ -133,7 +133,7 @@ describe('sport profiles (API seed)', () => {
 const KEYS_DYNAMIC: Record<string, string[]> = {
   roles: ['admin', 'manager', 'player'],
   staffRole: ['coach', 'assistant_coach', 'trainer', 'escort', 'other'],
-  scope: ['club', 'activity', 'team'],
+  scope: ['club', 'section', 'team'],
   enrollmentType: ['player', 'staff'],
   access: ['invitations', 'roles', 'permissions'],
   gender: ['male', 'female', 'mixed'],
@@ -149,6 +149,43 @@ describe('dynamic keys', () => {
     it(`${l}: every union value has a text`, () => {
       const missing = Object.entries(KEYS_DYNAMIC).flatMap(([base, values]) =>
         values.map(v => `${base}.${v}`).filter(k => !flat[l]![k]))
+      expect(missing).toEqual([])
+    })
+  }
+})
+
+// The modules a team can switch on come from the seed as codes: the name shown in the team form is `module.<code>`.
+describe('team modules (API seed)', () => {
+  const seed = readFileSync(join(__dirname, '../../../api/src/seed/sport-profiles.ts'), 'utf8')
+  const lists = [...seed.matchAll(/(?:const MODULES = |modulesAvailable: )\[([^\]]*)\]/g)]
+  const modules = [...new Set(lists.flatMap(m => [...m[1]!.matchAll(/'([a-z0-9_]+)'/g)].map(x => x[1]!)))]
+
+  it('finds the modules in the seed (the test is not empty)', () => expect(modules.length).toBeGreaterThanOrEqual(3))
+
+  for (const l of Object.keys(flat)) {
+    it(`${l}: every module in the seed has a text and no other module has one`, () => {
+      const have = Object.keys(flat[l]!).filter(k => k.startsWith('module.')).map(k => k.slice('module.'.length))
+      expect(have.sort()).toEqual([...modules].sort())
+    })
+  }
+})
+
+// The word for the team unit comes from the seed (`unitTerm`): each term has the same texts in every language.
+describe('unit terms (API seed)', () => {
+  const seed = readFileSync(join(__dirname, '../../../api/src/seed/sport-profiles.ts'), 'utf8')
+  const terms = [...new Set([...seed.matchAll(/unitTerm: '([a-z]+)'/g)].map(m => m[1]!))].sort()
+  const KEYS = [
+    'text', 'emptyTitle', 'emptyText', 'newSectionText', 'deleteSectionText', 'newTeam', 'newTeamText', 'editTeam',
+    'editTeamAria', 'newSeasonText', 'noTeam', 'staffTeams', 'staffTeamsText', 'staffTeamsLegend', 'staffTeamsNone', 'staffTeamsRequired',
+  ]
+
+  it('finds both terms in the seed (the test is not empty)', () => expect(terms).toEqual(['group', 'team']))
+
+  for (const l of Object.keys(flat)) {
+    it(`${l}: every term has every text and no other term has one`, () => {
+      const have = [...new Set(Object.keys(flat[l]!).filter(k => k.startsWith('structure.unit.')).map(k => k.split('.')[2]!))].sort()
+      expect(have).toEqual(terms)
+      const missing = terms.flatMap(t => KEYS.map(k => `structure.unit.${t}.${k}`)).filter(k => !flat[l]![k])
       expect(missing).toEqual([])
     })
   }

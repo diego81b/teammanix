@@ -4,7 +4,7 @@ export interface InvitationFields {
   email: string
   role: InvitationRole
   scope: ScopeType
-  activityId: string
+  sectionId: string
   teamId: string
   record: 'existing' | 'new'
   personId: string
@@ -19,10 +19,15 @@ export interface InvitationBody {
   role: InvitationRole
   language: Language
   scope?: ScopeType
-  activityId?: string
+  sectionId?: string
   teamId?: string
   personId?: string
   name?: string
+}
+
+/** The section scope exists only in a club that has sections: without them there is nothing to choose. */
+export function scopeOptions(hasSections: boolean): ScopeType[] {
+  return hasSections ? ['club', 'section', 'team'] : ['club', 'team']
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -32,7 +37,7 @@ export function validateInvitation(c: InvitationFields): InvitationError[] {
   const err: InvitationError[] = []
   if (!EMAIL.test(c.email.trim())) err.push({ field: 'email', key: 'validation.email' })
   if (c.role === 'manager') {
-    if (c.scope === 'activity' && !c.activityId) err.push({ field: 'activityId', key: 'invitation.destinationRequired' })
+    if (c.scope === 'section' && !c.sectionId) err.push({ field: 'sectionId', key: 'invitation.destinationRequired' })
     if (c.scope === 'team' && !c.teamId) err.push({ field: 'teamId', key: 'invitation.destinationRequired' })
   }
   if (c.role === 'staff' || c.role === 'player') {
@@ -51,7 +56,7 @@ export function invitationData(c: InvitationFields): InvitationBody {
     return {
       ...base,
       scope: c.scope,
-      ...(c.scope === 'activity' ? { activityId: c.activityId } : {}),
+      ...(c.scope === 'section' ? { sectionId: c.sectionId } : {}),
       ...(c.scope === 'team' ? { teamId: c.teamId } : {}),
     }
   }

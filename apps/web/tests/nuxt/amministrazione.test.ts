@@ -39,37 +39,44 @@ function endpoint(path: string, response: unknown = {}) {
 
 describe('useStructure', () => {
   it('reads the tree and the sport profiles', async () => {
-    endpoint('/structure', [{ id: 'a1', teams: [] }])
+    endpoint('/structure', { sections: [{ id: 'a1', name: 'Football' }], teams: [] })
     endpoint('/sport-profiles', [{ code: 'football' }])
     const s = useStructure()
-    expect(await s.tree()).toEqual([{ id: 'a1', teams: [] }])
+    expect(await s.tree()).toEqual({ sections: [{ id: 'a1', name: 'Football' }], teams: [] })
     expect(await s.profiles()).toEqual([{ code: 'football' }])
   })
 
-  it('creates activity, team and season with the right paths', async () => {
-    endpoint('/activities', { id: 'a1' })
-    endpoint('/activities/a1/teams', { id: 'q1' })
+  it('creates section, team and season with the right paths', async () => {
+    endpoint('/sections', { id: 'a1' })
+    endpoint('/teams', { id: 'q1' })
     endpoint('/teams/q1/seasons', { id: 's1' })
     const s = useStructure()
-    await s.createActivity({ name: 'Football', sportProfile: 'football' })
-    await s.createTeam('a1', { name: 'U14', category: 'Under 14', gender: 'male' })
+    await s.createSection({ name: 'Football' })
+    await s.createTeam({ name: 'U14', sportProfile: 'football', sectionId: 'a1', category: 'Under 14', gender: 'male' })
     await s.createSeason('q1', { name: '2026/2027', startDate: '2026-09-01', endDate: '2027-06-30' })
-    expect(last['POST /activities']?.body).toEqual({ name: 'Football', sportProfile: 'football' })
-    expect(last['POST /activities/a1/teams']?.body).toMatchObject({ name: 'U14' })
+    expect(last['POST /sections']?.body).toEqual({ name: 'Football' })
+    expect(last['POST /teams']?.body).toEqual({ name: 'U14', sportProfile: 'football', sectionId: 'a1', category: 'Under 14', gender: 'male' })
     expect(last['POST /teams/q1/seasons']?.body).toMatchObject({ startDate: '2026-09-01' })
   })
 
   it('edits with PATCH', async () => {
-    endpoint('/activities/a1', {})
+    endpoint('/sections/a1', {})
     endpoint('/teams/q1', {})
     endpoint('/seasons/s1', {})
     const s = useStructure()
-    await s.editActivity('a1', { name: 'New' })
-    await s.editTeam('q1', { name: 'U15' })
+    await s.editSection('a1', { name: 'New' })
+    await s.editTeam('q1', { name: 'U15', sectionId: null })
     await s.editSeason('s1', { league: 'Elite' })
-    expect(last['PATCH /activities/a1']?.method).toBe('PATCH')
-    expect(last['PATCH /teams/q1']?.body).toEqual({ name: 'U15' })
+    expect(last['PATCH /sections/a1']?.method).toBe('PATCH')
+    expect(last['PATCH /sections/a1']?.body).toEqual({ name: 'New' })
+    expect(last['PATCH /teams/q1']?.body).toEqual({ name: 'U15', sectionId: null })
     expect(last['PATCH /seasons/s1']?.body).toEqual({ league: 'Elite' })
+  })
+
+  it('deletes a section', async () => {
+    endpoint('/sections/a1', undefined)
+    await useStructure().removeSection('a1')
+    expect(last['DELETE /sections/a1']?.method).toBe('DELETE')
   })
 
   it('clones a season carrying the remaining suspensions only when asked', async () => {
@@ -147,6 +154,12 @@ describe('usePeople', () => {
     expect(last['PUT /enrollments/i1/status']).toMatchObject({ method: 'PUT', body: { status: 'available' } })
     expect(last['POST /enrollments/i1/close']?.method).toBe('POST')
     expect(last['POST /enrollments/i1/promote']?.body).toEqual({ seasonId: 's2', closeSource: true })
+  })
+  it('enrolls one person as staff in several teams with a single call', async () => {
+    endpoint('/people/p1/staff-enrollments', [{ id: 'i1' }, { id: 'i2' }])
+    const r = await usePeople().enrollStaffInTeams('p1', ['t1', 't2'], 'coach')
+    expect(r).toEqual([{ id: 'i1' }, { id: 'i2' }])
+    expect(last['POST /people/p1/staff-enrollments']?.body).toEqual({ teamIds: ['t1', 't2'], staffRole: 'coach' })
   })
 })
 

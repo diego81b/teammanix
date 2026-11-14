@@ -1,5 +1,5 @@
 <template>
-  <UModal v-model:open="open" :title="$t('structure.newSeason')" :description="$t('structure.newSeasonText', { team: team?.name ?? '' })">
+  <UModal v-model:open="open" :title="$t('structure.newSeason')" :description="$t(`structure.unit.${term}.newSeasonText`, { team: team?.name ?? '' })">
     <template #body>
       <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error" class="mb-4" />
       <UForm id="form-season" :state="status" :validate="validate" :validate-on="['change']" class="space-y-4" @submit="send">
@@ -28,10 +28,10 @@
 
 <script setup lang="ts">
 import type { FormError } from '@nuxt/ui'
-import type { TeamTree } from '~/types/api'
+import type { TeamTree, UnitTerm } from '~/types/api'
 import { proposeNewSeason, validatePeriod } from '~/utils/season'
 
-const props = defineProps<{ team: TeamTree | null }>()
+const props = defineProps<{ term: UnitTerm, team: TeamTree | null }>()
 const emit = defineEmits<{ created: [id: string] }>()
 const open = defineModel<boolean>('open', { default: false })
 const { t } = useI18n()

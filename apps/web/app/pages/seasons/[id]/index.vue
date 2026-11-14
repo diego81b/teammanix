@@ -16,7 +16,7 @@
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div class="space-y-1">
             <h1 class="text-2xl font-bold">{{ context.season.name }}</h1>
-            <p class="text-sm text-muted">{{ context.activity.name }} · {{ context.team.name }}</p>
+            <p class="text-sm text-muted">{{ [context.section?.name, context.team.name].filter(Boolean).join(' · ') }}</p>
             <p class="flex flex-wrap items-center gap-2 text-sm">
               <UBadge :color="seasonStatusItem(context.season.status)" variant="subtle" :label="$t(`status.season.${context.season.status}`)" />
               <span class="text-muted">{{ formatDate(context.season.startDate, locale) }} - {{ formatDate(context.season.endDate, locale) }}</span>
@@ -197,6 +197,7 @@ import { formatDate } from '~/utils/date'
 import { countRoster, filterRoster, fullName } from '~/utils/roster'
 import { labelPosition } from '~/utils/sport'
 import { seasonStatusItem } from '~/utils/season'
+import { seasonContext } from '~/utils/structure'
 
 const { t, te, locale } = useI18n()
 const route = useRoute()
@@ -209,18 +210,10 @@ const { data, loading, error, reload: load } = useLoad(async () => {
   return { tree, roster, profiles }
 })
 
-const context = computed(() => {
-  for (const a of data.value?.tree ?? []) {
-    for (const team of a.teams) {
-      const season = team.seasons.find(s => s.id === id.value)
-      if (season) return { activity: a, team, season, hasDraft: team.seasons.some(s => s.status === 'draft') }
-    }
-  }
-  return null
-})
+const context = computed(() => (data.value ? seasonContext(data.value.tree, id.value) : null))
 const roster = computed(() => data.value?.roster ?? [])
-/** Positions of the sport profile of this season's activity. */
-const positions = computed(() => data.value?.profiles.find(p => p.code === context.value?.activity.sportProfile)?.positions ?? [])
+/** Positions of the sport profile of this season's team. */
+const positions = computed(() => data.value?.profiles.find(p => p.code === context.value?.team.sportProfile)?.positions ?? [])
 const editable = computed(() => context.value?.season.status !== 'closed')
 useHead({ title: () => `${context.value?.season.name ?? t('season.title')} · TeamManix` })
 

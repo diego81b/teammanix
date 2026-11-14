@@ -18,7 +18,7 @@
 
       <div v-for="g in data" :key="g.enrollment.id" class="space-y-2">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <h3 class="min-w-0 text-sm font-semibold">{{ g.enrollment.season }} · {{ g.enrollment.activity }} · {{ g.enrollment.team }}</h3>
+          <h3 class="min-w-0 text-sm font-semibold">{{ g.enrollment.season }} · {{ teamLabel(g.enrollment.section, g.enrollment.team) }}</h3>
           <UButton
             v-if="g.canAdd"
             color="neutral"
@@ -67,6 +67,7 @@
 import type { EnrollmentPersonDto, PersonDetail, SeasonSuspension } from '~/types/api'
 import { canSuspendOn, forPerson } from '~/utils/suspension'
 import { fullName } from '~/utils/roster'
+import { teamLabel } from '~/utils/structure'
 
 const props = defineProps<{ person: PersonDetail }>()
 const { t } = useI18n()

@@ -15,8 +15,8 @@
           <UFormField name="scope" :label="$t('invitation.scope')" required>
             <USelect v-model="status.scope" :items="scopes" size="xl" class="w-full" />
           </UFormField>
-          <UFormField v-if="status.scope === 'activity'" name="activityId" :label="$t('invitation.activity')" required>
-            <USelect v-model="status.activityId" :items="activityOptions" size="xl" class="w-full" :placeholder="$t('invitation.choose')" />
+          <UFormField v-if="status.scope === 'section'" name="sectionId" :label="$t('invitation.section')" required>
+            <USelect v-model="status.sectionId" :items="sectionOptions" size="xl" class="w-full" :placeholder="$t('invitation.choose')" />
           </UFormField>
           <UFormField v-if="status.scope === 'team'" name="teamId" :label="$t('invitation.team')" required>
             <USelect v-model="status.teamId" :items="teamsOptions" size="xl" class="w-full" :placeholder="$t('invitation.choose')" />
@@ -64,8 +64,8 @@
 
 <script setup lang="ts">
 import type { FormError } from '@nuxt/ui'
-import type { ActivityTree, Language, PersonDto, InvitationRole, ScopeType } from '~/types/api'
-import { invitationData, validateInvitation, type InvitationFields } from '~/utils/invitation'
+import type { StructureTree, Language, PersonDto, InvitationRole, ScopeType } from '~/types/api'
+import { invitationData, scopeOptions, validateInvitation, type InvitationFields } from '~/utils/invitation'
 import { fullName } from '~/utils/roster'
 
 const emit = defineEmits<{ sent: [] }>()
@@ -76,20 +76,24 @@ const structure = useStructure()
 const people = usePeople()
 
 const empty = (): InvitationFields => ({
-  email: '', role: 'staff', scope: 'club', activityId: '', teamId: '', record: 'new', personId: '', name: '',
+  email: '', role: 'staff', scope: 'club', sectionId: '', teamId: '', record: 'new', personId: '', name: '',
   language: (['it', 'en', 'fr'].includes(locale.value) ? locale.value : 'it') as Language,
 })
 const status = reactive<InvitationFields>(empty())
-const tree = ref<ActivityTree[]>([])
+const tree = ref<StructureTree>({ sections: [], teams: [] })
 const peopleList = ref<PersonDto[]>([])
 const submit = ref(false)
 const error = ref('')
 
 const roles = computed(() => (['admin', 'manager', 'staff', 'player'] as InvitationRole[]).map(r => ({ label: t(`roles.${r}`), value: r })))
-const scopes = computed(() => (['club', 'activity', 'team'] as ScopeType[]).map(a => ({ label: t(`scope.${a}`), value: a })))
+// The section scope is offered only to a club that has sections.
+const scopes = computed(() => scopeOptions(tree.value.sections.length > 0).map((a: ScopeType) => ({ label: t(`scope.${a}`), value: a })))
 const languages = computed(() => (['it', 'en', 'fr'] as Language[]).map(l => ({ label: t(`language.${l}`), value: l })))
-const activityOptions = computed(() => tree.value.map(a => ({ label: a.name, value: a.id })))
-const teamsOptions = computed(() => tree.value.flatMap(a => a.teams.map(s => ({ label: `${a.name} · ${s.name}`, value: s.id }))))
+const sectionOptions = computed(() => tree.value.sections.map(a => ({ label: a.name, value: a.id })))
+const teamsOptions = computed(() => tree.value.teams.map((s) => {
+  const section = tree.value.sections.find(a => a.id === s.sectionId)
+  return { label: section ? `${section.name} · ${s.name}` : s.name, value: s.id }
+}))
 // The API rejects records already linked to an account (PERSONA_NON_DISPONIBILE); disabled ones do not come from the list.
 const peopleOptions = computed(() => peopleList.value.map(p => ({ label: fullName(p), value: p.id })))
 

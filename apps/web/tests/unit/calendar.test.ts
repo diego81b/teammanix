@@ -21,7 +21,7 @@ const event = (over: Partial<EventDto> = {}): EventDto => ({
 })
 
 const season = (over: Partial<CalendarSeasonDto> = {}): CalendarSeasonDto => ({
-  seasonId: 's1', seasonName: '2026/27', seasonStatus: 'active', teamId: 't1', teamName: 'U14', activityName: 'Football', ...over,
+  seasonId: 's1', seasonName: '2026/27', seasonStatus: 'active', teamId: 't1', teamName: 'U14', sectionName: 'Football', ...over,
 })
 
 describe('monthOf and shiftMonth', () => {

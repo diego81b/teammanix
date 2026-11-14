@@ -5,7 +5,7 @@ export interface InvitationData {
   role: InvitationRole
   language?: Language
   scope?: ScopeType
-  activityId?: string
+  sectionId?: string
   teamId?: string
   personId?: string
   name?: string

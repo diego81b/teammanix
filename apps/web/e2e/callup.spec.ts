@@ -42,8 +42,7 @@ async function setup() {
   const club = await call<{ accessToken: string }>('POST', '/club', session.accessToken, { name: 'ASD Callup', acceptDpa: true })
   const admin = club.accessToken
 
-  const activity = await call<{ id: string }>('POST', '/activities', admin, { name: 'Calcio', sportProfile: 'football' })
-  const team = await call<{ id: string }>('POST', `/activities/${activity.id}/teams`, admin, { name: 'Under 12' })
+  const team = await call<{ id: string }>('POST', '/teams', admin, { name: 'Under 12', sportProfile: 'football' })
   const season = await call<{ id: string }>('POST', `/teams/${team.id}/seasons`, admin, { name: 'Ora', startDate: day(-30), endDate: day(300) })
   for (const name of ['Bruno', 'Carla']) {
     const p = await call<{ id: string }>('POST', '/people', admin, { name, surname: 'Verdi', birthDate: '2014-03-04', email: `${name.toLowerCase()}-${email}` })

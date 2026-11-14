@@ -2,13 +2,13 @@
 
 export type Language = 'it' | 'en' | 'fr'
 
-export type ScopeType = 'club' | 'activity' | 'team'
+export type ScopeType = 'club' | 'section' | 'team'
 export type AccessRole = 'admin' | 'manager'
 
 export interface CtxRole {
   role: AccessRole
   scope: ScopeType
-  activityId: string | null
+  sectionId: string | null
   teamId: string | null
 }
 
@@ -84,12 +84,16 @@ export type TeamGender = 'male' | 'female' | 'mixed'
 export type InvitationStatus = 'sent' | 'accepted' | 'revoked' | 'expired'
 
 /** Codes only: sport name and positions are translated with `sport.<codice>` and `posizione.<codice>`. */
+export type UnitTerm = 'team' | 'group'
+
 export interface SportProfileDto {
   code: string
   positions: string[]
   starterBench: boolean
   maxStarters: number | null
   modulesAvailable: string[]
+  /** Word for the team unit: the frontend says "squadra" or "gruppo" from it. */
+  unitTerm: UnitTerm
 }
 
 export interface SeasonDto {
@@ -102,23 +106,28 @@ export interface SeasonDto {
   league: string | null
 }
 
+export interface SectionDto {
+  id: string
+  name: string
+}
+
 export interface TeamDto {
   id: string
-  activityId: string
+  /** Null for a team outside any section. */
+  sectionId: string | null
   name: string
+  sportProfile: string
+  modulesActive: string[]
   category: string | null
   gender: TeamGender | null
 }
 
-export interface ActivityDto {
-  id: string
-  name: string
-  sportProfile: string
-  modulesActive: string[]
-}
-
 export type TeamTree = TeamDto & { seasons: SeasonDto[] }
-export type ActivityTree = ActivityDto & { teams: TeamTree[] }
+/** Flat: the sections and, apart, every team of the club with its section id. */
+export interface StructureTree {
+  sections: SectionDto[]
+  teams: TeamTree[]
+}
 
 export interface SummaryCertificate {
   status: CertificateStatus
@@ -184,7 +193,8 @@ export interface EnrollmentPersonDto {
   season: string
   teamId: string
   team: string
-  activity: string
+  /** Null for a team outside any section. */
+  section: string | null
   type: EnrollmentType
   staffRole: StaffRole | null
   position: string | null
@@ -225,7 +235,7 @@ export interface InvitationDto {
   email: string
   role: InvitationRole
   scope: ScopeType
-  activityId: string | null
+  sectionId: string | null
   teamId: string | null
   personId: string | null
   status: InvitationStatus
@@ -241,7 +251,7 @@ export interface RoleDto {
   email: string
   role: AccessRole
   scope: ScopeType
-  activityId: string | null
+  sectionId: string | null
   teamId: string | null
   destination: string | null
 }
@@ -358,7 +368,8 @@ export interface CalendarSeasonDto {
   seasonStatus: SeasonStatus
   teamId: string
   teamName: string
-  activityName: string
+  /** Null for a team outside any section. */
+  sectionName: string | null
 }
 
 export type CallupSeverity = 'hard' | 'confirm' | 'warning'
