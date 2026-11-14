@@ -66,6 +66,8 @@ test('an admin creates a team in a club without sections: no section anywhere', 
   await page.getByRole('option', { name: 'Calcio', exact: true }).click()
   await dialog.getByRole('textbox', { name: /^Nome/ }).fill('Under 15')
   await dialog.getByRole('button', { name: 'Crea' }).click()
+  // Football suggests a staff role: the offer covers the page until it is answered.
+  await page.getByRole('dialog', { name: 'Ruoli suggeriti per Calcio' }).getByRole('button', { name: 'Non ora' }).click()
 
   await expect(page.getByRole('heading', { name: 'Under 15', level: 3 })).toBeVisible()
   await expect(page.getByText('Senza settore')).toHaveCount(0)

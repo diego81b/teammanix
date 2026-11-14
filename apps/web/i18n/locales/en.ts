@@ -367,11 +367,9 @@ const en: typeof it = {
     mixed: 'Mixed',
   },
   staffRole: {
-    coach: 'Coach',
-    assistant_coach: 'Assistant coach',
-    trainer: 'Trainer',
-    escort: 'Team official',
-    other: 'Other',
+    goalkeeper_coach: 'Goalkeeper coach',
+    master: 'Master',
+    instructor: 'Instructor',
   },
   staffRoles: {
     name: 'Role name',
@@ -494,6 +492,13 @@ const en: typeof it = {
     choiceTaken: 'Already on the staff',
     choiceNoSeason: 'No open season',
     staffTeamsEnrolled: 'Enrollments created: {count}',
+    suggestedRoles: {
+      title: 'Suggested roles for {sport}',
+      text: 'These are the staff roles typical of this sport. Choose which to add: nothing is added without your choice. You can edit or archive them later in Settings.',
+      add: 'Add the chosen roles',
+      skip: 'Not now',
+      added: 'Roles added.',
+    },
     unit: {
       team: {
         text: 'Teams and seasons of the club, grouped in sections if you need them.',

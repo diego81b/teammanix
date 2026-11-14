@@ -79,7 +79,8 @@
       </article>
     </section>
 
-    <StructureNewTeam v-model:open="open.team" :term="clubTerm" :profiles="profiles" :sections="sections" @created="load" />
+    <StructureNewTeam v-model:open="open.team" :term="clubTerm" :profiles="profiles" :sections="sections" @created="onTeamCreated" />
+    <StructureSuggestedRoles v-model:open="open.suggested" :sport="sportName(suggestion.sportProfile)" :sport-profile="suggestion.sportProfile" :choices="suggestion.choices" />
     <StructureEditTeam v-model:open="open.editTeam" :term="choiceTerm" :team="choiceTeam" :sections="sections" :profiles="profiles" @saved="load" />
     <StructureSection v-model:open="open.section" :term="clubTerm" :section="choiceSection" @saved="load" />
     <StructureDeleteSection v-model:open="open.deleteSection" :term="clubTerm" :section="choiceSection" @done="load" />
@@ -92,6 +93,7 @@ import type { DropdownMenuItem } from '@nuxt/ui'
 import type { SectionDto, SportProfileDto, TeamTree } from '~/types/api'
 import { formatDate } from '~/utils/date'
 import { seasonStatusItem } from '~/utils/season'
+import { pendingSuggestions, type SuggestedChoice } from '~/utils/staff-role'
 import { clubUnitTerm, groupTeams, unitTermOf } from '~/utils/structure'
 
 const { t, te, locale } = useI18n()
@@ -100,7 +102,9 @@ useHead({ title: () => `${t('structure.title')} · TeamManix` })
 const structure = useStructure()
 const { data, loading, error, reload: load } = useLoad(() => structure.tree())
 const profiles = ref<SportProfileDto[]>([])
-const open = reactive({ team: false, editTeam: false, section: false, deleteSection: false, season: false })
+const open = reactive({ team: false, editTeam: false, section: false, deleteSection: false, season: false, suggested: false })
+const staffRoles = useStaffRoles()
+const suggestion = reactive<{ sportProfile: string, choices: SuggestedChoice[] }>({ sportProfile: '', choices: [] })
 const choiceTeam = ref<TeamTree | null>(null)
 const choiceSection = ref<SectionDto | null>(null)
 
@@ -117,6 +121,25 @@ const choiceTerm = computed(() => unitTermOf(profiles.value, choiceTeam.value?.s
 const hasDraft = (s: TeamTree) => s.seasons.some(x => x.status === 'draft')
 const sportName = (code: string) => (te(`sport.${code}`) ? t(`sport.${code}`) : code)
 
+function onTeamCreated(sportProfile: string) {
+  load()
+  offerSuggestedRoles(sportProfile)
+}
+/** After a team is created: the roles its sport suggests that the club does not have yet, only if there are any. Nothing is added unless the admin chooses. */
+async function offerSuggestedRoles(sportProfile: string) {
+  const profile = profiles.value.find(p => p.code === sportProfile)
+  if (!profile?.suggestedStaffRoles.length) return
+  try {
+    const pending = pendingSuggestions(profile.suggestedStaffRoles, await staffRoles.list(), code => t(`staffRole.${code}`))
+    if (!pending.length) return
+    suggestion.sportProfile = sportProfile
+    suggestion.choices = pending
+    open.suggested = true
+  }
+  catch {
+    // The offer is optional and the roles are always in the settings: a failed read must not get in the way.
+  }
+}
 function openSection(s: SectionDto | null) {
   choiceSection.value = s
   open.section = true

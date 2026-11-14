@@ -367,11 +367,9 @@ const fr: typeof it = {
     mixed: 'Mixte',
   },
   staffRole: {
-    coach: 'Entraîneur',
-    assistant_coach: 'Entraîneur adjoint',
-    trainer: 'Préparateur',
-    escort: 'Accompagnateur',
-    other: 'Autre',
+    goalkeeper_coach: 'Entraîneur des gardiens',
+    master: 'Maître d\'armes',
+    instructor: 'Instructeur',
   },
   staffRoles: {
     name: 'Nom du rôle',
@@ -494,6 +492,13 @@ const fr: typeof it = {
     choiceTaken: 'Déjà dans le staff',
     choiceNoSeason: 'Aucune saison ouverte',
     staffTeamsEnrolled: 'Inscriptions créées : {count}',
+    suggestedRoles: {
+      title: 'Rôles suggérés pour {sport}',
+      text: 'Voici les rôles du staff typiques de ce sport. Choisissez lesquels ajouter : rien n\'est ajouté sans votre choix. Vous pourrez les modifier ou les archiver dans les Paramètres.',
+      add: 'Ajouter les rôles choisis',
+      skip: 'Pas maintenant',
+      added: 'Rôles ajoutés.',
+    },
     unit: {
       team: {
         text: 'Équipes et saisons du club, regroupées en secteurs si besoin.',

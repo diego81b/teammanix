@@ -104,26 +104,30 @@ describe('keys used in the app', () => {
 // Sport profiles come from the API as codes (seed): sport name and positions are translated here.
 describe('sport profiles (API seed)', () => {
   const seed = readFileSync(join(__dirname, '../../../api/src/seed/sport-profiles.ts'), 'utf8')
-  const sport = [...seed.matchAll(/code: '([a-z0-9_]+)'/g)].map(m => m[1]!)
+  const sport = [...seed.matchAll(/^\s+code: '([a-z0-9_]+)',\s*$/gm)].map(m => m[1]!)
+  const staffRoles = [...new Set([...seed.matchAll(/\{ code: '([a-z0-9_]+)', policyModel/g)].map(m => m[1]!))]
   const positions = [...new Set([...seed.matchAll(/positions: \[([^\]]*)\]/g)].flatMap(m => [...m[1]!.matchAll(/'([a-z0-9_]+)'/g)].map(x => x[1]!)))]
 
   it('finds profiles and positions in the seed (the test is not empty)', () => {
     expect(sport.length).toBeGreaterThan(3)
     expect(positions.length).toBeGreaterThan(10)
+    expect(staffRoles.length).toBeGreaterThanOrEqual(3)
   })
 
   for (const l of Object.keys(flat)) {
-    it(`${l}: every sport and position in the seed has a text`, () => {
+    it(`${l}: every sport, position and suggested staff role in the seed has a text`, () => {
       const missing = [
         ...sport.map(c => `sport.${c}`),
         ...positions.map(c => `position.${c}`),
+        ...staffRoles.map(c => `staffRole.${c}`),
       ].filter(k => !flat[l]![k])
       expect(missing).toEqual([])
     })
-    it(`${l}: no text for sports or positions the seed does not have`, () => {
+    it(`${l}: no text for sports, positions or staff roles the seed does not have`, () => {
       const useless = Object.keys(flat[l]!).filter(k =>
         (k.startsWith('sport.') && !sport.includes(k.slice('sport.'.length)))
-        || (k.startsWith('position.') && !positions.includes(k.slice('position.'.length))))
+        || (k.startsWith('position.') && !positions.includes(k.slice('position.'.length)))
+        || (k.startsWith('staffRole.') && !staffRoles.includes(k.slice('staffRole.'.length))))
       expect(useless).toEqual([])
     })
   }

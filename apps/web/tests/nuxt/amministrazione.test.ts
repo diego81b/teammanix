@@ -283,4 +283,10 @@ describe('useStaffRoles', () => {
     await usePeople().editEnrollment('i1', { staffRoleId: 'r1' })
     expect(last['PATCH /enrollments/i1']?.body).toEqual({ staffRoleId: 'r1' })
   })
+  it('adds the suggested roles the admin chose, by code and name', async () => {
+    endpoint('/staff-roles/suggested', [role])
+    const added = await useStaffRoles().addSuggested({ sportProfile: 'fencing', roles: [{ code: 'master', name: 'Maestro' }] })
+    expect(last['POST /staff-roles/suggested']?.body).toEqual({ sportProfile: 'fencing', roles: [{ code: 'master', name: 'Maestro' }] })
+    expect(added).toEqual([role])
+  })
 })

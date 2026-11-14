@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { go, login, PASSWORD, uniqueEmail } from './helpers'
 
 const API = process.env.E2E_API_URL ?? 'http://localhost:3001/api'
@@ -99,4 +99,48 @@ test('an archived role is not offered for a new enrollment and can be restored',
   await go(page, '/settings')
   await page.getByRole('listitem').filter({ hasText: 'Preparatore' }).getByRole('button', { name: 'Ripristina' }).click()
   await expect(page.getByRole('listitem').filter({ hasText: 'Preparatore' }).getByText('archiviato', { exact: true })).toHaveCount(0)
+})
+
+/** Creates a fencing team from the structure page: the sport suggests staff roles. */
+async function createFencingTeam(page: Page) {
+  await go(page, '/structure')
+  await page.getByRole('button', { name: 'Nuova squadra' }).click()
+  const form = page.getByRole('dialog')
+  await form.getByRole('combobox', { name: /^Sport/ }).click()
+  await page.getByRole('option', { name: 'Scherma', exact: true }).click()
+  await form.getByRole('textbox', { name: /^Nome/ }).fill('Spada')
+  await form.getByRole('button', { name: 'Crea' }).click()
+  const offer = page.getByRole('dialog', { name: 'Ruoli suggeriti per Scherma' })
+  await expect(offer).toBeVisible()
+  return offer
+}
+
+test('a new fencing team offers the suggested roles and only the ones chosen are added', async ({ page }) => {
+  const { email } = await setup()
+  await login(page, email)
+  await expect(page.getByRole('heading', { name: 'Ciao, Ada' })).toBeVisible()
+
+  const offer = await createFencingTeam(page)
+  await offer.getByRole('checkbox', { name: /Istruttore/ }).uncheck()
+  await offer.getByRole('button', { name: 'Aggiungi i ruoli scelti' }).click()
+  await expect(page.getByText('Ruoli aggiunti.')).toBeVisible()
+
+  await go(page, '/settings')
+  await expect(page.getByText('Maestro', { exact: true })).toBeVisible()
+  await expect(page.getByText('Istruttore', { exact: true })).toHaveCount(0)
+})
+
+test('declining the suggested roles adds nothing', async ({ page }) => {
+  const { email } = await setup()
+  await login(page, email)
+  await expect(page.getByRole('heading', { name: 'Ciao, Ada' })).toBeVisible()
+
+  const offer = await createFencingTeam(page)
+  await offer.getByRole('button', { name: 'Non ora' }).click()
+  await expect(offer).toBeHidden()
+
+  await go(page, '/settings')
+  await expect(page.getByRole('heading', { name: 'Ruoli dello staff' })).toBeVisible()
+  await expect(page.getByText('Maestro', { exact: true })).toHaveCount(0)
+  await expect(page.getByText('Istruttore', { exact: true })).toHaveCount(0)
 })

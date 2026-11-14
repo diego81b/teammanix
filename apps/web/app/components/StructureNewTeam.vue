@@ -34,7 +34,7 @@ import { sortProfiles } from '~/utils/sport'
 import { NONE, teamCreateBody, unitTermOf, validateTeam, type TeamFields } from '~/utils/structure'
 
 const props = defineProps<{ term: UnitTerm, profiles: SportProfileDto[], sections: SectionDto[] }>()
-const emit = defineEmits<{ created: [] }>()
+const emit = defineEmits<{ created: [sportProfile: string] }>()
 const open = defineModel<boolean>('open', { default: false })
 const { t, locale } = useI18n()
 const structure = useStructure()
@@ -67,7 +67,7 @@ async function send() {
   try {
     await structure.createTeam(teamCreateBody(status))
     open.value = false
-    emit('created')
+    emit('created', status.sportProfile)
   }
   catch (e) {
     error.value = errorText(e)

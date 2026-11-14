@@ -1,5 +1,5 @@
 import type { StaffRoleItem } from '../types/api'
-import { roleChoices, type RoleFields } from '../utils/staff-role'
+import { roleChoices, type RoleFields, type SuggestedBody } from '../utils/staff-role'
 
 /** The club's catalog of staff roles: any member reads it, only the admin changes it. */
 export function useStaffRoles() {
@@ -10,6 +10,8 @@ export function useStaffRoles() {
     edit: (id: string, data: Partial<RoleFields> & { archived?: boolean }) =>
       api<StaffRoleItem>(`/staff-roles/${id}`, { method: 'PATCH', body: { ...data } }),
     /** Only a role no enrollment uses (STAFF_ROLE_IN_USE otherwise): the others are archived. */
+    /** Adds the suggested roles the admin chose; the answer has only the ones that were new. */
+    addSuggested: (body: SuggestedBody) => api<StaffRoleItem[]>('/staff-roles/suggested', { method: 'POST', body: { ...body } }),
     remove: (id: string) => api<void>(`/staff-roles/${id}`, { method: 'DELETE' }),
   }
 }

@@ -1,4 +1,4 @@
-import type { StaffPolicyModel, StaffRoleItem } from '../types/api'
+import type { StaffPolicyModel, StaffRoleItem, SuggestedStaffRole } from '../types/api'
 
 /** Permission models a club role can use (rule 14), `none` last. */
 export const POLICY_MODELS: readonly StaffPolicyModel[] = ['coach', 'assistant_coach', 'trainer', 'none']
@@ -46,4 +46,39 @@ export function roleEditBody(f: RoleFields, current: StaffRoleItem): Partial<Rol
   if (f.policyModel !== current.policyModel) body.policyModel = f.policyModel
   if (f.mustBeAvailable !== current.mustBeAvailable) body.mustBeAvailable = f.mustBeAvailable
   return body
+}
+
+/** Key for comparing role names, the same the API uses for uniqueness: ignores case, accents and repeated spaces. */
+export function roleNameKey(name: string): string {
+  return name.trim().replace(/\s+/g, ' ').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+}
+
+export interface SuggestedChoice extends SuggestedStaffRole {
+  /** The name in the language of the admin. */
+  name: string
+}
+
+/**
+ * The roles a sport profile suggests that the club does not have yet, named by `nameOf` (the texts of the current
+ * language). A name the club already has, archived or not, is not offered again.
+ */
+export function pendingSuggestions(
+  suggested: readonly SuggestedStaffRole[] | undefined,
+  catalog: readonly StaffRoleItem[],
+  nameOf: (code: string) => string,
+): SuggestedChoice[] {
+  const taken = new Set(catalog.map(r => roleNameKey(r.name)))
+  return (suggested ?? [])
+    .map(s => ({ ...s, name: nameOf(s.code) }))
+    .filter(s => !taken.has(roleNameKey(s.name)))
+}
+
+export interface SuggestedBody {
+  sportProfile: string
+  roles: { code: string, name: string }[]
+}
+
+/** Body of `POST /staff-roles/suggested`: model and flag are not sent, the API takes them from the profile. */
+export function suggestedBody(sportProfile: string, chosen: readonly SuggestedChoice[]): SuggestedBody {
+  return { sportProfile, roles: chosen.map(c => ({ code: c.code, name: c.name })) }
 }

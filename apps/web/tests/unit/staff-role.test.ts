@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { NAME_MAX, POLICY_MODELS, roleChoices, roleCreateBody, roleEditBody, startingRole, validRoleName } from '../../app/utils/staff-role'
-import type { StaffRoleItem } from '../../app/types/api'
+import { NAME_MAX, POLICY_MODELS, pendingSuggestions, roleChoices, roleCreateBody, roleEditBody, roleNameKey, startingRole, suggestedBody, validRoleName } from '../../app/utils/staff-role'
+import type { StaffRoleItem, SuggestedStaffRole } from '../../app/types/api'
 
 const role = (o: Partial<StaffRoleItem> & { id: string }): StaffRoleItem => ({
   name: o.id, policyModel: 'none', mustBeAvailable: false, archived: false, ...o,
@@ -89,5 +89,43 @@ describe('roleEditBody', () => {
   })
   it('nothing changed, empty body', () => {
     expect(roleEditBody({ name: 'Allenatore', policyModel: 'coach', mustBeAvailable: true }, current)).toEqual({})
+  })
+})
+
+describe('roleNameKey', () => {
+  it('ignores case, accents and repeated spaces, like the API', () => {
+    expect(roleNameKey(' Entraîneur   ADJOINT ')).toBe('entraineur adjoint')
+    expect(roleNameKey('Maestro')).toBe(roleNameKey('maestro'))
+  })
+})
+
+const suggestions: SuggestedStaffRole[] = [
+  { code: 'master', policyModel: 'coach', mustBeAvailable: true },
+  { code: 'instructor', policyModel: 'assistant_coach', mustBeAvailable: false },
+]
+const nameOf = (code: string) => ({ master: 'Maestro', instructor: 'Istruttore' })[code as 'master'] ?? code
+
+describe('pendingSuggestions', () => {
+  it('offers the suggested roles named in the language of the admin, with their model and flag', () => {
+    expect(pendingSuggestions(suggestions, roles, nameOf)).toEqual([
+      { code: 'master', name: 'Maestro', policyModel: 'coach', mustBeAvailable: true },
+      { code: 'instructor', name: 'Istruttore', policyModel: 'assistant_coach', mustBeAvailable: false },
+    ])
+  })
+  it('skips a name the club already has, archived roles and other case or accents included', () => {
+    const catalog = [role({ id: 'x', name: 'MAESTRO' }), role({ id: 'y', name: 'istruttore', archived: true })]
+    expect(pendingSuggestions(suggestions, catalog, nameOf)).toEqual([])
+    expect(pendingSuggestions(suggestions, [role({ id: 'x', name: 'maestro' })], nameOf).map(s => s.code)).toEqual(['instructor'])
+  })
+  it('has nothing to offer for a profile without suggestions, or without a profile', () => {
+    expect(pendingSuggestions([], roles, nameOf)).toEqual([])
+    expect(pendingSuggestions(undefined, roles, nameOf)).toEqual([])
+  })
+})
+
+describe('suggestedBody', () => {
+  it('sends the profile and, for each chosen role, its code and name', () => {
+    const chosen = pendingSuggestions(suggestions, [], nameOf).slice(0, 1)
+    expect(suggestedBody('fencing', chosen)).toEqual({ sportProfile: 'fencing', roles: [{ code: 'master', name: 'Maestro' }] })
   })
 })

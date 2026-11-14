@@ -102,9 +102,17 @@ export type InvitationStatus = 'sent' | 'accepted' | 'revoked' | 'expired'
 /** Codes only: sport name and positions are translated with `sport.<codice>` and `posizione.<codice>`. */
 export type UnitTerm = 'team' | 'group'
 
+/** A staff role the sport profile suggests: the code gives the text (`staffRole.<code>`), model and flag are what the role gets. */
+export interface SuggestedStaffRole {
+  code: string
+  policyModel: StaffPolicyModel
+  mustBeAvailable: boolean
+}
+
 export interface SportProfileDto {
   code: string
   positions: string[]
+  suggestedStaffRoles: SuggestedStaffRole[]
   starterBench: boolean
   maxStarters: number | null
   modulesAvailable: string[]
