@@ -1252,7 +1252,7 @@ const fr: typeof it = {
     deleteText: 'Supprime définitivement votre compte et les données personnelles associées. Les fiches que les clubs ont sur vous restent aux clubs, qui les gèrent.',
     deleteButton: 'Supprimer mon compte',
     deleteModalTitle: 'Supprimer votre compte ?',
-    deleteModalText: "Cette action est irréversible. L'e-mail, le mot de passe, les préférences et les notifications de votre compte sont supprimés et vous perdez l'accès à tous vos clubs. Les fiches des clubs restent aux clubs.",
+    deleteModalText: "Cette action est irréversible. L'e-mail, le mot de passe, les préférences et les notifications de votre compte sont supprimés et vous perdez l'accès à tous vos clubs. Les fiches des clubs restent aux clubs. Seule la preuve de votre acceptation des conditions, de la politique de confidentialité et du DPA (nom, e-mail, date et version) est conservée, à titre de preuve.",
     deletePassword: 'Mot de passe',
     deleteConfirm: 'Supprimer définitivement',
     deleteDone: 'Compte supprimé',

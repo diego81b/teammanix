@@ -1252,7 +1252,7 @@ const en: typeof it = {
     deleteText: 'Permanently deletes your account and the personal data linked to it. The records clubs hold about you stay with the clubs, which manage them.',
     deleteButton: 'Delete my account',
     deleteModalTitle: 'Delete your account?',
-    deleteModalText: 'This cannot be undone. The email, password, preferences and notifications of your account are deleted and you lose access to all your clubs. The records of the clubs stay with the clubs.',
+    deleteModalText: 'This cannot be undone. The email, password, preferences and notifications of your account are deleted and you lose access to all your clubs. The records of the clubs stay with the clubs. Only the proof that you accepted the terms, privacy policy and DPA (name, email, date and version) is kept, as evidence.',
     deletePassword: 'Password',
     deleteConfirm: 'Delete permanently',
     deleteDone: 'Account deleted',

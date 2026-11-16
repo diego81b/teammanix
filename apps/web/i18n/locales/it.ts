@@ -1256,7 +1256,7 @@ const it = {
     deleteText: 'Cancella per sempre il tuo account e i dati personali collegati. Le schede che le società hanno su di te restano alle società, che le gestiscono.',
     deleteButton: 'Elimina il mio account',
     deleteModalTitle: "Eliminare l'account?",
-    deleteModalText: "L'operazione non si può annullare. Vengono cancellati email, password, preferenze e notifiche del tuo account e perdi l'accesso a tutte le tue società. Le schede delle società restano alle società.",
+    deleteModalText: "L'operazione non si può annullare. Vengono cancellati email, password, preferenze e notifiche del tuo account e perdi l'accesso a tutte le tue società. Le schede delle società restano alle società. Resta solo la prova di accettazione di termini, privacy e DPA (nome, email, data e versione), che conserviamo come prova.",
     deletePassword: 'Password',
     deleteConfirm: 'Elimina definitivamente',
     deleteDone: 'Account eliminato',
