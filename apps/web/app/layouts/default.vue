@@ -43,22 +43,33 @@
 
     <div class="mx-auto flex" style="max-width: calc(var(--tm-content-max) + var(--tm-sidebar-w))">
       <nav
-        class="sticky hidden shrink-0 flex-col gap-1 p-4 md:flex"
+        class="sticky hidden shrink-0 flex-col gap-4 overflow-y-auto p-4 md:flex"
         style="width: var(--tm-sidebar-w); top: var(--tm-header-h); height: calc(100dvh - var(--tm-header-h))"
         :aria-label="$t('shell.navigation')"
       >
-        <UButton
-          v-for="v in items"
-          :key="v.to"
-          :to="v.to"
-          :icon="v.icon"
-          :label="v.label"
-          :color="active(v.to) ? 'primary' : 'neutral'"
-          :variant="active(v.to) ? 'soft' : 'ghost'"
-          size="xl"
-          class="justify-start"
-          :aria-current="active(v.to) ? 'page' : undefined"
-        />
+        <div
+          v-for="g in groups"
+          :key="g.id"
+          class="flex flex-col gap-1"
+          :role="groups.length > 1 ? 'group' : undefined"
+          :aria-labelledby="groups.length > 1 ? `nav-${g.id}` : undefined"
+        >
+          <p v-if="groups.length > 1" :id="`nav-${g.id}`" class="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">
+            {{ $t(`shell.groups.${g.id}`) }}
+          </p>
+          <UButton
+            v-for="e in g.entries"
+            :key="e.to"
+            :to="e.to"
+            :icon="e.icon"
+            :label="$t(`shell.${e.key}`)"
+            :color="active(e.to) ? 'primary' : 'neutral'"
+            :variant="active(e.to) ? 'soft' : 'ghost'"
+            size="xl"
+            class="justify-start"
+            :aria-current="active(e.to) ? 'page' : undefined"
+          />
+        </div>
       </nav>
       <main id="content" class="min-w-0 flex-1 px-4 py-6 pb-[calc(var(--tm-tabbar-h)+var(--tm-safe-bottom)+1.5rem)] md:px-6 md:pb-10">
         <slot />
@@ -71,16 +82,61 @@
       :aria-label="$t('shell.navigation')"
     >
       <NuxtLink
-        v-for="v in items"
-        :key="v.to"
-        :to="v.to"
-        class="flex flex-1 flex-col items-center justify-center gap-1 text-xs font-medium"
-        :class="active(v.to) ? 'text-primary' : 'text-muted'"
-        :aria-current="active(v.to) ? 'page' : undefined"
+        v-for="e in mobile.tabs"
+        :key="e.to"
+        :to="e.to"
+        class="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 text-xs font-medium"
+        :class="active(e.to) ? 'text-primary' : 'text-muted'"
+        :aria-current="active(e.to) ? 'page' : undefined"
       >
-        <UIcon :name="v.icon" class="size-6" />
-        {{ v.label }}
+        <UIcon :name="e.icon" class="size-6" />
+        <span class="max-w-full truncate">{{ $t(tabLabelKey(e.key)) }}</span>
       </NuxtLink>
+
+      <USlideover
+        v-if="mobile.more.length > 0"
+        v-model:open="moreOpen"
+        side="bottom"
+        :title="$t('shell.more')"
+        :description="$t('shell.moreText')"
+        :ui="{ description: 'sr-only', close: 'top-1.5' }"
+      >
+        <button
+          type="button"
+          class="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 text-xs font-medium"
+          :class="moreActive || moreOpen ? 'text-primary' : 'text-muted'"
+        >
+          <UIcon name="i-tm-more" class="size-6" />
+          <span class="max-w-full truncate">{{ $t('shell.more') }}</span>
+        </button>
+
+        <template #body>
+          <div
+            v-for="g in mobile.more"
+            :key="g.id"
+            class="mb-4 flex flex-col gap-1 last:mb-0"
+            role="group"
+            :aria-labelledby="`more-${g.id}`"
+          >
+            <p :id="`more-${g.id}`" class="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">
+              {{ $t(`shell.groups.${g.id}`) }}
+            </p>
+            <UButton
+              v-for="e in g.entries"
+              :key="e.to"
+              :to="e.to"
+              :icon="e.icon"
+              :label="$t(`shell.${e.key}`)"
+              :color="active(e.to) ? 'primary' : 'neutral'"
+              :variant="active(e.to) ? 'soft' : 'ghost'"
+              size="xl"
+              class="min-h-11 justify-start"
+              :aria-current="active(e.to) ? 'page' : undefined"
+              @click="moreOpen = false"
+            />
+          </div>
+        </template>
+      </USlideover>
     </nav>
   </div>
 </template>
@@ -112,22 +168,13 @@ onBeforeUnmount(() => {
 })
 watch(() => [route.path, session.activeClubId], refresh)
 
-// Administration items are for the admin only (the API rejects them for others anyway). The calendar is for every role.
-const items = computed(() => [
-  { label: t('shell.home'), icon: 'i-tm-home', to: '/' },
-  { label: t('shell.calendar'), icon: 'i-tm-calendar', to: '/calendar' },
-  ...(session.isAdmin
-    ? [
-        { label: t('shell.structure'), icon: 'i-tm-building', to: '/structure' },
-        { label: t('shell.settings'), icon: 'i-tm-sliders', to: '/settings' },
-        { label: t('shell.people'), icon: 'i-tm-users', to: '/people' },
-        { label: t('shell.access'), icon: 'i-tm-user-plus', to: '/invitations' },
-      ]
-    : []),
-])
-// /stagioni and /archivio are part of Struttura and Persone.
-const ROOTS: Record<string, string[]> = { '/structure': ['/structure', '/seasons'], '/people': ['/people', '/archive'] }
-const active = (to: string) => (to === '/' ? route.path === '/' : (ROOTS[to] ?? [to]).some(r => route.path === r || route.path.startsWith(`${r}/`)))
+// What each role sees, and how it splits between the tab bar and the sheet, is decided by utils/navigation.
+const groups = computed(() => navGroups(session.isAdmin))
+const mobile = computed(() => mobileNav(session.isAdmin))
+const active = (to: string) => isNavActive(route.path, to)
+const moreOpen = ref(false)
+const moreActive = computed(() => mobile.value.more.some(g => g.entries.some(e => active(e.to))))
+watch(() => route.path, () => { moreOpen.value = false })
 
 const themes = computed(() => [
   { value: 'system', label: t('shell.themeAutomatic'), icon: 'i-tm-monitor' },
@@ -138,11 +185,7 @@ const themes = computed(() => [
 const menu = computed<DropdownMenuItem[][]>(() => [
   [{ label: session.user?.email ?? '', type: 'label' }],
   [
-    { label: t('shell.notifications'), icon: 'i-tm-bell', to: '/notifications' },
     { label: t('shell.profile'), icon: 'i-tm-user', to: '/profile' },
-    { label: t('shell.absences'), icon: 'i-tm-calendar', to: '/absences' },
-    { label: t('shell.suspensions'), icon: 'i-tm-ban', to: '/suspensions' },
-    { label: t('shell.statistics'), icon: 'i-tm-trend-up', to: '/statistics' },
     { label: t('common.changeClub'), icon: 'i-tm-building', to: '/select-club' },
   ],
   [

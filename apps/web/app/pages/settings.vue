@@ -15,18 +15,21 @@
     <p v-if="loading && !data" class="text-sm text-muted" role="status">{{ $t('common.loading') }}</p>
 
     <template v-if="data">
-      <ul class="divide-y divide-default rounded-lg border border-default bg-elevated">
-        <li v-for="s in BOOLEAN_SETTINGS" :key="s.key" class="p-4">
-          <USwitch
-            :model-value="data[s.key]"
-            :loading="saving === s.key"
-            :disabled="saving !== null"
-            :label="$t(`settings.${s.key}.label`)"
-            :description="$t(`settings.${s.key}.text`)"
-            @update:model-value="(v: boolean) => change(s.key, { [s.key]: v })"
-          />
-        </li>
-      </ul>
+      <section v-for="g in settingGroups()" :key="g.id" class="space-y-2" :aria-labelledby="`settings-${g.id}`">
+        <h2 :id="`settings-${g.id}`" class="text-lg font-semibold">{{ $t(`settings.groups.${g.id}`) }}</h2>
+        <ul class="divide-y divide-default rounded-lg border border-default bg-elevated">
+          <li v-for="s in g.settings" :key="s.key" class="p-4">
+            <USwitch
+              :model-value="data[s.key]"
+              :loading="saving === s.key"
+              :disabled="saving !== null"
+              :label="$t(`settings.${s.key}.label`)"
+              :description="$t(`settings.${s.key}.text`)"
+              @update:model-value="(v: boolean) => change(s.key, { [s.key]: v })"
+            />
+          </li>
+        </ul>
+      </section>
     </template>
 
     <StaffRolesPanel />
@@ -35,7 +38,7 @@
 
 <script setup lang="ts">
 import type { ClubSettings } from '~/types/api'
-import { BOOLEAN_SETTINGS } from '~/utils/club-settings'
+import { settingGroups } from '~/utils/club-settings'
 
 const { t } = useI18n()
 useHead({ title: () => `${t('settings.title')} · TeamManix` })

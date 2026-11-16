@@ -269,13 +269,11 @@ Realizza una pagina `components.html` che mostra ogni componente nei suoi stati 
 
 SHELL DELL'APP
 
-- Mobile: header fisso 56 px con a sinistra il selettore di squadra (nome squadra + chevron, apre un bottom sheet con l'elenco delle squadre dell'utente e, sotto, "Cambia società" se ne ha più di una), a destra campanella notifiche con badge numerico e avatar. Sotto, bottom tab bar fissa con voci in base al ruolo:
-  - Giocatore: Home, Calendario, Profilo, Altro.
-  - Staff: Home, Calendario, Rosa, Altro.
-  - Dirigente: Home, Calendario, Rosa, Altro (sola lettura).
-  - Admin: Home, Calendario, Rosa, Amministrazione (con "Altro" nel menu del profilo).
+- Mobile: header fisso 56 px con a sinistra il selettore di squadra (nome squadra + chevron, apre un bottom sheet con l'elenco delle squadre dell'utente e, sotto, "Cambia società" se ne ha più di una), a destra campanella notifiche con badge numerico e avatar. Sotto, bottom tab bar fissa, al massimo cinque posti, con voci in base al ruolo:
+  - Giocatore, staff, dirigente: Home, Calendario, Assenze, Squalifiche, Statistiche (testi brevi nella barra, "Le mie ..." altrove).
+  - Admin: Home, Calendario, Squadre, Persone, Altro. "Altro" apre un bottom sheet con le voci rimaste, raggruppate come su desktop: "Il mio spazio" (Le mie assenze, squalifiche, statistiche) e "Società" (Inviti e ruoli, Impostazioni). Il sheet si chiude navigando e restituisce il focus al pulsante.
   Voce attiva: icona e testo bordeaux con barra superiore 2 px bordeaux. Voci inattive grigio 700.
-- Desktop: sidebar sinistra 248 px bianca con bordo destro grigio 200: logo in alto, selettore società e squadra, voci con icona, sezione "Amministrazione" visibile solo all'admin. Header di pagina con titolo, azioni primarie a destra, breadcrumb sopra.
+- Desktop: sidebar sinistra 248 px bianca con bordo destro grigio 200: logo in alto, selettore società e squadra, voci con icona in due gruppi con titolo: "Il mio spazio" (Home, Calendario, Le mie assenze, Le mie squalifiche, Le mie statistiche) per ogni ruolo e "Società" (Squadre, Persone, Inviti e ruoli, Impostazioni) solo per l'admin. Chi non è admin vede un solo gruppo, senza titolo. Il menu dell'account contiene solo profilo, tema, lingua, cambio società ed esci. Header di pagina con titolo, azioni primarie a destra, breadcrumb sopra.
 - Il nome della società appare sempre in modo discreto (selettore, titoli delle notifiche) perché l'utente può appartenere a più società.
 
 SCHERMATE DA PRODURRE
