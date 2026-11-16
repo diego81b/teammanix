@@ -2,6 +2,7 @@ import type { EntityManager } from '@mikro-orm/core';
 import { AuditLog } from '../entities/audit-log.entity';
 import { Club } from '../entities/club.entity';
 import { Document } from '../entities/document.entity';
+import { TermsAcceptance } from '../entities/terms-acceptance.entity';
 import { User } from '../entities/user.entity';
 import type { StorageService } from '../storage/storage.service';
 
@@ -26,9 +27,9 @@ export function parseKeepEmail(args: string[]): string {
 
 /**
  * Deletes every club with all its data (the tenant tables follow by cascade), every account except the one
- * to keep, the audit log and the stored files of the deleted documents. The kept account stays without
- * memberships or roles. Sport profiles and other seed data are untouched. Files go after the commit, so a
- * failed delete does not lose them.
+ * to keep, the proofs of acceptance left without an account, the audit log and the stored files of the deleted
+ * documents. The kept account stays without memberships or roles. Sport profiles and other seed data are
+ * untouched. Files go after the commit, so a failed delete does not lose them.
  */
 export async function resetData(em: EntityManager, storage: StorageService, keepEmail: string): Promise<ResetResult> {
   const keep = await em.findOne(User, { email: keepEmail.toLowerCase() });
@@ -41,6 +42,8 @@ export async function resetData(em: EntityManager, storage: StorageService, keep
     const clubs = await tem.nativeDelete(Club, {});
     const users = await tem.nativeDelete(User, { id: { $ne: keep.id } });
     await tem.nativeDelete(AuditLog, {});
+    // The proofs of acceptance outlive their account (archival): once the account is gone only this command removes them.
+    await tem.nativeDelete(TermsAcceptance, { user: null });
     return { clubs, users };
   });
 

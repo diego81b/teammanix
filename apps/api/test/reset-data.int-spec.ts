@@ -8,6 +8,7 @@ import { Document } from '../src/entities/document.entity';
 import { Membership } from '../src/entities/membership.entity';
 import { Person } from '../src/entities/person.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
+import { TermsAcceptance } from '../src/entities/terms-acceptance.entity';
 import { User } from '../src/entities/user.entity';
 import { DocumentCategory } from '../src/entities/enums';
 import { StorageService } from '../src/storage/storage.service';
@@ -76,6 +77,9 @@ describe('dev data reset', () => {
     expect(await check.count(Document, {}, { filters: false })).toBe(0);
     expect(await check.count(AuditLog, {})).toBe(0);
     expect(await check.count(SportProfile, {})).toBe(1);
+    // The proofs of acceptance of the deleted accounts go too, the kept account keeps its own (terms and privacy).
+    expect(await check.count(TermsAcceptance, { user: null }, { filters: false })).toBe(0);
+    expect(await check.count(TermsAcceptance, {}, { filters: false })).toBe(2);
     // The folders stay (the driver removes files only), the files are gone.
     for (const c of [keep, other]) await expect(readdir(join(t.storageDir, c.clubId))).resolves.toEqual([]);
 

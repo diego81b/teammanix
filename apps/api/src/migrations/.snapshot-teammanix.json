@@ -1675,7 +1675,7 @@
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
-          "nullable": false,
+          "nullable": true,
           "unique": false,
           "length": null,
           "precision": null,
@@ -1684,6 +1684,38 @@
           "comment": null,
           "enumItems": [],
           "mappedType": "uuid"
+        },
+        "signer_name": {
+          "name": "signer_name",
+          "type": "varchar(210)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 210,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "signer_email": {
+          "name": "signer_email",
+          "type": "varchar(320)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 320,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
         },
         "club_id": {
           "name": "club_id",
@@ -1792,7 +1824,7 @@
             "id"
           ],
           "referencedTableName": "public.users",
-          "deleteRule": "cascade",
+          "deleteRule": "set null",
           "updateRule": "cascade"
         },
         "terms_acceptances_club_id_foreign": {

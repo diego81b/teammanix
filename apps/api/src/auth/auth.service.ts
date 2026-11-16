@@ -1,6 +1,7 @@
 import { EntityManager } from '@mikro-orm/postgresql';
 import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import * as argon2 from 'argon2';
+import { signerOf } from './acceptance.rules';
 import { hashOptions } from './password-hash';
 import { AuditService } from '../audit/audit.service';
 import { appConfig, DOCUMENTS_VERSION } from '../config/app.config';
@@ -59,7 +60,7 @@ export class AuthService {
       const data = { passwordHash: hash, name: dto.name, surname: dto.surname, language: dto.language ?? Language.IT };
       const u = existing ? tem.assign(await tem.findOneOrFail(User, existing.id), data) : tem.create(User, { email: dto.email, ...data });
       for (const type of [TypeLegalDocument.TERMS, TypeLegalDocument.PRIVACY]) {
-        tem.create(TermsAcceptance, { user: u, type, version: DOCUMENTS_VERSION });
+        tem.create(TermsAcceptance, { user: u, ...signerOf(u), type, version: DOCUMENTS_VERSION });
       }
       return u;
     });

@@ -8,12 +8,20 @@ import { TypeLegalDocument } from './enums';
  * Proof of acceptance (click-wrap) of terms, privacy and DPA under art. 28 GDPR.
  * The DPA is accepted by whoever creates the club, on behalf of the club that owns the data. Immutable rows, never updated.
  * No IP stored: minimization. club is null for the acceptance of the terms at registration.
+ * Kept as evidence of signature and acceptance (archival): deleting the account sets `user` to null, and the signer
+ * stays identified by the name and email frozen on the row. The row goes only with its club.
  */
 @Entity({ tableName: 'terms_acceptances' })
 @Index({ properties: ['user', 'type', 'version'] })
 export class TermsAcceptance extends BaseEntity<'acceptedAt'> {
-  @ManyToOne(() => User, { deleteRule: 'cascade' })
-  user!: Rel<User>;
+  @ManyToOne(() => User, { nullable: true, deleteRule: 'set null' })
+  user: Rel<User> | null = null;
+
+  @Property({ length: 210 })
+  signerName!: string;
+
+  @Property({ length: 320 })
+  signerEmail!: string;
 
   @ManyToOne(() => Club, { nullable: true, deleteRule: 'cascade' })
   club: Rel<Club> | null = null;

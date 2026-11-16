@@ -75,7 +75,7 @@ describe('delete own account (art. 17)', () => {
     expect(await check.count(PushSubscription, { user: m.userId })).toBe(0);
     expect(await check.count(NotificationPreference, { user: m.userId })).toBe(0);
     expect(await check.count(Notification, { user: m.userId }, { filters: false })).toBe(0);
-    expect(await check.count(TermsAcceptance, { user: m.userId })).toBe(0);
+    expect(await check.count(TermsAcceptance, { user: m.userId })).toBe(0); // the proof stays, but no longer linked
     expect(await check.count(AccessRole, { user: m.userId }, { filters: false })).toBe(0);
     expect(await check.count(Membership, { user: m.userId }, { filters: false })).toBe(0);
     // The club keeps working for whoever is left.
@@ -159,6 +159,28 @@ describe('delete own account (art. 17)', () => {
       const text = JSON.stringify({ meta: row.meta, entity: row.entity });
       expect(text).not.toMatch(/del-6p|Pia|Verdi/);
     }
+  });
+
+  it('the proof of acceptance stays as evidence: frozen signer, unlinked from the account, club kept', async () => {
+    const a = await admin('del-8@test.it');
+    await withRole(a, 'del-8b@test.it', 'admin');
+    const before = await em().find(TermsAcceptance, { user: a.userId }, { orderBy: { type: 'asc' } });
+    expect(before.map((r) => r.type)).toEqual(['dpa', 'privacy', 'terms']);
+    // The signer is the person at the moment of the signature, not what the account says later.
+    await em().nativeUpdate(User, { id: a.userId }, { name: 'Changed' });
+
+    expect((await remove(a.token)).status).toBe(204);
+
+    const kept = await em().find(TermsAcceptance, { signerEmail: 'del-8@test.it' }, { orderBy: { type: 'asc' }, filters: false });
+    expect(kept.map((r) => [r.type, r.version, r.acceptedAt.getTime()])).toEqual(
+      before.map((r) => [r.type, r.version, r.acceptedAt.getTime()]),
+    );
+    for (const r of kept) {
+      expect(r.user).toBeNull();
+      expect(r.signerName).toBe('Mario Rossi');
+    }
+    expect(kept.find((r) => r.type === 'dpa')?.club?.id).toBe(a.clubId);
+    expect(kept.find((r) => r.type === 'terms')?.club).toBeNull();
   });
 
   it('invitations sent by the deleted account stay valid', async () => {
