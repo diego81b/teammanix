@@ -29,20 +29,20 @@ async function setup() {
   return { email }
 }
 
-test('the admin sees the personal and club groups in the sidebar, with the account menu reduced to account things', async ({ page }) => {
+test('an admin with no person record sees Home and Calendario next to the club group, with the account menu reduced to account things', async ({ page }) => {
   const { email } = await setup()
   await login(page, email)
   await expect(page.getByRole('heading', { name: 'Ciao, Ada' })).toBeVisible()
 
   const sidebar = page.getByRole('navigation', { name: 'Navigazione principale' }).first()
-  await expect(sidebar.getByRole('group', { name: 'Il mio spazio' }).getByRole('link')).toHaveText(['Home', 'Calendario', 'Le mie assenze', 'Le mie squalifiche', 'Le mie statistiche'])
+  await expect(sidebar.getByRole('group', { name: 'Il mio spazio' }).getByRole('link')).toHaveText(['Home', 'Calendario'])
   await expect(sidebar.getByRole('group', { name: 'Società' }).getByRole('link')).toHaveText(['Squadre', 'Persone', 'Inviti e ruoli', 'Impostazioni'])
 
   await page.getByRole('button', { name: 'Menu dell\'account' }).click()
   await expect(page.getByRole('menuitem')).toHaveText(['Profilo e notifiche', 'Cambia società', 'Esci'])
 })
 
-test('on a phone the admin reaches the rest of the pages from the "Altro" sheet, which closes on navigation and gives the focus back', async ({ page }) => {
+test('on a phone the admin reaches the club pages from the "Altro" sheet, which closes on navigation and gives the focus back', async ({ page }) => {
   const { email } = await setup()
   await page.setViewportSize({ width: 400, height: 800 })
   await login(page, email)
@@ -54,7 +54,7 @@ test('on a phone the admin reaches the rest of the pages from the "Altro" sheet,
   const more = tabs.getByRole('button', { name: 'Altro' })
   await more.click()
   const sheet = page.getByRole('dialog', { name: 'Altro' })
-  await expect(sheet.getByRole('link')).toHaveText(['Le mie assenze', 'Le mie squalifiche', 'Le mie statistiche', 'Inviti e ruoli', 'Impostazioni'])
+  await expect(sheet.getByRole('link')).toHaveText(['Inviti e ruoli', 'Impostazioni'])
   for (const link of await sheet.getByRole('link').all()) expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44)
 
   await sheet.getByRole('link', { name: 'Impostazioni' }).click()

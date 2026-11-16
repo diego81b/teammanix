@@ -5,23 +5,37 @@ import it_ from '../../i18n/locales/it'
 import { isNavActive, mobileNav, navGroups, tabLabelKey, type NavKey } from '../../app/utils/navigation'
 
 const keys = (entries: { key: NavKey }[]) => entries.map(e => e.key)
+const aud = (admin: boolean, linked = true) => ({ admin, linked })
+const ALL = [aud(true), aud(true, false), aud(false), aud(false, false)]
 
 describe('navGroups', () => {
   it('gives an admin the personal group and the club group, in that order', () => {
-    const groups = navGroups(true)
+    const groups = navGroups(aud(true))
     expect(groups.map(g => g.id)).toEqual(['personal', 'club'])
     expect(keys(groups[0]!.entries)).toEqual(['home', 'calendar', 'absences', 'suspensions', 'statistics'])
     expect(keys(groups[1]!.entries)).toEqual(['teams', 'people', 'invitations', 'settings'])
   })
 
   it('gives everyone else the personal group only', () => {
-    const groups = navGroups(false)
+    const groups = navGroups(aud(false))
     expect(groups.map(g => g.id)).toEqual(['personal'])
     expect(keys(groups[0]!.entries)).toEqual(['home', 'calendar', 'absences', 'suspensions', 'statistics'])
   })
 
+  it('hides the "my ..." pages from an account with no person record, whatever its role', () => {
+    for (const admin of [true, false]) {
+      expect(keys(navGroups(aud(admin, false))[0]!.entries)).toEqual(['home', 'calendar'])
+    }
+  })
+
+  it('keeps the club group of an admin with no person record', () => {
+    const groups = navGroups(aud(true, false))
+    expect(groups.map(g => g.id)).toEqual(['personal', 'club'])
+    expect(keys(groups[1]!.entries)).toEqual(['teams', 'people', 'invitations', 'settings'])
+  })
+
   it('points every entry to a distinct path', () => {
-    const paths = navGroups(true).flatMap(g => g.entries.map(e => e.to))
+    const paths = navGroups(aud(true)).flatMap(g => g.entries.map(e => e.to))
     expect(new Set(paths).size).toBe(paths.length)
     expect(paths).toContain('/invitations')
     expect(paths).toContain('/structure')
@@ -50,7 +64,7 @@ describe('isNavActive', () => {
 
 describe('mobileNav', () => {
   it('gives an admin four tabs and a sheet with the rest, grouped as on the desktop', () => {
-    const { tabs, more } = mobileNav(true)
+    const { tabs, more } = mobileNav(aud(true))
     expect(keys(tabs)).toEqual(['home', 'calendar', 'teams', 'people'])
     expect(more.map(g => g.id)).toEqual(['personal', 'club'])
     expect(keys(more[0]!.entries)).toEqual(['absences', 'suspensions', 'statistics'])
@@ -58,23 +72,36 @@ describe('mobileNav', () => {
   })
 
   it('shows every personal entry as a tab for a non admin, with no sheet', () => {
-    const { tabs, more } = mobileNav(false)
+    const { tabs, more } = mobileNav(aud(false))
     expect(keys(tabs)).toEqual(['home', 'calendar', 'absences', 'suspensions', 'statistics'])
     expect(more).toEqual([])
   })
 
+  it('leaves the personal group out of the sheet for an admin with no person record', () => {
+    const { tabs, more } = mobileNav(aud(true, false))
+    expect(keys(tabs)).toEqual(['home', 'calendar', 'teams', 'people'])
+    expect(more.map(g => g.id)).toEqual(['club'])
+    expect(keys(more[0]!.entries)).toEqual(['invitations', 'settings'])
+  })
+
+  it('shows two tabs and no sheet for a non admin with no person record', () => {
+    const { tabs, more } = mobileNav(aud(false, false))
+    expect(keys(tabs)).toEqual(['home', 'calendar'])
+    expect(more).toEqual([])
+  })
+
   it('never goes over five slots, counting the sheet trigger', () => {
-    for (const admin of [true, false]) {
-      const { tabs, more } = mobileNav(admin)
+    for (const a of ALL) {
+      const { tabs, more } = mobileNav(a)
       expect(tabs.length + (more.length > 0 ? 1 : 0)).toBeLessThanOrEqual(5)
     }
   })
 
   it('has no entry both in a tab and in the sheet, and none missing', () => {
-    for (const admin of [true, false]) {
-      const { tabs, more } = mobileNav(admin)
+    for (const a of ALL) {
+      const { tabs, more } = mobileNav(a)
       const all = [...keys(tabs), ...more.flatMap(g => keys(g.entries))].sort()
-      expect(all).toEqual(navGroups(admin).flatMap(g => keys(g.entries)).sort())
+      expect(all).toEqual(navGroups(a).flatMap(g => keys(g.entries)).sort())
     }
   })
 })
@@ -90,13 +117,13 @@ describe('tabLabelKey', () => {
   it('points to a text that exists in every language', () => {
     for (const [name, locale] of Object.entries({ it: it_, en, fr })) {
       const get = (path: string) => path.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown> | undefined)?.[k], locale)
-      for (const e of navGroups(true).flatMap(g => g.entries)) expect(get(tabLabelKey(e.key)), `${name}: ${tabLabelKey(e.key)}`).toBeTypeOf('string')
+      for (const e of navGroups(aud(true)).flatMap(g => g.entries)) expect(get(tabLabelKey(e.key)), `${name}: ${tabLabelKey(e.key)}`).toBeTypeOf('string')
     }
   })
 })
 
 describe('navigation texts', () => {
-  const entries = navGroups(true).flatMap(g => g.entries)
+  const entries = navGroups(aud(true)).flatMap(g => g.entries)
 
   it('has a label in every language for every entry, and a group heading', () => {
     for (const [name, locale] of Object.entries({ it: it_, en, fr })) {

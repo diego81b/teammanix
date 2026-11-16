@@ -169,8 +169,9 @@ onBeforeUnmount(() => {
 watch(() => [route.path, session.activeClubId], refresh)
 
 // What each role sees, and how it splits between the tab bar and the sheet, is decided by utils/navigation.
-const groups = computed(() => navGroups(session.isAdmin))
-const mobile = computed(() => mobileNav(session.isAdmin))
+const audience = computed(() => ({ admin: session.isAdmin, linked: !!session.active?.linkedToPerson }))
+const groups = computed(() => navGroups(audience.value))
+const mobile = computed(() => mobileNav(audience.value))
 const active = (to: string) => isNavActive(route.path, to)
 const moreOpen = ref(false)
 const moreActive = computed(() => mobile.value.more.some(g => g.entries.some(e => active(e.to))))

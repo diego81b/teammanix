@@ -16,6 +16,12 @@ export interface NavGroup {
   entries: NavEntry[]
 }
 
+/** Who looks at the menu: the club admin, and whether the account is linked to a person record of the club. */
+export interface NavAudience {
+  admin: boolean
+  linked: boolean
+}
+
 const ENTRIES: Record<NavKey, NavEntry> = {
   home: { key: 'home', to: '/', icon: 'i-tm-home' },
   calendar: { key: 'calendar', to: '/calendar', icon: 'i-tm-calendar' },
@@ -30,6 +36,8 @@ const ENTRIES: Record<NavKey, NavEntry> = {
 
 const PERSONAL: NavKey[] = ['home', 'calendar', 'absences', 'suspensions', 'statistics']
 const CLUB: NavKey[] = ['teams', 'people', 'invitations', 'settings']
+/** Pages about the person's own record: with no record they would only say so, so the menu leaves them out. */
+const NEEDS_PERSON: NavKey[] = ['absences', 'suspensions', 'statistics']
 /** The entries the tab bar keeps for each role; the rest go to the sheet. A non admin has nothing left over. */
 const TABS: Record<'admin' | 'member', NavKey[]> = {
   admin: ['home', 'calendar', 'teams', 'people'],
@@ -42,10 +50,13 @@ const pick = (keys: NavKey[]): NavEntry[] => keys.map(k => ENTRIES[k])
 const SHORT_TAB: NavKey[] = ['absences', 'suspensions', 'statistics']
 export const tabLabelKey = (key: NavKey): string => (SHORT_TAB.includes(key) ? `shell.tab.${key}` : `shell.${key}`)
 
-/** The personal group is for every role; the club group is for the admin only (the API rejects the pages for others anyway). */
-export function navGroups(admin: boolean): NavGroup[] {
+/**
+ * The personal group is for every role, minus the pages that need a person record; the club group is for the
+ * admin only (the API rejects the pages for others anyway).
+ */
+export function navGroups({ admin, linked }: NavAudience): NavGroup[] {
   return [
-    { id: 'personal', entries: pick(PERSONAL) },
+    { id: 'personal', entries: pick(PERSONAL.filter(k => linked || !NEEDS_PERSON.includes(k))) },
     ...(admin ? [{ id: 'club' as const, entries: pick(CLUB) }] : []),
   ]
 }
@@ -58,9 +69,11 @@ export function isNavActive(path: string, to: string): boolean {
   return (ROOTS[to] ?? [to]).some(r => path === r || path.startsWith(`${r}/`))
 }
 
-export function mobileNav(admin: boolean): { tabs: NavEntry[], more: NavGroup[] } {
-  const tabKeys = TABS[admin ? 'admin' : 'member']
-  const more = navGroups(admin)
+export function mobileNav(audience: NavAudience): { tabs: NavEntry[], more: NavGroup[] } {
+  const groups = navGroups(audience)
+  const visible = groups.flatMap(g => g.entries.map(e => e.key))
+  const tabKeys = TABS[audience.admin ? 'admin' : 'member'].filter(k => visible.includes(k))
+  const more = groups
     .map(g => ({ ...g, entries: g.entries.filter(e => !tabKeys.includes(e.key)) }))
     .filter(g => g.entries.length > 0)
   return { tabs: pick(tabKeys), more }
