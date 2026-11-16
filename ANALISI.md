@@ -201,7 +201,7 @@ Questa sezione è un'impostazione di progetto, non consulenza legale.
 2. Accordo di nomina a responsabile (DPA, art. 28) tra la società e la piattaforma.
 3. Dichiarazione di agire come rappresentante della società con i poteri per farlo.
 
-Accettazione online con tracciamento (click-wrap) in registrazione. Per il pilot meglio un DPA firmato anche in forma elettronica. Nuova entità `AccettazioneTermini`: utente, società, documento, versione, data e ora, IP. A ogni nuova versione dei documenti, nuova accettazione.
+Accettazione online con tracciamento (click-wrap) in registrazione. Per il pilot meglio un DPA firmato anche in forma elettronica. Nuova entità `AccettazioneTermini`: utente, società, documento, versione, data e ora, IP. A ogni nuova versione dei documenti, nuova accettazione. L'accettazione si conserva come prova di firma e di accettazione (archiviazione) anche dopo la cancellazione dell'account (art. 17, par. 3, lett. e): la riga perde il legame con l'utente e porta nome ed email del firmatario congelati al momento della firma. Il tempo di conservazione resta da definire con la sezione 12, e l'informativa privacy deve citare questa conservazione.
 
 ### Obblighi che restano alla società (titolare)
 
