@@ -1,10 +1,12 @@
 import { Body, Controller, Get, HttpCode, Patch, Post } from '@nestjs/common';
 import type { AuthContext } from '../common/auth-context';
 import { CurrentAuth, AuthLimit, Public, WithoutClub } from '../common/decorators';
+import { AccountDeletionService } from './account-deletion.service';
 import { AuthService } from './auth.service';
 import {
   ChangeLanguageDto,
   ChangePasswordDto,
+  DeleteAccountDto,
   EmailDto,
   LoginDto,
   RegistrationDto,
@@ -15,7 +17,10 @@ import {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly accountDeletion: AccountDeletionService,
+  ) {}
 
   @Public()
   @AuthLimit()
@@ -91,5 +96,14 @@ export class AuthController {
   @HttpCode(200)
   changePassword(@CurrentAuth() a: AuthContext, @Body() dto: ChangePasswordDto) {
     return this.auth.changePassword(a.userId, a.clubId, dto);
+  }
+
+  /** Erasure of the own account, confirmed with the password. */
+  @WithoutClub()
+  @AuthLimit()
+  @Post('delete-account')
+  @HttpCode(204)
+  deleteAccount(@CurrentAuth() a: AuthContext, @Body() dto: DeleteAccountDto) {
+    return this.accountDeletion.delete(a.userId, dto.password);
   }
 }

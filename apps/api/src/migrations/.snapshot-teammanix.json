@@ -4384,7 +4384,7 @@
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
-          "nullable": false,
+          "nullable": true,
           "unique": false,
           "length": null,
           "precision": null,
@@ -4531,7 +4531,7 @@
             "id"
           ],
           "referencedTableName": "public.users",
-          "deleteRule": "cascade",
+          "deleteRule": "set null",
           "updateRule": "cascade"
         },
         "invitations_accepted_by_id_foreign": {
@@ -5167,6 +5167,7 @@
             "closed_season",
             "person_exported",
             "person_deleted",
+            "account_deleted",
             "terms_accepted",
             "absence_created",
             "absence_modified",

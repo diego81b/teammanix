@@ -187,6 +187,7 @@ export enum AuditAction {
   SEASON_CLOSED = 'closed_season',
   PERSON_EXPORTED = 'person_exported',
   PERSON_DELETED = 'person_deleted',
+  ACCOUNT_DELETED = 'account_deleted',
   TERMS_ACCEPTED = 'terms_accepted',
   ABSENCE_CREATED = 'absence_created',
   ABSENCE_MODIFIED = 'absence_modified',

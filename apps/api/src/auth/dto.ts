@@ -72,6 +72,12 @@ export class ChangePasswordDto {
   newPassword!: string;
 }
 
+export class DeleteAccountDto {
+  @IsString()
+  @MaxLength(128)
+  password!: string;
+}
+
 export class SelectClubDto {
   @IsUUID()
   clubId!: string;

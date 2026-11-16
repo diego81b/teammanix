@@ -15,7 +15,7 @@ import { CHECK_ADMIN_CLUB, CHECK_SCOPE } from './scope';
 @Index({ properties: ['club', 'email'] })
 @Check({ name: 'invitations_scope_consistent', expression: CHECK_SCOPE })
 @Check({ name: 'invitations_admin_only_club', expression: CHECK_ADMIN_CLUB })
-export class Invitation extends TenantEntity<'status'> {
+export class Invitation extends TenantEntity<'status' | 'invitedBy'> {
   @Property({ length: 320 })
   email!: string;
 
@@ -48,8 +48,9 @@ export class Invitation extends TenantEntity<'status'> {
   @Enum({ items: () => InvitationStatus, length: 20 })
   status: InvitationStatus = InvitationStatus.SENT;
 
-  @ManyToOne(() => User, { deleteRule: 'cascade' })
-  invitedBy!: Rel<User>;
+  /** Null once the account that sent it is deleted: the invitation belongs to the club and stays valid. */
+  @ManyToOne(() => User, { nullable: true, deleteRule: 'set null' })
+  invitedBy: Rel<User> | null = null;
 
   @ManyToOne(() => User, { nullable: true, deleteRule: 'set null' })
   acceptedBy: Rel<User> | null = null;
