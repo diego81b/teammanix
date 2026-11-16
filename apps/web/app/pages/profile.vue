@@ -77,6 +77,15 @@
         </li>
       </ul>
     </section>
+
+    <section class="space-y-3" aria-labelledby="profile-delete">
+      <div class="space-y-1">
+        <h2 id="profile-delete" class="font-semibold">{{ $t('profile.deleteTitle') }}</h2>
+        <p class="text-sm text-muted">{{ $t('profile.deleteText') }}</p>
+      </div>
+      <UButton color="error" variant="outline" size="lg" class="min-h-11" :label="$t('profile.deleteButton')" @click="deleteOpen = true" />
+      <DeleteAccount v-model:open="deleteOpen" />
+    </section>
   </div>
 </template>
 
@@ -84,6 +93,7 @@
 import type { NotificationPreference, PushState } from '~/utils/notification'
 
 const CHANNELS = ['inApp', 'email', 'push'] as const
+const deleteOpen = ref(false)
 
 const { t } = useI18n()
 useHead({ title: () => `${t('profile.title')} · TeamManix` })
