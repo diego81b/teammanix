@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { CreateBucketCommand, GetObjectCommand, HeadObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
+import { keyRing } from '../src/storage/encryption';
 import { StorageS3, type ConfigS3 } from '../src/storage/storage-s3';
 import { contractStorage } from './storage-contract';
 
@@ -11,7 +12,7 @@ import { contractStorage } from './storage-contract';
 const BUCKET = 'test-certificates';
 let container: StartedTestContainer;
 let cfg: ConfigS3;
-const key = randomBytes(32);
+const ring = keyRing(randomBytes(32));
 
 beforeAll(async () => {
   container = await new GenericContainer('adobe/s3mock:latest')
@@ -41,8 +42,8 @@ const clientTest = () =>
   });
 
 contractStorage('S3', () => ({
-  storage: new StorageS3(cfg, key),
-  otherWithDifferentKey: new StorageS3(cfg, randomBytes(32)),
+  storage: new StorageS3(cfg, ring),
+  withRing: (r) => new StorageS3(cfg, r),
 }));
 
 describe('StorageS3, object specific', () => {
@@ -50,7 +51,7 @@ describe('StorageS3, object specific', () => {
 
   it('the object in the bucket is encrypted and declared as opaque binary', async () => {
     const club = randomUUID();
-    const k = await new StorageS3(cfg, key).save(club, Buffer.from('%PDF-1.7 contenuto in chiaro riconoscibile'));
+    const k = await new StorageS3(cfg, ring).save(club, Buffer.from('%PDF-1.7 contenuto in chiaro riconoscibile'));
     const raw = Buffer.from(await (await client().send(new GetObjectCommand({ Bucket: BUCKET, Key: k }))).Body!.transformToByteArray());
     expect(raw.includes(Buffer.from('contenuto in chiaro'))).toBe(false);
     const head = await client().send(new HeadObjectCommand({ Bucket: BUCKET, Key: k }));

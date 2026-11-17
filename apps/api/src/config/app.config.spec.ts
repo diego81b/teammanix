@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { appConfig } from './app.config';
+import { keyId } from '../storage/encryption';
 
 const ENV = { ...process.env };
 const SECRET = 'secret-of-test-long-almeno-trentadue-caratteri';
@@ -7,6 +8,7 @@ const SECRET = 'secret-of-test-long-almeno-trentadue-caratteri';
 beforeEach(() => {
   process.env = { ...ENV, JWT_SECRET: SECRET };
   delete process.env.STORAGE_ENCRYPTION_KEY;
+  delete process.env.STORAGE_ENCRYPTION_KEY_PREVIOUS;
   delete process.env.STORAGE_DIR;
   delete process.env.STORAGE_DRIVER;
   for (const k of ['S3_ENDPOINT', 'S3_REGION', 'S3_BUCKET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY']) delete process.env[k];
@@ -18,9 +20,9 @@ afterAll(() => {
 describe('appConfig, storage', () => {
   it('outside production the encryption key derives from JWT_SECRET and is stable', () => {
     process.env.NODE_ENV = 'development';
-    const a = appConfig().storageKey;
-    expect(a).toHaveLength(32);
-    expect(appConfig().storageKey.equals(a)).toBe(true);
+    const a = appConfig().storageKeys.current;
+    expect(a.key).toHaveLength(32);
+    expect(appConfig().storageKeys.current.key.equals(a.key)).toBe(true);
   });
 
   it('the default folder is ./storage, configurable with STORAGE_DIR', () => {
@@ -34,7 +36,35 @@ describe('appConfig, storage', () => {
     const k = randomBytes(32);
     process.env.NODE_ENV = 'development';
     process.env.STORAGE_ENCRYPTION_KEY = k.toString('base64');
-    expect(appConfig().storageKey.equals(k)).toBe(true);
+    const ring = appConfig().storageKeys;
+    expect(ring.current.key.equals(k)).toBe(true);
+    expect(ring.current.id).toBe(keyId(k));
+    expect(ring.previous).toEqual([]);
+  });
+
+  it('STORAGE_ENCRYPTION_KEY_PREVIOUS lists the keys that stay readable, comma separated', () => {
+    const [cur, p1, p2] = [randomBytes(32), randomBytes(32), randomBytes(32)];
+    process.env.NODE_ENV = 'development';
+    process.env.STORAGE_ENCRYPTION_KEY = cur.toString('base64');
+    process.env.STORAGE_ENCRYPTION_KEY_PREVIOUS = ` ${p1.toString('base64')}, ${p2.toString('base64')} `;
+    const ring = appConfig().storageKeys;
+    expect(ring.current.key.equals(cur)).toBe(true);
+    expect(ring.previous.map((k) => k.key)).toEqual([p1, p2]);
+  });
+
+  it('a previous key that is not 32 bytes fails', () => {
+    process.env.NODE_ENV = 'development';
+    process.env.STORAGE_ENCRYPTION_KEY = randomBytes(32).toString('base64');
+    process.env.STORAGE_ENCRYPTION_KEY_PREVIOUS = randomBytes(16).toString('base64');
+    expect(() => appConfig()).toThrow('STORAGE_ENCRYPTION_KEY_PREVIOUS');
+  });
+
+  it('the current key listed also as previous fails', () => {
+    const k = randomBytes(32).toString('base64');
+    process.env.NODE_ENV = 'development';
+    process.env.STORAGE_ENCRYPTION_KEY = k;
+    process.env.STORAGE_ENCRYPTION_KEY_PREVIOUS = k;
+    expect(() => appConfig()).toThrow('STORAGE_ENCRYPTION_KEY_PREVIOUS');
   });
 
   it('in production without a key startup fails', () => {

@@ -1,6 +1,5 @@
-import { randomUUID } from 'node:crypto';
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { encrypt, decrypt } from './encryption';
+import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import type { KeyRing } from './encryption';
 import { StorageService, validateKey } from './storage.service';
 
 export interface ConfigS3 {
@@ -21,9 +20,9 @@ export class StorageS3 extends StorageService {
 
   constructor(
     private readonly cfg: ConfigS3,
-    private readonly keyEncryption: Buffer,
+    ring: KeyRing,
   ) {
-    super();
+    super(ring);
     this.client = new S3Client({
       endpoint: cfg.endpoint,
       region: cfg.region,
@@ -35,25 +34,32 @@ export class StorageS3 extends StorageService {
     });
   }
 
-  async save(clubId: string, data: Buffer): Promise<string> {
-    const key = `${clubId}/${randomUUID()}`;
-    validateKey(key); // also validates clubId
+  protected async putRaw(key: string, blob: Buffer): Promise<void> {
     await this.client.send(
-      new PutObjectCommand({
-        Bucket: this.cfg.bucket,
-        Key: key,
-        Body: encrypt(data, this.keyEncryption),
-        ContentType: 'application/octet-stream',
-      }),
+      new PutObjectCommand({ Bucket: this.cfg.bucket, Key: key, Body: blob, ContentType: 'application/octet-stream' }),
     );
-    return key;
   }
 
-  async read(key: string): Promise<Buffer> {
-    validateKey(key);
+  protected async getRaw(key: string): Promise<Buffer> {
     const r = await this.client.send(new GetObjectCommand({ Bucket: this.cfg.bucket, Key: key }));
     if (!r.Body) throw new Error('Empty object');
-    return decrypt(Buffer.from(await r.Body.transformToByteArray()), this.keyEncryption);
+    return Buffer.from(await r.Body.transformToByteArray());
+  }
+
+  async *listKeys(clubId?: string): AsyncIterable<string> {
+    let token: string | undefined;
+    do {
+      const r = await this.client.send(new ListObjectsV2Command({ Bucket: this.cfg.bucket, ContinuationToken: token, Prefix: clubId ? `${clubId}/` : undefined }));
+      for (const o of r.Contents ?? []) {
+        try {
+          validateKey(o.Key ?? '');
+        } catch {
+          continue; // foreign object
+        }
+        yield o.Key as string;
+      }
+      token = r.IsTruncated ? r.NextContinuationToken : undefined;
+    } while (token);
   }
 
   /** S3 responds with success even if the object does not exist: idempotency is native. */

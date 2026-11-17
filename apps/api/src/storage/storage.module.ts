@@ -10,7 +10,7 @@ import { StorageService } from './storage.service';
       provide: StorageService,
       useFactory: (): StorageService => {
         const cfg = appConfig();
-        return cfg.s3 ? new StorageS3(cfg.s3, cfg.storageKey) : new StorageFileSystem(cfg.storageDir, cfg.storageKey);
+        return cfg.s3 ? new StorageS3(cfg.s3, cfg.storageKeys) : new StorageFileSystem(cfg.storageDir, cfg.storageKeys);
       },
     },
   ],

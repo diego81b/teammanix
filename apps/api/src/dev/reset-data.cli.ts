@@ -11,7 +11,7 @@ async function main() {
   assertNotProduction(process.env.NODE_ENV);
   const keep = parseKeepEmail(process.argv.slice(2));
   const cfg = appConfig();
-  const storage = cfg.s3 ? new StorageS3(cfg.s3, cfg.storageKey) : new StorageFileSystem(cfg.storageDir, cfg.storageKey);
+  const storage = cfg.s3 ? new StorageS3(cfg.s3, cfg.storageKeys) : new StorageFileSystem(cfg.storageDir, cfg.storageKeys);
   const orm = await MikroORM.init({ ...config, debug: false });
   try {
     const r = await resetData(orm.em.fork(), storage, keep);

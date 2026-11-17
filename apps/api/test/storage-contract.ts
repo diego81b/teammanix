@@ -1,12 +1,13 @@
-import { randomUUID } from 'node:crypto';
-import type { StorageService } from '../src/storage/storage.service';
+import { randomBytes, randomUUID } from 'node:crypto';
+import { keyRing, type KeyRing } from '../src/storage/encryption';
+import { rewrapAll, type StorageService } from '../src/storage/storage.service';
 
 /**
  * Behaviour every `StorageService` driver must guarantee. Used from a test file:
- * `storageContract('name', () => ({ storage, otherWithDifferentKey }))`.
- * `otherWithDifferentKey` points to the same store but with another encryption key.
+ * `contractStorage('name', () => ({ storage, withRing }))`.
+ * `storage` writes with a key; `withRing(ring)` points to the same store with another key ring.
  */
-export function contractStorage(name: string, create: () => { storage: StorageService; otherWithDifferentKey: StorageService }): void {
+export function contractStorage(name: string, create: () => { storage: StorageService; withRing: (ring: KeyRing) => StorageService }): void {
   describe(`StorageService contract: ${name}`, () => {
     const club = randomUUID();
 
@@ -32,9 +33,9 @@ export function contractStorage(name: string, create: () => { storage: StorageSe
     });
 
     it('with another encryption key the file cannot be read', async () => {
-      const { storage, otherWithDifferentKey } = create();
+      const { storage, withRing } = create();
       const key = await storage.save(club, Buffer.from('secret'));
-      await expect(otherWithDifferentKey.read(key)).rejects.toThrow();
+      await expect(withRing(keyRing(randomBytes(32))).read(key)).rejects.toThrow();
     });
 
     it('deletes the file and is idempotent', async () => {
@@ -56,6 +57,67 @@ export function contractStorage(name: string, create: () => { storage: StorageSe
     it('a valid key never saved cannot be read', async () => {
       const { storage } = create();
       await expect(storage.read(`${club}/${randomUUID()}`)).rejects.toThrow();
+    });
+
+    it('an object copied under another key cannot be read (bound to its key)', async () => {
+      const { storage } = create();
+      const raw = storage as unknown as { getRaw(k: string): Promise<Buffer>; putRaw(k: string, b: Buffer): Promise<void> };
+      const one = await storage.save(club, Buffer.from('certificate of person one'));
+      const two = await storage.save(club, Buffer.from('certificate of person two'));
+      await raw.putRaw(two, await raw.getRaw(one));
+      await expect(storage.read(two)).rejects.toThrow();
+    });
+
+    describe('key rotation', () => {
+      const oldKey = randomBytes(32);
+      const newKey = randomBytes(32);
+
+      it('a previous key stays readable and new files use the current key', async () => {
+        const { withRing } = create();
+        const club = randomUUID();
+        const before = await withRing(keyRing(oldKey)).save(club, Buffer.from('written before'));
+        const rotated = withRing(keyRing(newKey, [oldKey]));
+        expect((await rotated.read(before)).toString()).toBe('written before');
+        const after = await rotated.save(club, Buffer.from('written after'));
+        await expect(withRing(keyRing(oldKey)).read(after)).rejects.toThrow();
+      });
+
+      it('rewrap moves every object to the current key, then the old key can go', async () => {
+        const { withRing } = create();
+        const club = randomUUID();
+        const key = await withRing(keyRing(oldKey)).save(club, Buffer.from('to rewrap'));
+        const rotated = withRing(keyRing(newKey, [oldKey]));
+        const r = await rewrapAll(rotated, false, club);
+        expect(r.rewrapped).toBeGreaterThanOrEqual(1);
+        expect((await withRing(keyRing(newKey)).read(key)).toString()).toBe('to rewrap');
+        await expect(withRing(keyRing(oldKey)).read(key)).rejects.toThrow();
+      });
+
+      it('rewrap is repeatable: converted objects are skipped', async () => {
+        const { withRing } = create();
+        const club = randomUUID();
+        await withRing(keyRing(oldKey)).save(club, Buffer.from('once'));
+        const rotated = withRing(keyRing(newKey, [oldKey]));
+        await rewrapAll(rotated, false, club);
+        expect((await rewrapAll(rotated, false, club)).rewrapped).toBe(0);
+      });
+
+      it('a dry run reports the count and writes nothing', async () => {
+        const { withRing } = create();
+        const club = randomUUID();
+        const key = await withRing(keyRing(oldKey)).save(club, Buffer.from('dry'));
+        const r = await rewrapAll(withRing(keyRing(newKey, [oldKey])), true, club);
+        expect(r.rewrapped).toBeGreaterThanOrEqual(1);
+        expect((await withRing(keyRing(oldKey)).read(key)).toString()).toBe('dry');
+      });
+
+      it('a ring without the old key stops on the first object and writes nothing', async () => {
+        const { withRing } = create();
+        const club = randomUUID();
+        const key = await withRing(keyRing(oldKey)).save(club, Buffer.from('untouched'));
+        await expect(rewrapAll(withRing(keyRing(randomBytes(32))), false, club)).rejects.toThrow('Rewrap stopped at');
+        expect((await withRing(keyRing(oldKey)).read(key)).toString()).toBe('untouched');
+      });
     });
   });
 }
