@@ -7,7 +7,9 @@
 # Coolify adds domain and TLS at deploy time.
 # Migrations and seed (idempotent) run at container start, before the api: if they fail, the
 # container does not start and Coolify keeps the previous version.
-# Frontend: when it exists, add it as a second service with the same label scheme.
+# Web: second service (static SPA behind nginx), same label scheme. One domain, split by path in Coolify: the web service
+# on the root (https://app.example.com), the api service on /api (https://app.example.com/api, no prefix stripping, the
+# API routes already start with /api). The bundle calls `/api`, so there is no CORS and ALLOWED_ORIGINS is the web origin.
 name: teammanix
 
 services:
@@ -58,6 +60,28 @@ services:
       resources:
         limits:
           memory: 512m
+
+  web:
+    build:
+      context: apps/web
+      args:
+        NUXT_PUBLIC_API_BASE_URL: ${NUXT_PUBLIC_API_BASE_URL:-/api}
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.teammanix-web.loadbalancer.server.port=80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - coolify
+    deploy:
+      resources:
+        limits:
+          memory: 128m
 
 networks:
   coolify:

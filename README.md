@@ -24,7 +24,7 @@ Multi-tenant PWA for sports clubs. A club registers itself, creates its structur
 | Mail | Brevo transactional API |
 | Files | AES-256-GCM encrypted by the app; filesystem driver in development, any S3 compatible service in production |
 | Tests | Jest and Testcontainers (API), Vitest and `@nuxt/test-utils` (web), Playwright (end to end) |
-| Deploy | Docker Compose on Coolify |
+| Deploy | Docker Compose on Coolify (API on Node, web as static files behind nginx) |
 
 The repository is a monorepo without a workspace root: `apps/api` and `apps/web` are independent npm projects.
 
@@ -112,9 +112,41 @@ Conventions:
 - **Database.** A Coolify PostgreSQL resource with scheduled S3 backups. `DATABASE_URL` is the resource internal URL.
 - **Variables.** Set in the Coolify application. Required ones are listed in `docker-compose.prod.yml`: `DATABASE_URL`, `JWT_SECRET`, `APP_URL`, `ALLOWED_ORIGINS`, `BREVO_API_KEY`, `MAIL_FROM_EMAIL`, `STORAGE_ENCRYPTION_KEY` and the `S3_*` group. Web Push is optional: set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` as secrets (pair generated with `npx web-push generate-vapid-keys`, different from development). Without them the app works and push is not offered.
 - **Sensitive files** (medical certificates and other documents). Use a dedicated private S3 compatible bucket, for example Cloudflare R2 with EU jurisdiction. Files are encrypted by the app with `STORAGE_ENCRYPTION_KEY` before upload, so the provider only sees opaque bytes. Enable versioning or replication for backups (the DB backups do not cover the bucket). Keep the key outside Coolify: losing it makes every file unreadable, and changing it requires re-encrypting existing files. A DPA with the storage provider is required.
-- **Domain and TLS.** Assigned in Coolify to the `api` service (port 3001), routed by Traefik.
+- **Domain, TLS and routing.** One domain for the whole app, split by path in Coolify. The `web` service (static SPA behind nginx, port 80) takes the root, for example `https://app.example.com`. The `api` service (port 3001) takes `https://app.example.com/api`, with prefix stripping off because the API routes already start with `/api`. The web bundle calls `/api` (build argument `NUXT_PUBLIC_API_BASE_URL`, default `/api`, baked in at build time), so there is no CORS: set `APP_URL` and `ALLOWED_ORIGINS` to the web origin. To serve the API from another host, rebuild the web service with that URL as the build argument.
 - **Migrations and seed.** They run when the container starts. If they fail the container does not start and Coolify keeps the previous version.
-- **Web.** Added later as a second service in the same file, with the same label scheme.
+- **Web health.** `/healthz` on the web container. Every client route falls back to `index.html`, `/_nuxt/*` is cached for a year, `index.html` and `sw.js` are always revalidated.
+
+### Mail domain (Brevo)
+
+Authenticate the sending domain in Brevo (Senders, domains and dedicated IPs, Domains) before the first real email. Without it Gmail and Outlook route the mail to spam, and the API refuses to start if `MAIL_FROM_EMAIL` is not on an authenticated domain.
+
+1. Add the domain in Brevo and publish the DNS records it shows: the Brevo code TXT, the two DKIM CNAMEs (`brevo1._domainkey`, `brevo2._domainkey`) and the SPF TXT with `include:spf.brevo.com`. Keep a single SPF record per domain: merge the include into the existing one.
+2. Publish DMARC, starting in monitoring mode: `_dmarc  TXT  "v=DMARC1; p=none; rua=mailto:dmarc@example.com"`. After a few weeks of clean reports move to `p=quarantine`.
+3. Set `MAIL_FROM_EMAIL` to an address on that domain.
+4. Check: send a registration verification email to a Gmail and an Outlook mailbox. It must reach the inbox, and "Show original" must read `SPF: PASS`, `DKIM: PASS`, `DMARC: PASS`.
+
+### Backups
+
+Two things need a backup, and neither covers the other.
+
+- **Postgres.** Scheduled backups on the Coolify PostgreSQL resource, to an S3 destination that is not the file bucket. Keep at least 14 daily copies.
+- **File bucket.** Enable object versioning, or replication to a second bucket, on the private bucket. Use separate credentials for the backup copy.
+- **Never store the encryption key next to a bucket backup.** A stolen backup is readable only if the key is next to it.
+- **Restore drill** (once before the pilot, then after any change of provider). On a spare Coolify environment: restore the database dump, point a copy of the API at the restored database and at the restored or replicated bucket, with the production `STORAGE_ENCRYPTION_KEY`, log in and download one certificate file. If the download fails with an authentication error, the key or the bucket copy is wrong. Write the date and the result of the drill below.
+
+| Date | Who | Database | Bucket | Certificate download |
+|---|---|---|---|---|
+| (to fill in) | | | | |
+
+### Key custody (`STORAGE_ENCRYPTION_KEY`)
+
+The key is 32 random bytes in base64. Losing it makes every stored file unreadable, and there is no recovery.
+
+- **Generate:** `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. Never reuse the development value.
+- **Primary copy:** the company password manager, in a vault shared with at least two named people, so no single person is a point of failure. The Coolify secret is a working copy, not the record.
+- **Emergency copy:** printed or on an encrypted USB drive, in a sealed envelope kept offline by the legal representative of the company. Different place from any bucket backup.
+- **Retrieval, written for the second person:** open the password manager, vault "TeamManix production", entry "STORAGE_ENCRYPTION_KEY". If the manager is unreachable, use the emergency envelope. Check a retrieved key by setting it on the spare environment of the restore drill and downloading a file.
+- **Rotation.** The stored format carries no key identifier (IV, tag and ciphertext only), so a new key cannot be mixed with old files. Rotation therefore means re-encrypting every object: stop writes (maintenance), read each object with the old key, write it back with the new one, verify a sample, then set the new key and restart. This re-encryption tool does not exist yet: build it, and test it on the spare environment, before the first planned rotation. After a suspected leak of the key, rotate immediately and treat the old bucket backups as exposed. Update the password manager and the emergency copy in the same session, and destroy the old emergency copy.
 
 ## Roadmap
 
