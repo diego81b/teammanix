@@ -1,4 +1,4 @@
-import { Language } from '../entities/enums';
+import { InvitationRole, Language } from '../entities/enums';
 import { TEXTS_MAIL } from './texts';
 
 const LINK = 'https://app.test/x?token=abc123';
@@ -6,7 +6,7 @@ const cases = {
   verifyEmail: { name: 'Awa', link: LINK },
   alreadyRegistered: { link: LINK },
   resetPassword: { link: LINK },
-  invitation: { club: 'ASD Dakar', days: 7, link: LINK },
+  invitation: { club: 'ASD Dakar', days: 7, link: LINK, destination: 'Under 14', role: InvitationRole.PLAYER },
 } as const;
 
 describe('TEXTS_MAIL', () => {
@@ -37,9 +37,20 @@ describe('TEXTS_MAIL', () => {
 
   it('the invitation reports club and validity days', () => {
     for (const l of Object.values(Language)) {
-      const { subject, text } = TEXTS_MAIL.invitation[l]({ club: 'ASD Dakar', days: 7, link: LINK });
+      const { subject, text } = TEXTS_MAIL.invitation[l]({ club: 'ASD Dakar', days: 7, link: LINK, destination: null, role: InvitationRole.ADMIN });
       expect(subject).toContain('ASD Dakar');
       expect(text).toContain('7');
+    }
+  });
+
+  it('the invitation names the destination when there is one, the role otherwise', () => {
+    for (const l of Object.values(Language)) {
+      const base = { club: 'ASD Dakar', days: 7, link: LINK };
+      const team = TEXTS_MAIL.invitation[l]({ ...base, destination: 'Under 14', role: InvitationRole.PLAYER });
+      expect(team.text).toContain('Under 14');
+      const roles = Object.values(InvitationRole).map((role) => TEXTS_MAIL.invitation[l]({ ...base, destination: null, role }).text);
+      expect(new Set(roles).size).toBe(roles.length);
+      expect(roles.join('')).not.toContain('Under 14');
     }
   });
 });

@@ -1,4 +1,4 @@
-import { Language } from '../entities/enums';
+import { InvitationRole, Language } from '../entities/enums';
 
 /**
  * Testi delle email transazionali, una funzione per tipo e per lingua.
@@ -9,6 +9,12 @@ interface Text {
   subject: string;
   text: string;
 }
+
+const ROLE: Record<Language, Record<InvitationRole, string>> = {
+  [Language.IT]: { admin: 'amministratore', manager: 'dirigente', staff: 'staff', player: 'giocatore' },
+  [Language.EN]: { admin: 'administrator', manager: 'manager', staff: 'staff member', player: 'player' },
+  [Language.FR]: { admin: 'administrateur', manager: 'dirigeant', staff: 'membre du staff', player: 'joueur' },
+};
 
 const byKey = <P>(d: Record<Language, (p: P) => Text>) => d;
 
@@ -67,23 +73,24 @@ export const TEXTS_MAIL = {
     }),
   }),
 
-  invitation: byKey<{ club: string; days: number; link: string }>({
+  /** `destination` is the team or section; without one the mail names the role. */
+  invitation: byKey<{ club: string; days: number; link: string; destination: string | null; role: InvitationRole }>({
     [Language.IT]: (p): Text => ({
       subject: `Invito a ${p.club} su TeamManix`,
       text:
-        `Hai ricevuto un invito a ${p.club} su TeamManix.\n` +
+        `Hai ricevuto un invito a ${p.club} su TeamManix, ${p.destination ? `per ${p.destination}` : `come ${ROLE[Language.IT][p.role]}`}.\n` +
         `Apri questo link entro ${p.days} giorni, accedi o registrati con questo indirizzo email e conferma:\n${p.link}`,
     }),
     [Language.EN]: (p): Text => ({
       subject: `Invitation to ${p.club} on TeamManix`,
       text:
-        `You have been invited to ${p.club} on TeamManix.\n` +
+        `You have been invited to ${p.club} on TeamManix, ${p.destination ? `for ${p.destination}` : `as ${ROLE[Language.EN][p.role]}`}.\n` +
         `Open this link within ${p.days} days, sign in or sign up with this email address, and confirm:\n${p.link}`,
     }),
     [Language.FR]: (p): Text => ({
       subject: `Invitation à ${p.club} sur TeamManix`,
       text:
-        `Vous avez reçu une invitation à ${p.club} sur TeamManix.\n` +
+        `Vous avez reçu une invitation à ${p.club} sur TeamManix, ${p.destination ? `pour ${p.destination}` : `en tant que ${ROLE[Language.FR][p.role]}`}.\n` +
         `Ouvrez ce lien dans les ${p.days} jours, connectez-vous ou inscrivez-vous avec cette adresse e-mail, puis confirmez :\n${p.link}`,
     }),
   }),

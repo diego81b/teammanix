@@ -15,7 +15,7 @@ import { CHECK_ADMIN_CLUB, CHECK_SCOPE } from './scope';
 @Index({ properties: ['club', 'email'] })
 @Check({ name: 'invitations_scope_consistent', expression: CHECK_SCOPE })
 @Check({ name: 'invitations_admin_only_club', expression: CHECK_ADMIN_CLUB })
-export class Invitation extends TenantEntity<'status' | 'invitedBy'> {
+export class Invitation extends TenantEntity<'status' | 'invitedBy' | 'createdDraft'> {
   @Property({ length: 320 })
   email!: string;
 
@@ -33,6 +33,10 @@ export class Invitation extends TenantEntity<'status' | 'invitedBy'> {
 
   @ManyToOne(() => Person, { nullable: true, deleteRule: 'set null' })
   person: Rel<Person> | null = null;
+
+  /** The invitation created the record in `person` itself: revoking it deletes the record while nobody has used it. */
+  @Property({ default: false })
+  createdDraft: boolean = false;
 
   /** SHA-256 hash of the token sent by email. The plain token is not stored. */
   @Property({ length: 64, unique: true, hidden: true })

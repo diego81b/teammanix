@@ -11,11 +11,14 @@ import { Invitation } from '../entities/invitation.entity';
 import { Person } from '../entities/person.entity';
 import { AccessRole } from '../entities/access-role.entity';
 import { Club } from '../entities/club.entity';
+import { Enrollment } from '../entities/enrollment.entity';
+import { MedicalCertificate } from '../entities/medical-certificate.entity';
 import { Team } from '../entities/team.entity';
 import { User } from '../entities/user.entity';
 import { MailService } from '../mail/mail.service';
 import { TEXTS_MAIL } from '../mail/texts';
 import type { CreateInvitationDto } from './dto';
+import { isDiscardableDraft } from './draft.rules';
 
 const hash = (token: string) => createHash('sha256').update(token).digest('hex');
 
@@ -95,19 +98,29 @@ export class InvitationsService {
 
     const token = randomBytes(32).toString('base64url');
     const invitation = await this.em.transactional(async (tem) => {
-      // A new invitation replaces the one still open for the same email, role and destination.
-      const open = await tem.find(Invitation, { email: dto.email, role: dto.role, scope, status: InvitationStatus.SENT });
-      for (const v of open) {
-        const same =
+      // A new invitation replaces the one still open for the same email, role and destination. With a name
+      // (new record) the open invitations count whatever their record: the draft they made is reused, not duplicated.
+      const open = await tem.find(Invitation, { email: dto.email, role: dto.role, scope, status: InvitationStatus.SENT }, { populate: ['person'] });
+      const replaced = open.filter(
+        (v) =>
           (v.section?.id ?? null) === (section?.id ?? null) &&
           (v.team?.id ?? null) === (team?.id ?? null) &&
-          (v.person?.id ?? null) === (person?.id ?? null);
-        if (same) v.status = InvitationStatus.REVOKED;
-      }
+          (dto.name ? v.createdDraft : (v.person?.id ?? null) === (person?.id ?? null)),
+      );
+      for (const v of replaced) v.status = InvitationStatus.REVOKED;
       // New record with only the minimum data. A record with the same email is not reused: siblings with the parent's email.
-      const fresh = dto.name
-        ? tem.create(Person, { club: tem.getReference(Club, clubId), name: dto.name, email: dto.email })
-        : null;
+      let fresh: Person | null = null;
+      if (dto.name) {
+        const reusable = replaced.map((v) => v.person).find((p) => p && !p.user && !p.completedAt && !p.disabledAt) ?? null;
+        if (reusable) {
+          reusable.name = dto.name;
+          fresh = reusable;
+        } else {
+          fresh = tem.create(Person, { club: tem.getReference(Club, clubId), name: dto.name, email: dto.email });
+        }
+      }
+      await tem.flush();
+      for (const v of replaced) if (v.person && v.person !== fresh) await this.discardDraft(tem, v);
       return tem.create(Invitation, {
         club: tem.getReference(Club, clubId),
         email: dto.email,
@@ -116,6 +129,7 @@ export class InvitationsService {
         section: section ? tem.getReference(Section, section.id) : null,
         team: team ? tem.getReference(Team, team.id) : null,
         person: fresh ?? (person ? tem.getReference(Person, person.id) : null),
+        createdDraft: !!fresh,
         tokenHash: hash(token),
         expiresAt: new Date(Date.now() + INVITATION_DAYS * 86_400_000),
         invitedBy: tem.getReference(User, a.userId),
@@ -133,7 +147,7 @@ export class InvitationsService {
    * because the token hash changes.
    */
   async resend(a: AuthContext, id: string): Promise<InvitationDto> {
-    const invitation = await this.em.findOne(Invitation, { id, status: InvitationStatus.SENT }, { populate: ['person'] });
+    const invitation = await this.em.findOne(Invitation, { id, status: InvitationStatus.SENT }, { populate: ['person', 'section', 'team'] });
     if (!invitation) throw new NotFoundException({ message: 'Invitation not found', code: 'INVITATION_NOT_FOUND' });
     if (invitation.person?.disabledAt) {
       throw new ConflictException({ message: 'The person is disabled: re-enable them before inviting', code: 'PERSON_DISABLED' });
@@ -151,7 +165,13 @@ export class InvitationsService {
     const club = await this.em.findOneOrFail(Club, clubId);
     await this.mail.send({
       to: invitation.email,
-      ...TEXTS_MAIL.invitation[invitation.language]({ club: club.name, days: INVITATION_DAYS, link: `${appConfig().appUrl}/invitation?token=${token}` }),
+      ...TEXTS_MAIL.invitation[invitation.language]({
+        club: club.name,
+        days: INVITATION_DAYS,
+        link: `${appConfig().appUrl}/invitation?token=${token}`,
+        destination: invitation.team?.name ?? invitation.section?.name ?? null,
+        role: invitation.role,
+      }),
     });
   }
 
@@ -178,10 +198,13 @@ export class InvitationsService {
   }
 
   async revoke(a: AuthContext, id: string): Promise<void> {
-    const invitation = await this.em.findOne(Invitation, { id, status: InvitationStatus.SENT });
+    const invitation = await this.em.findOne(Invitation, { id, status: InvitationStatus.SENT }, { populate: ['person'] });
     if (!invitation) throw new NotFoundException({ message: 'Invitation not found', code: 'INVITATION_NOT_FOUND' });
-    invitation.status = InvitationStatus.REVOKED;
-    await this.em.flush();
+    await this.em.transactional(async (tem) => {
+      invitation.status = InvitationStatus.REVOKED;
+      await tem.flush();
+      await this.discardDraft(tem, invitation);
+    });
     await this.audit.register({
       action: AuditAction.INVITATION_REVOKED,
       userId: a.userId,
@@ -189,6 +212,26 @@ export class InvitationsService {
       entity: 'Invitation',
       entityId: id,
     });
+  }
+
+  /** Deletes the record a revoked invitation created, unless somebody has started to use it. */
+  private async discardDraft(tem: EntityManager, invitation: Invitation): Promise<void> {
+    const person = invitation.person;
+    if (!person) return;
+    const [enrollments, certificates, otherOpenInvitations] = await Promise.all([
+      tem.count(Enrollment, { person: person.id }),
+      tem.count(MedicalCertificate, { person: person.id }),
+      tem.count(Invitation, { person: person.id, status: InvitationStatus.SENT, id: { $ne: invitation.id } }),
+    ]);
+    const discard = isDiscardableDraft({
+      createdByInvitation: invitation.createdDraft,
+      hasUser: !!person.user,
+      completed: !!person.completedAt,
+      enrollments,
+      certificates,
+      otherOpenInvitations,
+    });
+    if (discard) await tem.removeAndFlush(person);
   }
 
   /**

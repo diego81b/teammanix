@@ -1,11 +1,15 @@
 import { Person } from '../src/entities/person.entity';
 import { AccessRole } from '../src/entities/access-role.entity';
-import { Environment, startEnvironment } from './helpers';
+import { SportProfile } from '../src/entities/sport-profile.entity';
+import { createTeams, Environment, roleId, startEnvironment } from './helpers';
 
 describe('clubs and invitations', () => {
   let t: Environment;
   beforeAll(async () => {
     t = await startEnvironment();
+    const em = t.orm.em.fork();
+    em.create(SportProfile, { code: 'football', positions: ['goalkeeper'], modulesAvailable: ['attendances'] } as never);
+    await em.flush();
   });
   afterAll(async () => {
     await t?.close();
@@ -130,6 +134,77 @@ describe('clubs and invitations', () => {
     expect(fake.body.code).toBe('INVALID_INVITATION');
     const language = await t.req('POST', '/invitations', { token: a.token, body: { email: 'x@test.it', role: 'manager', language: 'de' } });
     expect(language.status).toBe(400);
+  });
+
+  it('the email names the team, the section or the role', async () => {
+    const a = await admin('dest-a@test.it', 'Club Dest');
+    const teams = await createTeams(t.req, a.token, { section: 'Giovanili' });
+    const team = await teams.team('Under 14');
+    const last = (to: string) => t.mail.outbox.filter((m) => m.to === to).at(-1)!.text;
+    await t.req('POST', '/invitations', { token: a.token, body: { email: 'd-team@test.it', role: 'player', name: 'Luca', scope: 'team', teamId: team.id } });
+    expect(last('d-team@test.it')).toContain('Club Dest su TeamManix, per Under 14.');
+    await t.req('POST', '/invitations', { token: a.token, body: { email: 'd-sec@test.it', role: 'manager', scope: 'section', sectionId: teams.sectionId } });
+    expect(last('d-sec@test.it')).toContain('per Giovanili.');
+    await t.req('POST', '/invitations', { token: a.token, body: { email: 'd-club@test.it', role: 'admin', language: 'en' } });
+    expect(last('d-club@test.it')).toContain('on TeamManix, as administrator.');
+    const resent = await t.req('POST', '/invitations', { token: a.token, body: { email: 'd-team@test.it', role: 'player', name: 'Luca', scope: 'team', teamId: team.id } });
+    expect(resent.status).toBe(201);
+    const again = await t.req('POST', `/invitations/${resent.body.id}/resend`, { token: a.token });
+    expect(again.status).toBe(200);
+    expect(last('d-team@test.it')).toContain('per Under 14.');
+  });
+
+  describe('draft records of invitations', () => {
+    const drafts = async (clubId: string, email: string) =>
+      t.orm.em.fork().find(Person, { club: clubId, email }, { filters: false });
+    const open = async (token: string, email: string) =>
+      ((await t.req('GET', '/invitations', { token })).body as { email: string; status: string; personId: string }[]).filter(
+        (i) => i.email === email && i.status === 'sent',
+      );
+
+    it('a repeated invitation with a name reuses the draft and revokes the open one', async () => {
+      const a = await admin('rep-a@test.it', 'Club Rep');
+      const body = { email: 'rep@test.it', role: 'player', name: 'Luca' };
+      const first = await t.req('POST', '/invitations', { token: a.token, body });
+      const second = await t.req('POST', '/invitations', { token: a.token, body: { ...body, name: 'Luca Rossi' } });
+      expect(second.status).toBe(201);
+      expect(second.body.personId).toBe(first.body.personId);
+      const people = await drafts(a.clubId, 'rep@test.it');
+      expect(people).toHaveLength(1);
+      expect(people[0]!.name).toBe('Luca Rossi');
+      expect(await open(a.token, 'rep@test.it')).toHaveLength(1);
+      expect((await t.req('GET', `/invitations/preview?token=${t.tokenInvitation('rep@test.it')}`)).status).toBe(200);
+    });
+
+    it('revoking an invitation takes its unused draft along', async () => {
+      const a = await admin('rev-a@test.it', 'Club Rev');
+      const inv = await t.req('POST', '/invitations', { token: a.token, body: { email: 'rev@test.it', role: 'player', name: 'Luca' } });
+      expect(await drafts(a.clubId, 'rev@test.it')).toHaveLength(1);
+      expect((await t.req('DELETE', `/invitations/${inv.body.id}`, { token: a.token })).status).toBe(204);
+      expect(await drafts(a.clubId, 'rev@test.it')).toHaveLength(0);
+    });
+
+    it('a draft with an enrollment stays when its invitation is revoked', async () => {
+      const a = await admin('enr-a@test.it', 'Club Enr');
+      const team = await (await createTeams(t.req, a.token)).team('Under 12');
+      expect((await t.req('POST', `/teams/${team.id}/seasons`, { token: a.token, body: { name: '26/27', startDate: '2026-09-01', endDate: '2027-06-30' } })).status).toBe(201);
+      const inv = await t.req('POST', '/invitations', { token: a.token, body: { email: 'enr@test.it', role: 'staff', name: 'Marco', scope: 'team', teamId: team.id } });
+      const enrolled = await t.req('POST', `/people/${inv.body.personId}/staff-enrollments`, {
+        token: a.token,
+        body: { teamIds: [team.id], staffRoleId: await roleId(t.req, a.token, 'coach') },
+      });
+      expect(enrolled.status).toBe(201);
+      expect((await t.req('DELETE', `/invitations/${inv.body.id}`, { token: a.token })).status).toBe(204);
+      expect(await drafts(a.clubId, 'enr@test.it')).toHaveLength(1);
+    });
+
+    it('a record the club already had is never deleted by revoking', async () => {
+      const a = await admin('own-a@test.it', 'Club Own');
+      const personId = await createPerson(a.clubId, 'own@test.it');
+      const inv = await t.req('POST', '/invitations', { token: a.token, body: { email: 'own@test.it', role: 'player', personId } });
+      expect((await t.req('DELETE', `/invitations/${inv.body.id}`, { token: a.token })).status).toBe(204);
+      expect(await drafts(a.clubId, 'own@test.it')).toHaveLength(1);
+    });
   });
 
   it('acceptance: same outcome for a new and an existing account, generic error in all invalid cases', async () => {
