@@ -24,6 +24,7 @@ Variabili d'ambiente: un file per app, nella cartella dell'app, mai nella radice
 - `npm run test:unit` (senza Docker, `src/**/*.spec.ts`), `npm run test:int` (Testcontainers, serve Docker, `test/*.int-spec.ts`), `npm run test:watch`
 - singolo file o test: `npx jest --selectProjects unit -- token.service`, `npx jest --selectProjects integration -- club-invitations -t "nome del test"`
 - `npm run typecheck`, `npm run build`
+- Chiavi per ambiente: `npm run keys:gen -- [dev|staging|prod]` scrive `JWT_SECRET` e `STORAGE_ENCRYPTION_KEY` in `secrets/<env>/` nella radice (ignorata da git; per staging e prod anche `coolify-env.txt` da incollare in Coolify), non sovrascrive mai. Nucleo testato in `src/dev/gen-keys.ts`.
 - Migrazioni (nel container, schema in `src/migrations`, con snapshot): `docker compose -f docker-compose.yml -f docker-compose.dev.yml exec api npm run migration:create`
 - Reset dei dati di sviluppo (nel container): `docker compose -f docker-compose.yml -f docker-compose.dev.yml exec api npm run dev:reset-data -- --keep <email>` cancella ogni società con i suoi dati, ogni utente tranne quello indicato (resta senza appartenenze), le prove di accettazione rimaste senza account, l'audit e i file nello storage; profili sport e seed restano. Rifiuta con `NODE_ENV=production`. Nucleo testato in `src/dev/reset-data.ts`, script sottile in `reset-data.cli.ts`. Si lancia prima di una migrazione che cambia il modello senza mappare i dati, solo dopo conferma dell'utente.
 

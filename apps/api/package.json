@@ -13,6 +13,7 @@
     "seed": "ts-node --transpile-only src/seed/run.ts",
     "db:setup": "npm run migration:up && npm run seed",
     "dev:reset-data": "ts-node --transpile-only src/dev/reset-data.cli.ts",
+    "keys:gen": "ts-node --transpile-only src/dev/gen-keys.cli.ts",
     "dev": "nodemon --legacy-watch --watch src --ext ts --exec \"ts-node --transpile-only src/main.ts\"",
     "start:prod": "node dist/src/main.js",
     "migrate:prod": "node dist/src/migrate.js",
