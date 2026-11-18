@@ -2,8 +2,10 @@ import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 import type { AuthContext, CtxRole } from '../common/auth-context';
 import { Person } from '../entities/person.entity';
+import { Enrollment } from '../entities/enrollment.entity';
+import { activeModules } from './memberships.rules';
 import { AccessRole } from '../entities/access-role.entity';
-import { AccessRoleType, ScopeType } from '../entities/enums';
+import { AccessRoleType, ScopeType, SeasonStatus } from '../entities/enums';
 
 export interface Membership {
   clubId: string;
@@ -13,6 +15,8 @@ export interface Membership {
   linkedToPerson: boolean;
   /** true if the linked record exists but the person has not completed it yet: the client shows the form. */
   recordToComplete: boolean;
+  /** Modules on in at least one team of the account's open enrollments (active or draft season), for the menu. */
+  modules: string[];
 }
 
 const ctxRole = (r: AccessRole): CtxRole => ({
@@ -36,10 +40,17 @@ export class MembershipsService {
       this.em.find(AccessRole, { user: userId }, { filters: false, populate: ['club'] }),
       this.em.find(Person, { user: userId }, { filters: false, populate: ['club'] }),
     ]);
+    const enrollments = people.length
+      ? await this.em.find(
+          Enrollment,
+          { person: { $in: people.map((p) => p.id) }, endedAt: null, season: { status: { $in: [SeasonStatus.ACTIVE, SeasonStatus.DRAFT] } } },
+          { filters: false, populate: ['season.team'] },
+        )
+      : [];
     const byKey = new Map<string, Membership>();
     const item = (id: string, name: string): Membership => {
       let v = byKey.get(id);
-      if (!v) byKey.set(id, (v = { clubId: id, name, roles: [], linkedToPerson: false, recordToComplete: false }));
+      if (!v) byKey.set(id, (v = { clubId: id, name, roles: [], linkedToPerson: false, recordToComplete: false, modules: [] }));
       return v;
     };
     // A disabled person (rule 12) loses access to the whole club, even with roles.
@@ -50,6 +61,7 @@ export class MembershipsService {
       const v = item(p.club.id, p.club.name);
       v.linkedToPerson = true;
       v.recordToComplete = !p.completedAt;
+      v.modules = activeModules(enrollments.filter((e) => e.person.id === p.id).map((e) => e.season.team.modulesActive));
     }
     return [...byKey.values()].sort((a, b) => a.name.localeCompare(b.name));
   }
