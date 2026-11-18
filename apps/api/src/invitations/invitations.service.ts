@@ -1,3 +1,4 @@
+import { FilterQuery } from '@mikro-orm/core';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { createHash, randomBytes } from 'node:crypto';
@@ -36,6 +37,10 @@ export interface InvitationDto {
   status: InvitationStatus;
   language: Language;
   expiresAt: Date;
+}
+
+export interface MyInvitation extends PreviewInvitation {
+  id: string;
 }
 
 export interface PreviewInvitation {
@@ -182,6 +187,21 @@ export class InvitationsService {
       { filters: false, populate: ['club', 'section', 'team', 'person'] },
     );
     if (!invitation || invitation.status !== InvitationStatus.SENT || invitation.expiresAt.getTime() < Date.now()) throw invitationNotValid();
+    return this.previewOf(invitation);
+  }
+
+  /** The open invitations addressed to the signed-in account's email, to accept them without the link. */
+  async mine(userId: string): Promise<MyInvitation[]> {
+    const user = await this.em.findOneOrFail(User, userId);
+    const invitations = await this.em.find(
+      Invitation,
+      { email: user.email, status: InvitationStatus.SENT, expiresAt: { $gt: new Date() } },
+      { filters: false, populate: ['club', 'section', 'team', 'person'], orderBy: { createdAt: 'desc' } },
+    );
+    return invitations.map((i) => ({ id: i.id, ...this.previewOf(i) }));
+  }
+
+  private previewOf(invitation: Invitation): PreviewInvitation {
     return {
       club: invitation.club.name,
       role: invitation.role,
@@ -238,14 +258,19 @@ export class InvitationsService {
    * Whoever accepts is already authenticated with a verified email: whether the account is new or existing changes nothing.
    * The invitation email must match the account's, otherwise a forwarded link would grant access.
    */
-  async accept(userId: string, token: string): Promise<SessionDto> {
+  accept(userId: string, token: string): Promise<SessionDto> {
+    return this.acceptWhere(userId, { tokenHash: hash(token) });
+  }
+
+  /** Same rules and result as `accept`: the email match is the authorization, so any other id gives the same 404. */
+  acceptMine(userId: string, id: string): Promise<SessionDto> {
+    return this.acceptWhere(userId, { id });
+  }
+
+  private async acceptWhere(userId: string, where: FilterQuery<Invitation>): Promise<SessionDto> {
     const user = await this.em.findOneOrFail(User, userId);
     const clubId = await this.em.transactional(async (tem) => {
-      const invitation = await tem.findOne(
-        Invitation,
-        { tokenHash: hash(token) },
-        { filters: false, populate: ['club', 'section', 'team', 'person'] },
-      );
+      const invitation = await tem.findOne(Invitation, where, { filters: false, populate: ['club', 'section', 'team', 'person'] });
       if (!invitation || invitation.status !== InvitationStatus.SENT || invitation.expiresAt.getTime() < Date.now() || invitation.email !== user.email) {
         throw invitationNotValid();
       }

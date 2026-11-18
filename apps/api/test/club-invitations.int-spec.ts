@@ -1,3 +1,4 @@
+import { Invitation } from '../src/entities/invitation.entity';
 import { Person } from '../src/entities/person.entity';
 import { AccessRole } from '../src/entities/access-role.entity';
 import { SportProfile } from '../src/entities/sport-profile.entity';
@@ -248,6 +249,61 @@ describe('clubs and invitations', () => {
       expect(r.body).toEqual(reuse.body);
     }
     expect(reuse.body.code).toBe('INVALID_INVITATION');
+  });
+
+  describe('my invitations', () => {
+    const mine = (token: string) => t.req('GET', '/invitations/mine', { token });
+    const acceptMine = (token: string, id: string) => t.req('POST', `/invitations/mine/${id}/accept`, { token });
+
+    it('lists only the open invitations for the account email, without token or other emails', async () => {
+      const a = await admin('mine-a@test.it', 'Club Mine A');
+      const open = await t.req('POST', '/invitations', { token: a.token, body: { email: 'mine@test.it', role: 'manager' } });
+      const revoked = await t.req('POST', '/invitations', { token: a.token, body: { email: 'mine@test.it', role: 'admin' } });
+      await t.req('DELETE', `/invitations/${revoked.body.id}`, { token: a.token });
+      await t.req('POST', '/invitations', { token: a.token, body: { email: 'someone-else@test.it', role: 'manager' } });
+      const b = await admin('mine-a2@test.it', 'Club Mine A2');
+      const expired = await t.req('POST', '/invitations', { token: b.token, body: { email: 'mine@test.it', role: 'manager' } });
+      const em = t.orm.em.fork();
+      await em.nativeUpdate(Invitation, { id: expired.body.id }, { expiresAt: new Date(Date.now() - 1000) }, { filters: false });
+
+      const u = await t.newUser('mine@test.it');
+      const r = await mine(u.accessToken);
+      expect(r.status).toBe(200);
+      expect(r.body).toEqual([
+        { id: open.body.id, club: 'Club Mine A', role: 'manager', scope: 'club', destination: null, recordName: null, language: expect.any(String) },
+      ]);
+      expect(JSON.stringify(r.body)).not.toMatch(/someone-else|token/i);
+    });
+
+    it('accepts by id with the same result as the token and audits it; reuse gives INVALID_INVITATION', async () => {
+      const a = await admin('mine-b@test.it', 'Club Mine B');
+      const inv = await t.req('POST', '/invitations', { token: a.token, body: { email: 'mine-ok@test.it', role: 'manager' } });
+      const u = await t.newUser('mine-ok@test.it');
+      const r = await acceptMine(u.accessToken, inv.body.id);
+      expect(r.status).toBe(200);
+      expect(r.body.activeClub.name).toBe('Club Mine B');
+      expect((await mine(r.body.accessToken)).body).toEqual([]);
+      const again = await acceptMine(r.body.accessToken, inv.body.id);
+      expect([again.status, again.body.code]).toEqual([404, 'INVALID_INVITATION']);
+    });
+
+    it('another email, expired, revoked or unknown id: identical 404 INVALID_INVITATION', async () => {
+      const a = await admin('mine-c@test.it', 'Club Mine C');
+      const forOther = await t.req('POST', '/invitations', { token: a.token, body: { email: 'owner@test.it', role: 'manager' } });
+      const expired = await t.req('POST', '/invitations', { token: a.token, body: { email: 'thief@test.it', role: 'manager' } });
+      const revoked = await t.req('POST', '/invitations', { token: a.token, body: { email: 'thief@test.it', role: 'admin' } });
+      await t.orm.em.fork().nativeUpdate(Invitation, { id: expired.body.id }, { expiresAt: new Date(Date.now() - 1000) }, { filters: false });
+      await t.req('DELETE', `/invitations/${revoked.body.id}`, { token: a.token });
+      const thief = await t.newUser('thief@test.it');
+      const results = await Promise.all(
+        [forOther.body.id, expired.body.id, revoked.body.id, crypto.randomUUID()].map((id) => acceptMine(thief.accessToken, id)),
+      );
+      for (const r of results) {
+        expect(r.status).toBe(404);
+        expect(r.body).toEqual(results[0].body);
+      }
+      expect(results[0].body.code).toBe('INVALID_INVITATION');
+    });
   });
 
   it('expired invitation: generic error', async () => {

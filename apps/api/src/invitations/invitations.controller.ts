@@ -53,4 +53,19 @@ export class InvitationsController {
   accept(@CurrentAuth() a: AuthContext, @Body() dto: AcceptInvitationDto) {
     return this.invitations.accept(a.userId, dto.token);
   }
+
+  /** The open invitations for the account's email: no token, no other emails. */
+  @WithoutClub()
+  @Get('mine')
+  mine(@CurrentAuth() a: AuthContext) {
+    return this.invitations.mine(a.userId);
+  }
+
+  @WithoutClub()
+  @AuthLimit()
+  @Post('mine/:id/accept')
+  @HttpCode(200)
+  acceptMine(@CurrentAuth() a: AuthContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.invitations.acceptMine(a.userId, id);
+  }
 }
