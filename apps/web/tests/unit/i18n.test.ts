@@ -138,7 +138,7 @@ const KEYS_DYNAMIC: Record<string, string[]> = {
   roles: ['admin', 'manager', 'player'],
   'staffRoles.model': ['coach', 'assistant_coach', 'trainer', 'none'],
   'staffRoles.modelText': ['coach', 'assistant_coach', 'trainer', 'none'],
-  scope: ['club', 'section', 'team'],
+  scope: ['club', 'section'],
   enrollmentType: ['player', 'staff'],
   access: ['invitations', 'roles', 'permissions'],
   gender: ['male', 'female', 'mixed'],
@@ -180,7 +180,7 @@ describe('unit terms (API seed)', () => {
   const seed = readFileSync(join(__dirname, '../../../api/src/seed/sport-profiles.ts'), 'utf8')
   const terms = [...new Set([...seed.matchAll(/unitTerm: '([a-z]+)'/g)].map(m => m[1]!))].sort()
   const KEYS = [
-    'text', 'emptyTitle', 'emptyText', 'newSectionText', 'deleteSectionText', 'newTeam', 'newTeamText', 'editTeam',
+    'title', 'one', 'text', 'emptyTitle', 'emptyText', 'newSectionText', 'deleteSectionText', 'newTeam', 'newTeamText', 'editTeam',
     'editTeamAria', 'newSeasonText', 'noTeam', 'staffTeams', 'staffTeamsText', 'staffTeamsLegend', 'staffTeamsNone', 'staffTeamsRequired',
   ]
 

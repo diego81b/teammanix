@@ -1,8 +1,10 @@
 /**
  * Side menu and mobile tab bar, pure: which entries a role sees, which one is active and how the
  * entries split between the tab bar and the "More" sheet. The layout only renders the result.
- * The label of an entry is the text `shell.<key>`, the heading of a group `shell.groups.<id>`.
+ * The label of an entry is the text `shell.<key>` (`tabLabelKey`), the heading of a group `shell.groups.<id>`.
  */
+import type { UnitTerm } from '../types/api'
+
 export type NavKey = 'home' | 'calendar' | 'absences' | 'suspensions' | 'statistics' | 'teams' | 'people' | 'invitations' | 'settings'
 
 export interface NavEntry {
@@ -48,7 +50,9 @@ const pick = (keys: NavKey[]): NavEntry[] => keys.map(k => ENTRIES[k])
 
 /** The tab bar has about 80 px per slot at 400 px: the "My ..." entries have a short text there (`shell.tab.<key>`). */
 const SHORT_TAB: NavKey[] = ['absences', 'suspensions', 'statistics']
-export const tabLabelKey = (key: NavKey): string => (SHORT_TAB.includes(key) ? `shell.tab.${key}` : `shell.${key}`)
+/** The teams entry names the unit by the club term (`structure.unit.<term>.title`); the others have a fixed text. */
+export const tabLabelKey = (key: NavKey, term: UnitTerm = 'team'): string =>
+  key === 'teams' ? `structure.unit.${term}.title` : SHORT_TAB.includes(key) ? `shell.tab.${key}` : `shell.${key}`
 
 /**
  * The personal group is for every role, minus the pages that need a person record; the club group is for the

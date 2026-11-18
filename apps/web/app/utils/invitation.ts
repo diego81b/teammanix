@@ -1,4 +1,4 @@
-import type { Language, InvitationRole, InvitationStatus, ScopeType } from '../types/api'
+import type { Language, InvitationRole, InvitationStatus, ScopeType, UnitTerm } from '../types/api'
 
 export interface InvitationFields {
   email: string
@@ -24,6 +24,9 @@ export interface InvitationBody {
   personId?: string
   name?: string
 }
+
+/** The team scope is named by the club unit term; club and section have a fixed text. */
+export const scopeLabelKey = (scope: ScopeType, term: UnitTerm): string => (scope === 'team' ? `structure.unit.${term}.one` : `scope.${scope}`)
 
 /** The section scope exists only in a club that has sections: without them there is nothing to choose. */
 export function scopeOptions(hasSections: boolean): ScopeType[] {

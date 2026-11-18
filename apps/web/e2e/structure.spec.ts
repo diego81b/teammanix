@@ -122,6 +122,38 @@ test('a club of fencing groups says group, a mixed club says team', async ({ pag
   await expect(page.getByRole('dialog', { name: 'Nuovo gruppo' })).toBeVisible()
 })
 
+test('the menu, the page title and the invitation scope follow the club unit term, with no reload', async ({ page }) => {
+  const { email } = await newClub('menu-term')
+  await login(page, email)
+  await expect(page.getByRole('heading', { name: 'Ciao, Ada' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Squadre', exact: true })).toBeVisible()
+
+  // The first team of the club is a fencing group: the menu switches without a reload.
+  await go(page, '/structure')
+  await page.getByRole('button', { name: 'Nuova squadra' }).click()
+  const dialog = page.getByRole('dialog', { name: /^Nuov[ao] (squadra|gruppo)$/ })
+  await dialog.getByRole('combobox', { name: /^Sport/ }).click()
+  await page.getByRole('option', { name: 'Scherma', exact: true }).click()
+  await dialog.getByRole('textbox', { name: /^Nome/ }).fill('Spada A')
+  await dialog.getByRole('button', { name: 'Crea' }).click()
+  await page.getByRole('dialog', { name: 'Ruoli suggeriti per Scherma' }).getByRole('button', { name: 'Non ora' }).click()
+  await expect(page.getByRole('heading', { name: 'Spada A', level: 3 })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Gruppi', exact: true })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Squadre', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'Gruppi', level: 1 })).toBeVisible()
+
+  // A fresh load keeps it, and the scope of a manager says "Gruppo".
+  await go(page, '/invitations')
+  await expect(page.getByRole('link', { name: 'Gruppi', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Nuovo invito' }).click()
+  const invite = page.getByRole('dialog', { name: 'Nuovo invito' })
+  await invite.getByRole('combobox', { name: /^Ruolo/ }).click()
+  await page.getByRole('option', { name: 'Dirigente', exact: true }).click()
+  await invite.getByRole('combobox', { name: /^Ambito/ }).click()
+  await expect(page.getByRole('option', { name: 'Gruppo', exact: true })).toBeVisible()
+  await expect(page.getByRole('option', { name: 'Squadra', exact: true })).toHaveCount(0)
+})
+
 test('an admin enrolls a person as staff in three teams at once, then the teams are taken', async ({ page }) => {
   const { email, admin } = await newClub('staff')
   const section = await call<{ id: string }>('POST', '/sections', admin, { name: 'Calcio' })

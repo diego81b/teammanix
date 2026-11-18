@@ -11,7 +11,7 @@
       <div class="space-y-3">
         <NuxtLink to="/structure" class="inline-flex min-h-11 items-center gap-1 text-sm text-muted hover:text-default">
           <UIcon name="i-tm-chevron-left" class="size-4" aria-hidden="true" />
-          {{ $t('structure.title') }}
+          {{ $t(`structure.unit.${unit.term}.title`) }}
         </NuxtLink>
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div class="space-y-1">
@@ -197,6 +197,8 @@ import { formatDate } from '~/utils/date'
 import { countRoster, filterRoster, fullName } from '~/utils/roster'
 import { labelPosition } from '~/utils/sport'
 import { seasonStatusItem } from '~/utils/season'
+
+const unit = useUnitStore()
 import { seasonContext } from '~/utils/structure'
 
 const { t, te, locale } = useI18n()

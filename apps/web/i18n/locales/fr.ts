@@ -40,7 +40,6 @@ const fr: typeof it = {
     themeAutomatic: 'Automatique',
     themeLight: 'Clair',
     themeDark: 'Sombre',
-    teams: 'Équipes',
     people: 'Personnes',
     invitations: 'Invitations et rôles',
     settings: 'Paramètres',
@@ -345,7 +344,6 @@ const fr: typeof it = {
     role: 'Rôle',
     scope: 'Portée',
     section: 'Secteur',
-    team: 'Équipe',
     record: 'Fiche',
     nameHelp: 'La personne invitée complétera le reste.',
     person: 'Personne',
@@ -374,7 +372,6 @@ const fr: typeof it = {
   scope: {
     club: 'Tout le club',
     section: 'Secteur',
-    team: 'Équipe',
   },
   gender: {
     male: 'Masculin',
@@ -480,7 +477,6 @@ const fr: typeof it = {
     actions: 'Actions pour {name}',
   },
   structure: {
-    title: 'Équipes',
     newSection: 'Nouveau secteur',
     renameSection: 'Renommer le secteur',
     sectionName: 'Nom',
@@ -516,6 +512,8 @@ const fr: typeof it = {
     },
     unit: {
       team: {
+        title: 'Équipes',
+        one: 'Équipe',
         text: 'Équipes et saisons du club, regroupées en secteurs si besoin.',
         emptyTitle: 'Aucune équipe',
         emptyText: 'Créez la première équipe, puis ses saisons. Les secteurs sont facultatifs.',
@@ -534,6 +532,8 @@ const fr: typeof it = {
         staffTeamsRequired: 'Choisissez au moins une équipe',
       },
       group: {
+        title: 'Groupes',
+        one: 'Groupe',
         text: 'Groupes et saisons du club, regroupés en secteurs si besoin.',
         emptyTitle: 'Aucun groupe',
         emptyText: 'Créez le premier groupe, puis ses saisons. Les secteurs sont facultatifs.',

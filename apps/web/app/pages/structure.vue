@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div class="space-y-1">
-        <h1 class="text-2xl font-bold">{{ $t('structure.title') }}</h1>
+        <h1 class="text-2xl font-bold">{{ $t(`structure.unit.${clubTerm}.title`) }}</h1>
         <p class="text-sm text-muted">{{ $t(`structure.unit.${clubTerm}.text`) }}</p>
       </div>
       <div class="flex flex-wrap gap-2">
@@ -94,13 +94,15 @@ import type { SectionDto, SportProfileDto, TeamTree } from '~/types/api'
 import { formatDate } from '~/utils/date'
 import { seasonStatusItem } from '~/utils/season'
 import { pendingSuggestions, type SuggestedChoice } from '~/utils/staff-role'
-import { clubUnitTerm, groupTeams, unitTermOf } from '~/utils/structure'
+import { groupTeams, unitTermOf } from '~/utils/structure'
 
 const { t, te, locale } = useI18n()
-useHead({ title: () => `${t('structure.title')} · TeamManix` })
+const unit = useUnitStore()
+const clubTerm = computed(() => unit.term)
+useHead({ title: () => `${t(`structure.unit.${clubTerm.value}.title`)} · TeamManix` })
 
 const structure = useStructure()
-const { data, loading, error, reload: load } = useLoad(() => structure.tree())
+const { data, loading, error, reload } = useLoad(() => structure.tree())
 const profiles = ref<SportProfileDto[]>([])
 const open = reactive({ team: false, editTeam: false, section: false, deleteSection: false, season: false, suggested: false })
 const staffRoles = useStaffRoles()
@@ -114,8 +116,7 @@ const grouped = computed(() => view.value.grouped)
 // Without any team or section the empty message replaces the (single, empty) group.
 const groups = computed(() => (data.value && (data.value.teams.length || data.value.sections.length) ? view.value.groups : []))
 
-// The club says "gruppo" only when all its teams are groups; the dialog of one team follows that team's discipline.
-const clubTerm = computed(() => clubUnitTerm(profiles.value, data.value?.teams ?? []))
+// The club term lives in the unit store (the menu needs it too); the dialog of one team follows that team's discipline.
 const choiceTerm = computed(() => unitTermOf(profiles.value, choiceTeam.value?.sportProfile))
 
 const hasDraft = (s: TeamTree) => s.seasons.some(x => x.status === 'draft')
@@ -162,11 +163,18 @@ function sectionMenu(s: SectionDto): DropdownMenuItem[][] {
   ]]
 }
 
+// Every load hands the tree to the unit store, so a first group or a changed discipline updates the menu with no reload.
+async function load() {
+  await reload()
+  if (data.value && profiles.value.length) unit.apply(data.value.teams, profiles.value)
+}
+
 onMounted(async () => {
-  await load()
+  await reload()
   try {
     profiles.value = await structure.profiles()
   }
   catch { /* without profiles the sport code is shown */ }
+  if (data.value && profiles.value.length) unit.apply(data.value.teams, profiles.value)
 })
 </script>

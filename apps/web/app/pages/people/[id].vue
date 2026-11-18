@@ -135,7 +135,7 @@ import type { EnrollmentPersonDto, SportProfileDto, StructureTree } from '~/type
 import { formatDate } from '~/utils/date'
 import { fullName } from '~/utils/roster'
 import { labelPosition } from '~/utils/sport'
-import { clubUnitTerm, teamLabel } from '~/utils/structure'
+import { teamLabel } from '~/utils/structure'
 
 const { t, te, locale } = useI18n()
 const route = useRoute()
@@ -152,7 +152,7 @@ const open = reactive({ disable: false, staffTeams: false })
 const structure = useStructure()
 const tree = ref<StructureTree | null>(null)
 const profiles = ref<SportProfileDto[]>([])
-const term = computed(() => clubUnitTerm(profiles.value, tree.value?.teams ?? []))
+const term = computed(() => useUnitStore().term)
 const errorAction = ref('')
 const reenabling = ref(false)
 

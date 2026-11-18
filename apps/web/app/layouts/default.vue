@@ -62,7 +62,7 @@
             :key="e.to"
             :to="e.to"
             :icon="e.icon"
-            :label="$t(`shell.${e.key}`)"
+            :label="$t(tabLabelKey(e.key, unit.term))"
             :color="active(e.to) ? 'primary' : 'neutral'"
             :variant="active(e.to) ? 'soft' : 'ghost'"
             size="xl"
@@ -90,7 +90,7 @@
         :aria-current="active(e.to) ? 'page' : undefined"
       >
         <UIcon :name="e.icon" class="size-6" />
-        <span class="max-w-full truncate">{{ $t(tabLabelKey(e.key)) }}</span>
+        <span class="max-w-full truncate">{{ $t(tabLabelKey(e.key, unit.term)) }}</span>
       </NuxtLink>
 
       <USlideover
@@ -126,7 +126,7 @@
               :key="e.to"
               :to="e.to"
               :icon="e.icon"
-              :label="$t(`shell.${e.key}`)"
+              :label="$t(tabLabelKey(e.key, unit.term))"
               :color="active(e.to) ? 'primary' : 'neutral'"
               :variant="active(e.to) ? 'soft' : 'ghost'"
               size="xl"
@@ -150,6 +150,7 @@ const colorMode = useColorMode()
 const { t } = useI18n()
 const { locale, languages, set } = useLanguage()
 const notifications = useNotificationsStore()
+const unit = useUnitStore()
 const push = usePush()
 const badge = computed(() => unreadBadge(notifications.unread))
 
@@ -167,6 +168,9 @@ onBeforeUnmount(() => {
   clearInterval(timer)
 })
 watch(() => [route.path, session.activeClubId], refresh)
+
+// The club unit term ("team" or "group") names the teams entry; it follows the club and the role, and the structure page refreshes it.
+watch(() => [session.token, session.activeClubId, session.isAdmin], () => void unit.refresh(), { immediate: true })
 
 // What each role sees, and how it splits between the tab bar and the sheet, is decided by utils/navigation.
 const audience = computed(() => ({ admin: session.isAdmin, linked: !!session.active?.linkedToPerson }))

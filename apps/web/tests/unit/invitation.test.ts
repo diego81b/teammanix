@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { invitationData, invitationStatus, scopeOptions, validateInvitation, type InvitationFields } from '../../app/utils/invitation'
+import { invitationData, invitationStatus, scopeLabelKey, scopeOptions, validateInvitation, type InvitationFields } from '../../app/utils/invitation'
 
 const base = (o: Partial<InvitationFields> = {}): InvitationFields => ({
   email: 'a@b.it',
@@ -78,6 +78,15 @@ describe('invitationStatus', () => {
   it('accepted and revoked do not change', () => {
     expect(invitationStatus({ status: 'accepted', expiresAt: '2026-11-01T10:00:00Z' }, now)).toBe('accepted')
     expect(invitationStatus({ status: 'revoked', expiresAt: '2026-11-01T10:00:00Z' }, now)).toBe('revoked')
+  })
+})
+
+describe('scopeLabelKey', () => {
+  it('names the team scope by the unit term and keeps the others', () => {
+    expect(scopeLabelKey('team', 'team')).toBe('structure.unit.team.one')
+    expect(scopeLabelKey('team', 'group')).toBe('structure.unit.group.one')
+    expect(scopeLabelKey('club', 'group')).toBe('scope.club')
+    expect(scopeLabelKey('section', 'group')).toBe('scope.section')
   })
 })
 

@@ -40,7 +40,6 @@ const en: typeof it = {
     themeAutomatic: 'Automatic',
     themeLight: 'Light',
     themeDark: 'Dark',
-    teams: 'Teams',
     people: 'People',
     invitations: 'Invitations and roles',
     settings: 'Settings',
@@ -345,7 +344,6 @@ const en: typeof it = {
     role: 'Role',
     scope: 'Scope',
     section: 'Section',
-    team: 'Team',
     record: 'Profile',
     nameHelp: 'The invitee will fill in the rest.',
     person: 'Person',
@@ -374,7 +372,6 @@ const en: typeof it = {
   scope: {
     club: 'Whole club',
     section: 'Section',
-    team: 'Team',
   },
   gender: {
     male: 'Male',
@@ -480,7 +477,6 @@ const en: typeof it = {
     actions: 'Actions for {name}',
   },
   structure: {
-    title: 'Teams',
     newSection: 'New section',
     renameSection: 'Rename the section',
     sectionName: 'Name',
@@ -516,6 +512,8 @@ const en: typeof it = {
     },
     unit: {
       team: {
+        title: 'Teams',
+        one: 'Team',
         text: 'Teams and seasons of the club, grouped in sections if you need them.',
         emptyTitle: 'No teams yet',
         emptyText: 'Create the first team, then its seasons. Sections are optional.',
@@ -534,6 +532,8 @@ const en: typeof it = {
         staffTeamsRequired: 'Choose at least one team',
       },
       group: {
+        title: 'Groups',
+        one: 'Group',
         text: 'Groups and seasons of the club, sorted into sections if you need them.',
         emptyTitle: 'No groups yet',
         emptyText: 'Create the first group, then its seasons. Sections are optional.',

@@ -87,6 +87,7 @@
 
 <script setup lang="ts">
 import type { RoleDto } from '~/types/api'
+import { scopeLabelKey } from '~/utils/invitation'
 import { lastAdmin } from '~/utils/roles'
 import { fullName } from '~/utils/roster'
 
@@ -99,7 +100,11 @@ const toRemove = ref<RoleDto | null>(null)
 const removing = ref(false)
 const errorAction = ref('')
 
-const scope = (r: RoleDto) => (r.destination ? `${t(`scope.${r.scope}`)}: ${r.destination}` : t(`scope.${r.scope}`))
+const unit = useUnitStore()
+const scope = (r: RoleDto) => {
+  const label = t(scopeLabelKey(r.scope, unit.term))
+  return r.destination ? `${label}: ${r.destination}` : label
+}
 
 async function remove() {
   const r = toRemove.value

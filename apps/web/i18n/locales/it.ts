@@ -43,7 +43,6 @@ const it = {
     themeAutomatic: 'Automatico',
     themeLight: 'Chiaro',
     themeDark: 'Scuro',
-    teams: 'Squadre',
     people: 'Persone',
     invitations: 'Inviti e ruoli',
     settings: 'Impostazioni',
@@ -349,7 +348,6 @@ const it = {
     role: 'Ruolo',
     scope: 'Ambito',
     section: 'Settore',
-    team: 'Squadra',
     record: 'Scheda',
     nameHelp: 'L\'interessato completerà il resto.',
     person: 'Persona',
@@ -378,7 +376,6 @@ const it = {
   scope: {
     club: 'Tutta la società',
     section: 'Settore',
-    team: 'Squadra',
   },
   gender: {
     male: 'Maschile',
@@ -484,7 +481,6 @@ const it = {
     actions: 'Azioni per {name}',
   },
   structure: {
-    title: 'Squadre',
     newSection: 'Nuovo settore',
     renameSection: 'Rinomina il settore',
     sectionName: 'Nome',
@@ -520,6 +516,8 @@ const it = {
     },
     unit: {
       team: {
+        title: 'Squadre',
+        one: 'Squadra',
         text: 'Squadre e stagioni della società, raggruppate in settori se servono.',
         emptyTitle: 'Nessuna squadra',
         emptyText: 'Crea la prima squadra, poi le stagioni. I settori sono facoltativi.',
@@ -538,6 +536,8 @@ const it = {
         staffTeamsRequired: 'Scegli almeno una squadra',
       },
       group: {
+        title: 'Gruppi',
+        one: 'Gruppo',
         text: 'Gruppi e stagioni della società, raggruppati in settori se servono.',
         emptyTitle: 'Nessun gruppo',
         emptyText: 'Crea il primo gruppo, poi le stagioni. I settori sono facoltativi.',

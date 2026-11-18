@@ -111,7 +111,12 @@ describe('tabLabelKey', () => {
     expect(tabLabelKey('absences')).toBe('shell.tab.absences')
     expect(tabLabelKey('statistics')).toBe('shell.tab.statistics')
     expect(tabLabelKey('home')).toBe('shell.home')
-    expect(tabLabelKey('teams')).toBe('shell.teams')
+    expect(tabLabelKey('teams')).toBe('structure.unit.team.title')
+  })
+
+  it('names the teams entry by the club unit term', () => {
+    expect(tabLabelKey('teams', 'group')).toBe('structure.unit.group.title')
+    expect(tabLabelKey('people', 'group')).toBe('shell.people')
   })
 
   it('points to a text that exists in every language', () => {
@@ -128,7 +133,7 @@ describe('navigation texts', () => {
   it('has a label in every language for every entry, and a group heading', () => {
     for (const [name, locale] of Object.entries({ it: it_, en, fr })) {
       const shell = locale.shell as Record<string, unknown>
-      for (const e of entries) expect(shell[e.key], `${name}: shell.${e.key}`).toBeTypeOf('string')
+      for (const e of entries.filter(x => x.key !== 'teams')) expect(shell[e.key], `${name}: shell.${e.key}`).toBeTypeOf('string')
       const groups = shell.groups as Record<string, unknown>
       expect(groups.personal, `${name}: shell.groups.personal`).toBeTypeOf('string')
       expect(groups.club, `${name}: shell.groups.club`).toBeTypeOf('string')
@@ -137,6 +142,7 @@ describe('navigation texts', () => {
 
   it('names the invitations entry after what the page holds', () => {
     expect(it_.shell.invitations).toBe('Inviti e ruoli')
-    expect(it_.shell.teams).toBe('Squadre')
+    expect(it_.structure.unit.team.title).toBe('Squadre')
+    expect(it_.structure.unit.group.title).toBe('Gruppi')
   })
 })

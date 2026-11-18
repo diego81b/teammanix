@@ -18,7 +18,7 @@
           <UFormField v-if="status.scope === 'section'" name="sectionId" :label="$t('invitation.section')" required>
             <USelect v-model="status.sectionId" :items="sectionOptions" size="xl" class="w-full" :placeholder="$t('invitation.choose')" />
           </UFormField>
-          <UFormField v-if="status.scope === 'team'" name="teamId" :label="$t('invitation.team')" required>
+          <UFormField v-if="status.scope === 'team'" name="teamId" :label="$t(`structure.unit.${unit.term}.one`)" required>
             <USelect v-model="status.teamId" :items="teamsOptions" size="xl" class="w-full" :placeholder="$t('invitation.choose')" />
           </UFormField>
         </template>
@@ -65,12 +65,13 @@
 <script setup lang="ts">
 import type { FormError } from '@nuxt/ui'
 import type { StructureTree, Language, PersonDto, InvitationRole, ScopeType } from '~/types/api'
-import { invitationData, scopeOptions, validateInvitation, type InvitationFields } from '~/utils/invitation'
+import { invitationData, scopeLabelKey, scopeOptions, validateInvitation, type InvitationFields } from '~/utils/invitation'
 import { fullName } from '~/utils/roster'
 
 const emit = defineEmits<{ sent: [] }>()
 const open = defineModel<boolean>('open', { default: false })
 const { t, locale } = useI18n()
+const unit = useUnitStore()
 const access = useAccess()
 const structure = useStructure()
 const people = usePeople()
@@ -87,7 +88,7 @@ const error = ref('')
 
 const roles = computed(() => (['admin', 'manager', 'staff', 'player'] as InvitationRole[]).map(r => ({ label: t(`roles.${r}`), value: r })))
 // The section scope is offered only to a club that has sections.
-const scopes = computed(() => scopeOptions(tree.value.sections.length > 0).map((a: ScopeType) => ({ label: t(`scope.${a}`), value: a })))
+const scopes = computed(() => scopeOptions(tree.value.sections.length > 0).map((a: ScopeType) => ({ label: t(scopeLabelKey(a, unit.term)), value: a })))
 const languages = computed(() => (['it', 'en', 'fr'] as Language[]).map(l => ({ label: t(`language.${l}`), value: l })))
 const sectionOptions = computed(() => tree.value.sections.map(a => ({ label: a.name, value: a.id })))
 const teamsOptions = computed(() => tree.value.teams.map((s) => {
