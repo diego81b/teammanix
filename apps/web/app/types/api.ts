@@ -20,6 +20,8 @@ export interface Membership {
   linkedToPerson: boolean
   /** true if the record exists but the person has not completed it yet. */
   recordToComplete: boolean
+  /** Modules on in at least one team of the open enrollments: the menu hides the personal pages of the others. */
+  modules: string[]
 }
 
 export interface UserDto {

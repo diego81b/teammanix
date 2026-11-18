@@ -173,7 +173,7 @@ watch(() => [route.path, session.activeClubId], refresh)
 watch(() => [session.token, session.activeClubId, session.isAdmin], () => void unit.refresh(), { immediate: true })
 
 // What each role sees, and how it splits between the tab bar and the sheet, is decided by utils/navigation.
-const audience = computed(() => ({ admin: session.isAdmin, linked: !!session.active?.linkedToPerson }))
+const audience = computed(() => ({ admin: session.isAdmin, linked: !!session.active?.linkedToPerson, modules: session.active?.modules }))
 const groups = computed(() => navGroups(audience.value))
 const mobile = computed(() => mobileNav(audience.value))
 const active = (to: string) => isNavActive(route.path, to)

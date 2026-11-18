@@ -8,6 +8,7 @@ const admin: Membership = {
   name: 'ASD Test',
   roles: [{ role: 'admin', scope: 'club', sectionId: null, teamId: null }],
   linkedToPerson: false,
+  modules: [],
   recordToComplete: false,
 }
 const manager: Membership = { ...admin, clubId: 'c2', roles: [{ role: 'manager', scope: 'team', sectionId: null, teamId: 'q1' }] }

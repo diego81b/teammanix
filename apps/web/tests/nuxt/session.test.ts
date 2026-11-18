@@ -11,6 +11,7 @@ const adminClub: Membership = {
   name: 'ASD Test',
   roles: [{ role: 'admin', scope: 'club', sectionId: null, teamId: null }],
   linkedToPerson: false,
+  modules: [],
   recordToComplete: false,
 }
 const manager: Membership = {

@@ -34,6 +34,23 @@ describe('navGroups', () => {
     expect(keys(groups[1]!.entries)).toEqual(['teams', 'people', 'invitations', 'settings'])
   })
 
+  it('hides the entries whose module none of the user\'s teams uses', () => {
+    const personal = (modules: string[]) => keys(navGroups({ admin: false, linked: true, modules })[0]!.entries)
+    expect(personal(['attendances', 'standings', 'sanctions'])).toEqual(['home', 'calendar', 'absences', 'suspensions', 'statistics'])
+    expect(personal(['attendances', 'standings'])).toEqual(['home', 'calendar', 'absences', 'statistics'])
+    expect(personal(['sanctions'])).toEqual(['home', 'calendar', 'absences', 'suspensions'])
+    expect(personal([])).toEqual(['home', 'calendar', 'absences'])
+  })
+
+  it('shows every entry while the modules are unknown', () => {
+    expect(keys(navGroups({ admin: false, linked: true })[0]!.entries)).toEqual(['home', 'calendar', 'absences', 'suspensions', 'statistics'])
+  })
+
+  it('keeps the tab bar free of a hidden entry', () => {
+    const { tabs } = mobileNav({ admin: false, linked: true, modules: ['attendances'] })
+    expect(keys(tabs)).toEqual(['home', 'calendar', 'absences', 'statistics'])
+  })
+
   it('points every entry to a distinct path', () => {
     const paths = navGroups(aud(true)).flatMap(g => g.entries.map(e => e.to))
     expect(new Set(paths).size).toBe(paths.length)

@@ -22,6 +22,8 @@ export interface NavGroup {
 export interface NavAudience {
   admin: boolean
   linked: boolean
+  /** Modules switched on in at least one team of the account's open enrollments; undefined while unknown, then nothing is hidden. */
+  modules?: string[]
 }
 
 const ENTRIES: Record<NavKey, NavEntry> = {
@@ -46,6 +48,9 @@ const TABS: Record<'admin' | 'member', NavKey[]> = {
   member: PERSONAL,
 }
 
+/** Entries that exist only if one of these modules is on; the others (absences, calendar) depend on no module. */
+const NEEDS_MODULE: Partial<Record<NavKey, string[]>> = { suspensions: ['sanctions'], statistics: ['attendances', 'standings'] }
+
 const pick = (keys: NavKey[]): NavEntry[] => keys.map(k => ENTRIES[k])
 
 /** The tab bar has about 80 px per slot at 400 px: the "My ..." entries have a short text there (`shell.tab.<key>`). */
@@ -58,9 +63,10 @@ export const tabLabelKey = (key: NavKey, term: UnitTerm = 'team'): string =>
  * The personal group is for every role, minus the pages that need a person record; the club group is for the
  * admin only (the API rejects the pages for others anyway).
  */
-export function navGroups({ admin, linked }: NavAudience): NavGroup[] {
+export function navGroups({ admin, linked, modules }: NavAudience): NavGroup[] {
+  const moduleOn = (k: NavKey) => !modules || !NEEDS_MODULE[k] || NEEDS_MODULE[k].some(m => modules.includes(m))
   return [
-    { id: 'personal', entries: pick(PERSONAL.filter(k => linked || !NEEDS_PERSON.includes(k))) },
+    { id: 'personal', entries: pick(PERSONAL.filter(k => (linked || !NEEDS_PERSON.includes(k)) && moduleOn(k))) },
     ...(admin ? [{ id: 'club' as const, entries: pick(CLUB) }] : []),
   ]
 }
