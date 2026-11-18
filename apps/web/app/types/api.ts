@@ -58,6 +58,11 @@ export interface PreviewInvitation {
   recordName: string | null
 }
 
+/** Response of GET invitations/mine: an open invitation for the account email, with the id to accept it. */
+export interface MyInvitation extends PreviewInvitation {
+  id: string
+}
+
 export interface MessageDto {
   message: string
 }

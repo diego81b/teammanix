@@ -285,6 +285,10 @@ const en: typeof it = {
     linkInvitation: 'Invitation link',
     open: 'Open',
     linkNotDetected: 'This link is not recognised. Copy it in full from the invitation email.',
+    invitationsTitle: 'Your invitations',
+    noInvitations: 'There are no open invitations for {email}. An invitation arrives by email at this address: check that you registered with the right one.',
+    accept: 'Accept',
+    haveLink: 'Do you have an invitation link?',
   },
   newClub: {
     title: 'New club',

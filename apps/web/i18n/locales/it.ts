@@ -289,6 +289,10 @@ const it = {
     linkInvitation: 'Link dell\'invito',
     open: 'Apri',
     linkNotDetected: 'Non riconosco questo link. Copialo per intero dall\'email di invito.',
+    invitationsTitle: 'I tuoi inviti',
+    noInvitations: 'Non ci sono inviti aperti per {email}. Un invito arriva per email a questo indirizzo: controlla di esserti registrato con quello giusto.',
+    accept: 'Accetta',
+    haveLink: 'Hai un link d\'invito?',
   },
   newClub: {
     title: 'Nuova società',

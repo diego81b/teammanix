@@ -285,6 +285,10 @@ const fr: typeof it = {
     linkInvitation: 'Lien de l\'invitation',
     open: 'Ouvrir',
     linkNotDetected: 'Ce lien n\'est pas reconnu. Copiez-le en entier depuis l\'e-mail d\'invitation.',
+    invitationsTitle: 'Vos invitations',
+    noInvitations: 'Aucune invitation ouverte pour {email}. Une invitation arrive par e-mail à cette adresse : vérifiez que vous vous êtes inscrit avec la bonne.',
+    accept: 'Accepter',
+    haveLink: 'Vous avez un lien d\'invitation ?',
   },
   newClub: {
     title: 'Nouveau club',
