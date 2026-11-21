@@ -1,0 +1,4 @@
+# Copy to staging.tfvars (gitignored). Non secret values only: tofu.ps1 passes the file to plan, apply and destroy.
+server_uuid     = "replace-with-the-server-uuid"
+domain          = "staging.example.com"
+deploy_key_file = "../../secrets/staging/deploy_key"

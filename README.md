@@ -109,6 +109,8 @@ Conventions:
 
 `docker-compose.prod.yml` is a standalone file, not an overlay. Create a Docker Compose application in Coolify that points to it.
 
+The whole setup (project, database, application, variables, domains, deployment) can be provisioned from code with OpenTofu instead of clicking in Coolify: see [infra/coolify/README.md](infra/coolify/README.md), which also covers rebuilding an environment from zero. The list below is what that configuration sets up, and the reference for doing it by hand.
+
 - **Database.** A Coolify PostgreSQL resource with scheduled S3 backups. `DATABASE_URL` is the resource internal URL.
 - **Variables.** Set in the Coolify application. Required ones are listed in `docker-compose.prod.yml`: `DATABASE_URL`, `JWT_SECRET`, `APP_URL`, `ALLOWED_ORIGINS`, `BREVO_API_KEY`, `MAIL_FROM_EMAIL`, `STORAGE_ENCRYPTION_KEY` and the `S3_*` group. Web Push is optional: set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` as secrets (pair generated with `npx web-push generate-vapid-keys`, different from development). Without them the app works and push is not offered.
 - **Sensitive files** (medical certificates and other documents). Use a dedicated private S3 compatible bucket, for example Cloudflare R2 with EU jurisdiction. Files are encrypted by the app before upload (a random key per file, wrapped by `STORAGE_ENCRYPTION_KEY`), so the provider only sees opaque bytes. The DB backups do not cover the bucket (see Backups). Keep the key outside Coolify: losing it makes every file unreadable, and replacing it follows the rotation procedure below. A DPA with the storage provider is required.
