@@ -2,7 +2,7 @@
 
 OpenTofu configuration that provisions one TeamManix environment on an existing Coolify: project, environment, PostgreSQL, the compose application (`docker-compose.prod.yml`, cloned over SSH with a read only deploy key), its variables and the deployment. One tofu workspace per environment: `staging` now, `prod` later (always `prod`, never `production`: Coolify creates an environment with that name in every new project and the two would clash).
 
-Status: validated (`tofu fmt`, `init`, `validate`) and `tofu.ps1` tested with a stand-in secret store. Not yet applied against a live Coolify: the first apply may need small fixes, see "Check after the first apply".
+Status: validated (`tofu fmt`, `init`, `validate`) and `tofu.ps1` and `credentials.ps1` tested against the real Credential Manager with throwaway values. Not yet applied against a live Coolify: the first apply may need small fixes, see "Check after the first apply".
 
 This guide is meant to rebuild everything from zero: a new PC, a new environment, a Coolify that was destroyed, a new server.
 
@@ -17,38 +17,27 @@ This guide is meant to rebuild everything from zero: a new PC, a new environment
 
 ## Tools on the PC
 
-`tofu` (`winget install OpenTofu.Tofu`), Node 22 (for `npm run coolify:secrets`), `gh` logged in with admin rights on the repository, `ssh-keygen` (Git for Windows has it), PowerShell with the `SecretManagement` and `SecretStore` modules (below).
+`tofu` (`winget install OpenTofu.Tofu`), Node 22 (for `npm run coolify:secrets`), `gh` logged in with admin rights on the repository, `ssh-keygen` (Git for Windows has it), Windows PowerShell 5.1 or later. No PowerShell module is needed.
 
 ## 1. Credentials on the PC (once per PC)
 
-The Coolify token and the state passphrase live in the PowerShell SecretStore, never in a file or a permanent environment variable. `tofu.ps1` reads them, hands them to one tofu process and removes them when it ends.
+The Coolify token and the state passphrase live in the Windows Credential Manager (generic credentials named `teammanix/<name>`, visible in Control Panel, Credential Manager, Windows Credentials), never in a file or a permanent environment variable. No module to install: `credman.ps1` talks to the Windows API. `tofu.ps1` reads the entries, hands them to one tofu process and removes them from the environment when it ends. Run `credentials.ps1` in your own terminal, not through Claude Code: values are typed at a hidden prompt or generated, they never go through a command line or a file.
 
 ```powershell
-Install-Module Microsoft.PowerShell.SecretManagement, Microsoft.PowerShell.SecretStore -Scope CurrentUser
-Register-SecretVault -Name SecretStore -ModuleName Microsoft.PowerShell.SecretStore -DefaultVault
-Set-SecretStoreConfiguration -Authentication None -Interaction None
-Set-Secret -Name coolify-endpoint -Secret 'https://coolify.example.com'
-Set-Secret -Name coolify-token -Secret (Read-Host 'Coolify token' -AsSecureString)
+.\infra\coolify\credentials.ps1 set coolify-endpoint      # https://coolify.example.com, no trailing slash
+.\infra\coolify\credentials.ps1 set coolify-token         # root token, see section 2
+.\infra\coolify\credentials.ps1 new-passphrase staging    # prod: new-passphrase prod
+.\infra\coolify\credentials.ps1 check staging             # which entries exist, never the values
 ```
 
-`-Authentication None` protects the store with the Windows user key only: nothing is in plaintext on disk, but any process of your user can read it. `-Authentication Password` asks for a password once per session, which is stricter but blocks every unattended run, including the ones started by Claude Code.
+Windows protects the entries with the key of the current user: nothing is in plaintext on disk, but any process of your user can read them (Claude Code included, when it runs `tofu.ps1`). Keep the PC disk encrypted (BitLocker).
 
-The state passphrase is one per environment. Generate it, never invent it, run this in your own terminal (not through Claude Code, the last line prints the value):
-
-```powershell
-$b = New-Object byte[] 24
-[Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b)
-$p = [Convert]::ToBase64String($b)
-Set-Secret -Name teammanix-staging-tofu-passphrase -Secret $p   # prod: teammanix-prod-tofu-passphrase
-$p
-```
-
-Copy the printed value into the password manager next to the other keys of the environment and close the terminal. Set it before the first apply: changing it later needs a state migration. Without the passphrase the state cannot be read, and tofu refuses to run without it, so the state is never written in plaintext.
+`new-passphrase` generates the state passphrase (24 random bytes in base64), stores it as `teammanix-<env>-tofu-passphrase` and prints it once: copy it into the password manager next to the other keys of the environment and close the terminal. It refuses to replace an existing one, because a new passphrase makes the existing state unreadable. Set it before the first apply. Without the passphrase tofu refuses to run, so the state is never written in plaintext.
 
 ## 2. Coolify (once per instance)
 
 1. Settings: enable the API.
-2. Keys & Tokens: create a token with the **root** permission. Without `root` (or `read:sensitive`) the provider cannot read the database password and `DATABASE_URL` stays empty. The token controls everything on the instance, so it is for Tofu only. Put it in the store (`coolify-token`).
+2. Keys & Tokens: create a token with the **root** permission. Without `root` (or `read:sensitive`) the provider cannot read the database password and `DATABASE_URL` stays empty. The token controls everything on the instance, so it is for Tofu only. Store it with `credentials.ps1 set coolify-token` (section 1).
 3. Note the UUID of the server (the id in the URL of its page). It goes in `<env>.tfvars`.
 4. The compose file joins the external Docker network `coolify`, which every Coolify server has. If the server has several destinations, the database must be on `coolify` too: set `destination_uuid`.
 
@@ -98,8 +87,8 @@ Two stages because Coolify accepts the domain mapping of a git compose applicati
 
 | Item | Where | Lost means |
 |---|---|---|
-| Coolify token | SecretStore (`coolify-token`) | create a new root token |
-| State passphrase | SecretStore and the password manager | the state is unreadable: delete it and re-apply (see below), the data lives in Coolify and the bucket, not in the state |
+| Coolify token | Credential Manager (`teammanix/coolify-token`) | create a new root token |
+| State passphrase | Credential Manager and the password manager | the state is unreadable: delete it and re-apply (see below), the data lives in Coolify and the bucket, not in the state |
 | `secrets/<env>/` (`secrets.json`, `.key` files, `deploy_key`) | password manager (attach the folder), local copy gitignored | `STORAGE_ENCRYPTION_KEY` lost = every stored file unreadable, no recovery; the others can be regenerated |
 | State (`terraform.tfstate.d/<env>/`) | local, gitignored, encrypted | rebuildable: it holds ids and the generated database password, not data |
 | Postgres data | Coolify scheduled backups to S3 (main README, Backups) | see the restore drill |
@@ -108,7 +97,7 @@ Two stages because Coolify accepts the domain mapping of a git compose applicati
 ## Rebuild scenarios
 
 **Coolify was destroyed, or a new instance replaces it.** The old state points at ids that no longer exist.
-1. Install Coolify, enable the API, create a new root token, update `coolify-endpoint` and `coolify-token` in the store.
+1. Install Coolify, enable the API, create a new root token, update `coolify-endpoint` and `coolify-token` with `credentials.ps1 set`.
 2. Delete the old state of the environment: `terraform.tfstate.d/<env>/` in `infra/coolify` (or `tofu workspace delete -force <env>` after selecting another one).
 3. Put `secrets/<env>/` back from the password manager (same `STORAGE_ENCRYPTION_KEY`, same bucket: the files stay readable). The deploy key can be reused; if it is lost, delete `deploy_key*`, remove the old deploy key from the repository settings and run `npm run coolify:secrets` again.
 4. `init`, `apply`, `apply -var domains_enabled=true`. Update the DNS record if the server IP changed.
@@ -118,6 +107,6 @@ Two stages because Coolify accepts the domain mapping of a git compose applicati
 
 **New server, same Coolify.** Change `server_uuid`: Tofu replaces the database and the application on the new server (the database is empty again, restore it). The bucket does not move.
 
-**Rotate the Coolify token.** Create the new token, update `coolify-token`, delete the old one in Coolify.
+**Rotate the Coolify token.** Create the new token, update it with `credentials.ps1 set coolify-token`, delete the old one in Coolify.
 
 **Destroy an environment.** `.\infra\coolify\tofu.ps1 destroy` removes the project and, with it, the database and its data. Take a backup first.

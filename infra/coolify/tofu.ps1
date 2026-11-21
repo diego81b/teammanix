@@ -1,5 +1,5 @@
 <#
-  Runs tofu with the Coolify credentials taken from the PowerShell SecretStore, so no token lives in a file or in a
+  Runs tofu with the Coolify credentials taken from the Windows Credential Manager, so no token lives in a file or in a
   permanent environment variable. The secrets reach only this process and its child, and are removed on exit.
 
   Usage, from anywhere:
@@ -9,10 +9,10 @@
     .\infra\coolify\tofu.ps1 apply -var domains_enabled=true
     $env:TEAMMANIX_ENV = 'production'; .\infra\coolify\tofu.ps1 plan    # default environment: staging
 
-  Secrets expected in the default vault (see README.md):
-    coolify-endpoint                     base URL of Coolify, no trailing slash
-    coolify-token                        API token with the root permission
-    teammanix-<env>-tofu-passphrase      state encryption passphrase, 16 characters at least
+  Entries expected in the Credential Manager, stored with credentials.ps1 (see README.md):
+    teammanix/coolify-endpoint                     base URL of Coolify, no trailing slash
+    teammanix/coolify-token                        API token with the root permission
+    teammanix/teammanix-<env>-tofu-passphrase      state encryption passphrase
 
   Also used when present, never created here:
     ../../secrets/<env>/secrets.json     becomes TF_VAR_secrets
@@ -29,19 +29,13 @@ if ($envName -notmatch '^[a-z][a-z0-9-]*$') { throw "Invalid environment name '$
 if (-not (Get-Command tofu -ErrorAction SilentlyContinue)) {
   throw "tofu not found. Install it: winget install OpenTofu.Tofu"
 }
-try {
-  Import-Module Microsoft.PowerShell.SecretManagement -ErrorAction Stop
-} catch {
-  throw "SecretManagement module missing. See infra/coolify/README.md, section 'Credentials'."
-}
+. (Join-Path $PSScriptRoot 'credman.ps1')
 
 function Get-TofuSecret([string] $Name) {
-  try {
-    $value = Get-Secret -Name $Name -AsPlainText -ErrorAction Stop
-  } catch {
-    throw "Secret '$Name' not found in the default vault. See infra/coolify/README.md, section 'Credentials'."
+  $value = Get-CredSecret $Name
+  if ([string]::IsNullOrWhiteSpace($value)) {
+    throw "Credential 'teammanix/$Name' not found. Run .\infra\coolify\credentials.ps1 check (README.md, section 'Credentials')."
   }
-  if ([string]::IsNullOrWhiteSpace($value)) { throw "Secret '$Name' is empty." }
   return $value
 }
 
