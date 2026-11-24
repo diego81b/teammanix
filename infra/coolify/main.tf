@@ -2,10 +2,17 @@ locals {
   name = "${var.project_name}-${var.environment}"
   url  = "https://${var.domain}"
 
-  # The values the compose file requires, minus the ones built here. Empty values are dropped: an optional variable
-  # left empty in secrets.json must fall back to the default of the compose file.
+  # Keys of the dedicated Postgres backup bucket: they feed coolify_s3_storage and never reach the app.
+  # Same names as BACKUP_SECRETS in apps/api/src/dev/coolify-secrets.ts, checked by its spec.
+  backup_keys    = ["BACKUP_S3_ENDPOINT", "BACKUP_S3_REGION", "BACKUP_S3_BUCKET", "BACKUP_S3_ACCESS_KEY_ID", "BACKUP_S3_SECRET_ACCESS_KEY"]
+  backup         = { for k in local.backup_keys : k => lookup(var.secrets, k, "") }
+  backup_missing = nonsensitive([for k in local.backup_keys : k if local.backup[k] == ""])
+  backup_error   = "Backup bucket keys missing or empty in secrets.json: ${join(", ", local.backup_missing)}."
+
+  # The values the compose file requires, minus the ones built here and the backup keys. Empty values are dropped:
+  # an optional variable left empty in secrets.json must fall back to the default of the compose file.
   app_env = merge(
-    { for k, v in var.secrets : k => v if v != "" },
+    { for k, v in var.secrets : k => v if v != "" && !contains(local.backup_keys, k) },
     {
       DATABASE_URL    = coolify_database_postgresql.db.internal_db_url
       APP_URL         = local.url
@@ -63,18 +70,48 @@ resource "coolify_application_private_git" "app" {
   is_stripprefix_enabled = false
   autogenerate_domain    = false
 
-  # Stage 2 only, see var.domains_enabled.
+  # Stage 2 only: the provider sends the domains in a PATCH right after create, before Coolify has loaded the compose
+  # file, and gets a 422 (see var.domains_enabled).
   docker_compose_domains = var.domains_enabled ? jsonencode([
     { name = "web", domain = local.url },
     { name = "api", domain = "${local.url}/api" },
   ]) : null
 }
 
-# One atomic set: every variable not listed here is removed from the application on the next apply.
-resource "coolify_envs_bulk" "app" {
-  resource_type = "application"
-  resource_uuid = coolify_application_private_git.app.uuid
-  variables     = local.app_env
+# One resource per variable: a key removed from secrets.json is deleted from the application on the next apply. Only the
+# key names are unwrapped for for_each, the values stay sensitive.
+resource "coolify_environment_variable" "app" {
+  for_each = nonsensitive(toset(keys(local.app_env)))
+
+  application_uuid = coolify_application_private_git.app.uuid
+  key              = each.key
+  value            = local.app_env[each.key]
+}
+
+# Storage of the Postgres dumps, separate from the bucket of the app. The provider rejects a private endpoint host.
+resource "coolify_s3_storage" "backup" {
+  name     = "${local.name}-backup"
+  endpoint = local.backup["BACKUP_S3_ENDPOINT"]
+  region   = local.backup["BACKUP_S3_REGION"]
+  bucket   = local.backup["BACKUP_S3_BUCKET"]
+  key      = local.backup["BACKUP_S3_ACCESS_KEY_ID"]
+  secret   = local.backup["BACKUP_S3_SECRET_ACCESS_KEY"]
+
+  lifecycle {
+    precondition {
+      condition     = length(local.backup_missing) == 0
+      error_message = local.backup_error
+    }
+  }
+}
+
+resource "coolify_database_backup" "db" {
+  database_uuid       = coolify_database_postgresql.db.uuid
+  frequency           = var.backup_frequency
+  save_s3             = true
+  s3_storage_uuid     = coolify_s3_storage.backup.uuid
+  retain_days_s3      = var.backup_retention_days
+  retain_days_locally = var.backup_retention_days_local
 }
 
 # Deploys after the variables exist, and again when they or the stage change. Waits for the build: stage 2 needs
@@ -93,5 +130,5 @@ resource "coolify_deployment" "app" {
     create = "30m"
   }
 
-  depends_on = [coolify_envs_bulk.app]
+  depends_on = [coolify_environment_variable.app]
 }

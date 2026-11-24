@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { completeSecrets, missingRequired, requiredFromCompose, userSecrets } from './coolify-secrets';
+import { BACKUP_SECRETS, askSecrets, completeSecrets, requiredFromCompose, userSecrets } from './coolify-secrets';
 import { parseEnvName, writeKeys } from './gen-keys';
 
 /**
@@ -20,12 +20,11 @@ function main() {
   const file = join(dir, 'secrets.json');
   const existing: Record<string, string> = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {};
 
-  const { secrets, added } = completeSecrets(existing, readOrWriteKeys(root, env));
-  for (const name of userSecrets(required)) secrets[name] ??= '';
+  const { secrets: completed, added } = completeSecrets(existing, readOrWriteKeys(root, env));
+  const { secrets, missing } = askSecrets(completed, [...userSecrets(required), ...BACKUP_SECRETS]);
   writeSecret(file, `${JSON.stringify(secrets, null, 2)}\n`);
 
   console.log(`${file}${added.length ? `: generated ${added.join(', ')}` : ''}`);
-  const missing = missingRequired(secrets, userSecrets(required));
   if (missing.length) console.log(`Still to fill in: ${missing.join(', ')}`);
 
   ensureDeployKey(root, dir, env);

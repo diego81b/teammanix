@@ -21,3 +21,4 @@ secrets/
 *.tfvars
 *.tfvars.json
 !*.tfvars.example
+.kairos/

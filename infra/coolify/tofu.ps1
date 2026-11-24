@@ -7,7 +7,7 @@
     .\infra\coolify\tofu.ps1 plan
     .\infra\coolify\tofu.ps1 apply
     .\infra\coolify\tofu.ps1 apply -var domains_enabled=true
-    $env:TEAMMANIX_ENV = 'production'; .\infra\coolify\tofu.ps1 plan    # default environment: staging
+    $env:TEAMMANIX_ENV = 'prod'; .\infra\coolify\tofu.ps1 plan    # default environment: staging
 
   Entries expected in the Credential Manager, stored with credentials.ps1 (see README.md):
     teammanix/coolify-endpoint                     base URL of Coolify, no trailing slash
@@ -18,7 +18,8 @@
     ../../secrets/<env>/secrets.json     becomes TF_VAR_secrets
     <env>.tfvars                         non secret variables (server_uuid, domain, deploy_key_file), see <env>.tfvars.example
 
-  One tofu workspace per environment, so the states never mix.
+  One tofu workspace per environment, so the states never mix. The same name reaches tofu as var.environment
+  (TF_VAR_environment), so the workspace, the Coolify project (teammanix-<env>) and the Coolify environment always agree.
 #>
 
 $ErrorActionPreference = 'Stop'
@@ -44,12 +45,13 @@ function ConvertTo-HclString([string] $Value) {
   return $Value.Replace('\', '\\').Replace('"', '\"').Replace('${', '$${').Replace('%{', '%%{')
 }
 
-$names = @('COOLIFY_ENDPOINT', 'COOLIFY_TOKEN', 'TF_ENCRYPTION', 'TF_VAR_secrets', 'TF_WORKSPACE')
+$names = @('COOLIFY_ENDPOINT', 'COOLIFY_TOKEN', 'TF_ENCRYPTION', 'TF_VAR_secrets', 'TF_VAR_environment', 'TF_WORKSPACE')
 $code = 1
 Push-Location $PSScriptRoot
 try {
   $env:COOLIFY_ENDPOINT = (Get-TofuSecret 'coolify-endpoint').TrimEnd('/')
   $env:COOLIFY_TOKEN = Get-TofuSecret 'coolify-token'
+  $env:TF_VAR_environment = $envName
   $passphrase = ConvertTo-HclString (Get-TofuSecret "teammanix-$envName-tofu-passphrase")
   $env:TF_ENCRYPTION = "key_provider `"pbkdf2`" `"main`" { passphrase = `"$passphrase`" }"
 

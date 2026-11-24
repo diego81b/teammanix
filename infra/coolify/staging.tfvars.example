@@ -2,3 +2,14 @@
 server_uuid     = "replace-with-the-server-uuid"
 domain          = "staging.example.com"
 deploy_key_file = "../../secrets/staging/deploy_key"
+
+# Uncomment after stage 2: domains are applied in the second apply (README section 5).
+# domains_enabled = true
+
+# Do not set `environment` here: tofu.ps1 sets TF_VAR_environment from TEAMMANIX_ENV, and a line in this file would override it.
+
+# Postgres backup, commented out at the defaults. The bucket credentials are not here: they are the BACKUP_S3_* entries
+# of secrets/<env>/secrets.json.
+# backup_frequency            = "0 3 * * *"
+# backup_retention_days       = 30 # in the backup bucket
+# backup_retention_days_local = 7  # on the Coolify server

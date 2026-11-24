@@ -1,7 +1,6 @@
 variable "environment" {
-  description = "Environment name, one per state: staging now, production later."
+  description = "Environment name, one per state: staging now, prod later. No default: tofu.ps1 sets it from TEAMMANIX_ENV (TF_VAR_environment), the same name as the workspace."
   type        = string
-  default     = "staging"
 }
 
 variable "project_name" {
@@ -43,13 +42,31 @@ variable "deploy_key_file" {
 }
 
 variable "secrets" {
-  description = "Environment values of the API, flat NAME to value (secrets/<env>/secrets.json). DATABASE_URL, APP_URL and ALLOWED_ORIGINS are computed here and must not be in it."
+  description = "Environment values of the API, flat NAME to value (secrets/<env>/secrets.json). DATABASE_URL, APP_URL and ALLOWED_ORIGINS are computed here and must not be in it. It also holds the five BACKUP_S3_ENDPOINT, BACKUP_S3_REGION, BACKUP_S3_BUCKET, BACKUP_S3_ACCESS_KEY_ID and BACKUP_S3_SECRET_ACCESS_KEY of the Postgres backup bucket: they feed the backup storage and the app never receives them."
   type        = map(string)
   sensitive   = true
 }
 
 variable "domains_enabled" {
-  description = "Stage 2. Coolify takes the domain mapping of a compose app only after the first deploy has read the compose file: apply once with false, then with true."
+  description = "Stage 2. The provider sends the domain mapping in a PATCH right after creating the application, before Coolify has loaded the compose file, and gets a 422: apply once with false, then with true."
   type        = bool
   default     = false
+}
+
+variable "backup_frequency" {
+  description = "Schedule of the Postgres backup: a cron expression or a Coolify keyword such as daily."
+  type        = string
+  default     = "0 3 * * *"
+}
+
+variable "backup_retention_days" {
+  description = "Days a Postgres backup is kept in the backup bucket."
+  type        = number
+  default     = 30
+}
+
+variable "backup_retention_days_local" {
+  description = "Days a Postgres backup is kept on the Coolify server, so dumps do not pile up on its disk."
+  type        = number
+  default     = 7
 }

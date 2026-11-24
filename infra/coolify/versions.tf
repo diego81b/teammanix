@@ -4,7 +4,7 @@ terraform {
   required_providers {
     coolify = {
       source  = "coolify-terraform/coolify"
-      version = "0.1.33"
+      version = "0.1.34"
     }
   }
 
