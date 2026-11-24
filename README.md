@@ -150,6 +150,13 @@ The key is 32 random bytes in base64. Losing it makes every stored file unreadab
 - **Retrieval, written for the second person:** open the password manager, vault "TeamManix production", entry "STORAGE_ENCRYPTION_KEY". If the manager is unreachable, use the emergency envelope. Check a retrieved key by setting it on the spare environment of the restore drill and downloading a file.
 - **Rotation.** Each file has its own random key, wrapped by `STORAGE_ENCRYPTION_KEY` and stored with the key id, so a rotation rewraps the small per-file keys and never re-encrypts the files. Generate a new key, set it as `STORAGE_ENCRYPTION_KEY`, put the old one in `STORAGE_ENCRYPTION_KEY_PREVIOUS` (comma separated list), redeploy: old files stay readable, new files use the new key. Then run `npm run storage:rewrap -- --dry-run` and `npm run storage:rewrap` in the API container (add `--club <id>` for one club): it is safe to repeat and stops at the first object it cannot read. When it reports nothing left to rewrap, remove the old key from `STORAGE_ENCRYPTION_KEY_PREVIOUS`. After a suspected leak of the key, rotate immediately and treat the old bucket backups as exposed: they stay readable with the old key until it is destroyed. Update the password manager and the emergency copy in the same session, and destroy the old emergency copy. Inventory, loss and rotation of every server secret: [docs/ops/keys.md](docs/ops/keys.md).
 
+### Releases and CI
+
+- **CI.** Every pull request and every push to `develop`, `staging` and `main` runs `.github/workflows/ci.yml`: API typecheck and unit tests, web typecheck and unit and Nuxt tests. Integration and e2e tests are not in CI yet.
+- **Staging.** Merge `develop` into `staging`. Coolify deploys the `staging` branch on each push.
+- **Production.** Merge `staging` into `main`, then push a tag `vX.Y.Z` on the `main` commit. `.github/workflows/release.yml` runs CI, refuses a tag that is not reachable from `main`, and moves the `production` branch to the tag. Coolify deploys `production` on each push.
+- **Rollback.** The release workflow only moves `production` forward (a non-fast-forward push fails). Roll back with a fix commit on `main` and a new tag.
+
 ## Roadmap
 
 1. **Events and calendar.** Trainings and matches in the active season, recurring series, venues, opponents, personal calendar.
