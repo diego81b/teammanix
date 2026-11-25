@@ -210,10 +210,9 @@ describe('useCertificates', () => {
       },
     })
     const blob = await useCertificates().downloadFile('c2')
-    // Not toBeInstanceOf: on Node 22 fetch returns the Node Blob, not the global Blob of the test DOM.
-    expect(Object.prototype.toString.call(blob)).toBe('[object Blob]')
+    // Not toBeInstanceOf: on Node 22 fetch returns the Node Blob, not the Blob of the test DOM.
     expect(blob.type).toBe('application/pdf')
-    expect(blob.size).toBe(4)
+    expect([...new Uint8Array(await blob.arrayBuffer())]).toEqual([37, 80, 68, 70])
   })
 
   it('reads and updates the file setting', async () => {
