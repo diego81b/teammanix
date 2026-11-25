@@ -101,12 +101,13 @@ resource "coolify_environment_variable" "app" {
 
 # Storage of the Postgres dumps, separate from the bucket of the app. The provider rejects a private endpoint host.
 resource "coolify_s3_storage" "backup" {
-  name     = "${local.name}-backup"
-  endpoint = local.backup["BACKUP_S3_ENDPOINT"]
-  region   = local.backup["BACKUP_S3_REGION"]
-  bucket   = local.backup["BACKUP_S3_BUCKET"]
-  key      = local.backup["BACKUP_S3_ACCESS_KEY_ID"]
-  secret   = local.backup["BACKUP_S3_SECRET_ACCESS_KEY"]
+  name      = "${local.name}-backup"
+  endpoint  = local.backup["BACKUP_S3_ENDPOINT"]
+  region    = local.backup["BACKUP_S3_REGION"]
+  bucket    = local.backup["BACKUP_S3_BUCKET"]
+  key       = local.backup["BACKUP_S3_ACCESS_KEY_ID"]
+  secret    = local.backup["BACKUP_S3_SECRET_ACCESS_KEY"]
+  is_usable = true
 
   lifecycle {
     precondition {
