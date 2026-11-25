@@ -154,6 +154,7 @@ The key is 32 random bytes in base64. Losing it makes every stored file unreadab
 
 - **CI.** Every pull request and every push to `develop`, `staging` and `main` runs `.github/workflows/ci.yml`: API typecheck and unit tests, web typecheck and unit and Nuxt tests. Integration and e2e tests are not in CI yet.
 - **Staging.** Merge `develop` into `staging`. Coolify deploys the `staging` branch on each push.
+- **Branch rules.** `staging` and `main` accept only commits on which the CI jobs `api` and `web` passed, and are never force pushed or deleted; `production` moves only through the release workflow. Webhook and rules are managed by OpenTofu: [infra/coolify/README.md](infra/coolify/README.md), "Continuous deployment".
 - **Production.** Merge `staging` into `main`, then push a tag `vX.Y.Z` on the `main` commit. `.github/workflows/release.yml` runs CI, refuses a tag that is not reachable from `main`, and moves the `production` branch to the tag. Coolify deploys `production` on each push.
 - **Rollback.** The release workflow only moves `production` forward (a non-fast-forward push fails). Roll back with a fix commit on `main` and a new tag.
 

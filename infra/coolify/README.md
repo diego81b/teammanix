@@ -15,6 +15,7 @@ This guide is meant to rebuild everything from zero: a new PC, a new environment
 | Git deploy key (`npm run coolify:secrets`) | S3 bucket for the Postgres backups (a second, dedicated bucket) |
 | `JWT_SECRET`, `STORAGE_ENCRYPTION_KEY` (generated) | Brevo account, authenticated domain, API key |
 | Encrypted state, one workspace per environment | Coolify itself: install, enable the API, create the root token |
+| GitHub push webhook to Coolify, branch rulesets with the required CI checks | The deploy branch (`git push`), the GitHub token |
 
 ## Tools on the PC
 
@@ -27,6 +28,7 @@ The Coolify token and the state passphrase live in the Windows Credential Manage
 ```powershell
 .\infra\coolify\credentials.ps1 set coolify-endpoint      # https://coolify.example.com, no trailing slash
 .\infra\coolify\credentials.ps1 set coolify-token         # root token, see section 2
+.\infra\coolify\credentials.ps1 set github-token          # fine-grained GitHub token, see "Continuous deployment"
 .\infra\coolify\credentials.ps1 new-passphrase staging    # prod: new-passphrase prod
 .\infra\coolify\credentials.ps1 check staging             # which entries exist, never the values
 ```
@@ -63,7 +65,7 @@ It works on `secrets/<env>/` (gitignored):
 
 Nothing that exists is overwritten. Fill in the empty values (`BREVO_API_KEY`, `MAIL_FROM_EMAIL`, `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`; optional: `S3_REGION`, `MAIL_FROM_NAME`, `VAPID_*`; an optional entry left empty is dropped and the default of the compose file applies), and the five `BACKUP_S3_*` values, all required, then run it again: it lists what is still empty. A plan stops with `Backup bucket keys missing or empty in secrets.json` and the names while one of the five is empty. `DATABASE_URL`, `APP_URL` and `ALLOWED_ORIGINS` are computed by Tofu and must not be in the file. A unit test keeps this list and `docker-compose.prod.yml` aligned.
 
-Then copy `staging.tfvars.example` to `staging.tfvars` (gitignored) and fill in `server_uuid`, `domain`, `deploy_key_file`. For prod also set `git_branch = "main"` there (the default is `develop`). The backup schedule (`0 3 * * *`), its retention in the backup bucket (30 days) and on the server (7 days) have defaults; the example lists them commented out.
+Then copy `staging.tfvars.example` to `staging.tfvars` (gitignored) and fill in `server_uuid`, `domain`, `deploy_key_file`. Set the branch Coolify deploys: `git_branch = "staging"` for staging; for prod `git_branch = "production"` and `release_branch = "main"` (see "Continuous deployment"). The backup schedule (`0 3 * * *`), its retention in the backup bucket (30 days) and on the server (7 days) have defaults; the example lists them commented out.
 
 ## 5. Apply
 
@@ -99,14 +101,30 @@ After stage 2 works, add `domains_enabled = true` to `<env>.tfvars`. The variabl
 - Three things only the live apply settles, so read the stage 1 plan before applying: whether Coolify pre-creates the compose keys (above), whether `is_build` (left at the provider default) lets compose interpolation work at build time, and whether Coolify accepts the backup storage. `tofu test` mocks the provider and proves the configuration logic only (key sets, the plan-time stop, the schedule arguments).
 - Coolify may create the backup storage with its `is_usable` flag false, and nothing in this configuration validates the connection. Right after stage 1 open Storages in Coolify and see whether the backup storage shows as usable. If it does not, press Validate connection there. Then check the first scheduled run (`backup_frequency`, 03:00 on the server's clock by default): the database's Backups page shows it successful and sent to S3, and the bucket holds a dump of that night. Whether a scheduled run needs a usable storage is not known.
 - `NUXT_PUBLIC_API_BASE_URL` is deliberately not set: the compose default `/api` is right and it is a build argument.
-- A new commit is not deployed by `tofu apply` (the deployment resource reruns only when the variables, the branch or the stage change). Deploy from the Coolify UI or its webhook.
+- A new commit is not deployed by `tofu apply` (the deployment resource reruns only when the variables, the branch or the stage change). A push to the deploy branch deploys through the GitHub webhook (see "Continuous deployment"); the Coolify UI deploys by hand.
 - The provider contract is pinned to Coolify 4.6.0, with 4.1.0 as the minimum and 4.7.0 or later recommended for writes. A resource that fails on an unknown field is a provider issue: check its releases before working around it.
+
+## Continuous deployment (`github.tf`)
+
+Flow: `develop` is merged into `staging` and Coolify deploys `staging`. For prod, `staging` is merged into `main`, a tag `vX.Y.Z` is pushed on `main`, and `.github/workflows/release.yml` runs CI and moves `production` to the tag; Coolify deploys `production`. The flow for people is in the main README, "Releases and CI".
+
+Each workspace manages, for its own environment only:
+- **Webhook.** A repository webhook, push events only, to `<coolify-endpoint>/webhooks/source/github/events/manual?environment=<env>`. The secret is generated (`random_password.webhook`) and set on both sides: GitHub signs each push with it and Coolify (`manual_webhook_secret_github` of the application) rejects a push whose signature does not match. Coolify then deploys the applications whose repository and branch match the push. The query string only keeps the URL unique per environment, because GitHub refuses two hooks with the same URL; with staging and prod on one Coolify, each push reaches both hooks and only the application with the matching branch and secret deploys.
+- **Checks ruleset** (`teammanix-<env>-checks`): no deletion, no force push, and the CI jobs `api` and `web` (`var.required_checks`, reported by GitHub Actions) must have passed on a commit before it lands. On staging it guards `staging`; on prod it guards `release_branch` (`main`). A pull request or a push of a commit CI already checked (for example `git push origin develop:staging` after CI on `develop` is green) both pass.
+- **Release ruleset** (prod only, `teammanix-prod-release`): `production` is updated only by GitHub Actions (the release workflow) and by repository admins, never force pushed or deleted.
+
+Not managed here: the deploy branch itself. It is git history, so it is created with git and a destroy never deletes it; a plan stops if it is missing. Staging: `git push origin develop:refs/heads/staging`. Prod, before its first apply: `git push origin main:refs/heads/production`.
+
+The GitHub token (`teammanix/github-token`) is a fine-grained token limited to this repository: Administration read and write (rulesets), Webhooks read and write, Contents and Metadata read. Create it on GitHub, Settings, Developer settings, Fine-grained tokens, with an expiry date, and store it with `credentials.ps1 set github-token` in your own terminal. Without it a plan still runs (the repository is public and is read anonymously) and an apply fails on the GitHub resources. When it expires, create a new one and set it again; nothing else changes.
+
+Not yet proven live: that the GitHub Actions bypass on the release ruleset lets `release.yml` push `production`. The first tag settles it. If that push is refused, check the bypass list of `teammanix-prod-release` on GitHub (Settings, Rules).
 
 ## What to keep, and where
 
 | Item | Where | Lost means |
 |---|---|---|
 | Coolify token | Credential Manager (`teammanix/coolify-token`) | create a new root token |
+| GitHub token | Credential Manager (`teammanix/github-token`) | create a new fine-grained token, see "Continuous deployment" |
 | State passphrase | Credential Manager and the password manager | the state is unreadable: delete it and re-apply (see below), the data lives in Coolify and the bucket, not in the state |
 | `secrets/<env>/` (`secrets.json`, `.key` files, `deploy_key`) | password manager (attach the folder), local copy gitignored | `STORAGE_ENCRYPTION_KEY` lost = every stored file unreadable, no recovery; the others can be regenerated |
 | State (`terraform.tfstate.d/<env>/`) | local, gitignored, encrypted | rebuildable: it holds ids and the generated database password, not data |

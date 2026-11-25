@@ -70,3 +70,20 @@ variable "backup_retention_days_local" {
   type        = number
   default     = 7
 }
+
+variable "coolify_url" {
+  description = "Base URL of Coolify, no trailing slash, target of the GitHub webhook. tofu.ps1 sets it from teammanix/coolify-endpoint."
+  type        = string
+}
+
+variable "release_branch" {
+  description = "Prod only: branch the version tags are cut from (main). Required checks then guard it, and git_branch moves only through the release workflow. Null on staging, where the checks guard git_branch."
+  type        = string
+  default     = null
+}
+
+variable "required_checks" {
+  description = "CI jobs that must pass before a commit reaches the checked branch (job names of .github/workflows/ci.yml)."
+  type        = list(string)
+  default     = ["api", "web"]
+}

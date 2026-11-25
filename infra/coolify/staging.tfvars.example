@@ -6,6 +6,11 @@ deploy_key_file = "../../secrets/staging/deploy_key"
 # Uncomment after stage 2: domains are applied in the second apply (README section 5).
 # domains_enabled = true
 
+# Branch Coolify deploys on each push (it must exist on GitHub). Staging: "staging". Prod: "production", plus
+# release_branch = "main", the branch the version tags are cut from (README, "Continuous deployment").
+git_branch = "staging"
+# release_branch = "main"
+
 # Do not set `environment` here: tofu.ps1 sets TF_VAR_environment from TEAMMANIX_ENV, and a line in this file would override it.
 
 # Postgres backup, commented out at the defaults. The bucket credentials are not here: they are the BACKUP_S3_* entries
