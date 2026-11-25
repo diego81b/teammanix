@@ -62,6 +62,10 @@ resource "coolify_application_private_git" "app" {
   git_branch       = var.git_branch
   private_key_uuid = coolify_private_key.deploy.uuid
 
+  # Deploys on the GitHub push webhook (github.tf).
+  is_auto_deploy_enabled       = true
+  manual_webhook_secret_github = random_password.webhook.result
+
   build_pack              = "dockercompose"
   docker_compose_location = "/docker-compose.prod.yml"
   ports_exposes           = "80"
@@ -76,6 +80,13 @@ resource "coolify_application_private_git" "app" {
     { name = "web", domain = local.url },
     { name = "api", domain = "${local.url}/api" },
   ]) : null
+
+  lifecycle {
+    precondition {
+      condition     = data.github_branch.deploy.sha != null ? data.github_branch.deploy.sha != "" : false
+      error_message = "Branch ${var.git_branch} does not exist on GitHub. Push it first (prod: git push origin main:refs/heads/production)."
+    }
+  }
 }
 
 # One resource per variable: a key removed from secrets.json is deleted from the application on the next apply. Only the

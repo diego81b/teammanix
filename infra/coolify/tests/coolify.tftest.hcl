@@ -25,8 +25,17 @@ mock_provider "coolify" {
   }
 }
 
+mock_provider "github" {
+  mock_data "github_branch" {
+    defaults = { sha = "0123456789abcdef0123456789abcdef01234567" }
+  }
+}
+
+mock_provider "random" {}
+
 variables {
   environment     = "staging"
+  coolify_url     = "https://coolify.example.test"
   server_uuid     = "77777777-7777-4777-8777-777777777777"
   domain          = "staging.example.test"
   deploy_key_file = "tests/placeholder_deploy_key"
@@ -187,4 +196,89 @@ run "backup_storage_mapping" {
     )
     error_message = "Each BACKUP_S3_* value must reach its own field of the backup storage."
   }
+}
+
+# Staging: the checks guard the deploy branch, nothing restricts who pushes it.
+run "staging_github" {
+  command = plan
+
+  variables {
+    git_branch = "staging"
+  }
+
+  assert {
+    condition = (
+      local.github_owner == "diego81b" && local.github_name == "teammanix"
+      && github_repository_ruleset.checks.conditions[0].ref_name[0].include == tolist(["refs/heads/staging"])
+      && length(github_repository_ruleset.release) == 0
+    )
+    error_message = "Staging must require the checks on its own branch and create no release ruleset."
+  }
+
+  assert {
+    condition = (
+      toset([for c in github_repository_ruleset.checks.rules[0].required_status_checks[0].required_check : c.context]) == toset(["api", "web"])
+      && alltrue([for c in github_repository_ruleset.checks.rules[0].required_status_checks[0].required_check : c.integration_id == 15368])
+    )
+    error_message = "The required checks must be the CI jobs, reported by GitHub Actions."
+  }
+
+  assert {
+    condition = (
+      github_repository_webhook.deploy.configuration[0].url == "https://coolify.example.test/webhooks/source/github/events/manual?environment=staging"
+      && github_repository_webhook.deploy.events == toset(["push"])
+    )
+    error_message = "The webhook must send pushes to the manual GitHub endpoint of Coolify, unique per environment."
+  }
+}
+
+# Prod: the checks guard main, and only the release workflow (or an admin) moves the deploy branch.
+run "prod_github" {
+  command = plan
+
+  variables {
+    environment    = "prod"
+    git_branch     = "production"
+    release_branch = "main"
+  }
+
+  assert {
+    condition     = github_repository_ruleset.checks.conditions[0].ref_name[0].include == tolist(["refs/heads/main"])
+    error_message = "Prod must require the checks on the branch the tags are cut from."
+  }
+
+  assert {
+    condition = (
+      github_repository_ruleset.release[0].conditions[0].ref_name[0].include == tolist(["refs/heads/production"])
+      && github_repository_ruleset.release[0].rules[0].update == true
+      && toset([for a in github_repository_ruleset.release[0].bypass_actors : "${a.actor_type}:${a.actor_id}"]) == toset(["Integration:15368", "RepositoryRole:5"])
+    )
+    error_message = "The prod deploy branch must accept pushes only from GitHub Actions and admins."
+  }
+
+  assert {
+    condition     = endswith(github_repository_webhook.deploy.configuration[0].url, "?environment=prod")
+    error_message = "The prod webhook URL must differ from the staging one."
+  }
+}
+
+# Coolify verifies each push with the secret GitHub signs it with: both must be the same value.
+run "webhook_secret_shared" {
+  command = apply
+
+  assert {
+    condition     = nonsensitive(coolify_application_private_git.app.manual_webhook_secret_github == github_repository_webhook.deploy.configuration[0].secret)
+    error_message = "Coolify and GitHub must share the webhook secret."
+  }
+}
+
+run "missing_deploy_branch" {
+  command = plan
+
+  override_data {
+    target = data.github_branch.deploy
+    values = { sha = "" }
+  }
+
+  expect_failures = [coolify_application_private_git.app]
 }

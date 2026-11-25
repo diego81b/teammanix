@@ -9,3 +9,7 @@ output "application_uuid" {
 output "deployment_status" {
   value = coolify_deployment.app.status
 }
+
+output "webhook_url" {
+  value = local.webhook_url
+}

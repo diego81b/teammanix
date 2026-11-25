@@ -4,6 +4,7 @@
 
     .\infra\coolify\credentials.ps1 set coolify-endpoint          # https://coolify.example.com, no trailing slash
     .\infra\coolify\credentials.ps1 set coolify-token             # root token of Coolify
+    .\infra\coolify\credentials.ps1 set github-token              # fine-grained GitHub token of the repository
     .\infra\coolify\credentials.ps1 new-passphrase staging        # generates the state passphrase, stores it, prints it once
     .\infra\coolify\credentials.ps1 check [staging]               # which entries exist, never the values
     .\infra\coolify\credentials.ps1 remove <name>
@@ -51,7 +52,7 @@ switch ($action) {
   'check' {
     $envName = if ($arg) { $arg } else { 'staging' }
     Assert-Name $envName
-    foreach ($name in @('coolify-endpoint', 'coolify-token', "teammanix-$envName-tofu-passphrase")) {
+    foreach ($name in @('coolify-endpoint', 'coolify-token', 'github-token', "teammanix-$envName-tofu-passphrase")) {
       $state = if (Get-CredSecret $name) { 'ok     ' } else { 'MISSING' }
       "$state teammanix/$name"
     }
