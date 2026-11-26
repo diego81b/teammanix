@@ -10,7 +10,7 @@
           <USelect v-model="status.sectionId" :items="sectionItems" size="xl" class="w-full" />
         </UFormField>
         <UFormField name="teamIds" :label="$t(`structure.unit.${term}.staffTeamsLegend`)" required>
-          <p v-if="visible.length === 0" class="text-sm text-muted">{{ $t(`structure.unit.${term}.staffTeamsNone`) }}</p>
+          <p v-if="visible.length === 0" class="text-muted">{{ $t(`structure.unit.${term}.staffTeamsNone`) }}</p>
           <UCheckboxGroup v-else v-model="status.teamIds" :items="items" size="lg" />
         </UFormField>
       </UForm>

@@ -72,6 +72,47 @@ h1, h2, h3 {
   letter-spacing: -0.01em;
 }
 
+@layer base {
+  /* One size for every page title; a size or weight class on an h1 would beat this rule, layout-sources.test.ts guards that. */
+  h1 {
+    font-size: var(--tm-text-2xl);
+    font-weight: var(--tm-weight-bold);
+    line-height: var(--tm-leading-tight);
+  }
+  @media (min-width: 768px) {
+    h1 { font-size: var(--tm-text-3xl); }
+  }
+}
+
+@layer components {
+  /* Content area: one box, gutters included, centered in the width it gets. The shell and the callup bar share it. */
+  .tm-container {
+    width: 100%;
+    max-width: var(--tm-content-max);
+    margin-inline: auto;
+    padding-inline: var(--tm-gutter);
+  }
+
+  /* Page root: one gap between top-level blocks. */
+  .tm-page > :not(:last-child) { margin-block-end: var(--tm-space-6); }
+  @media (min-width: 768px) {
+    .tm-page > :not(:last-child) { margin-block-end: var(--tm-space-8); }
+  }
+
+  /* Form and text pages: readable line length, left-aligned in the content area. */
+  .tm-page--narrow { max-width: var(--tm-narrow-max); }
+
+  .tm-section-title {
+    font-family: var(--font-heading);
+    font-size: var(--tm-text-lg);
+    font-weight: var(--tm-weight-semibold);
+    line-height: var(--tm-leading-snug);
+  }
+  @media (min-width: 768px) {
+    .tm-section-title { font-size: var(--tm-text-xl); }
+  }
+}
+
 /* Logo: two images, only one visible per theme. */
 .tm-logo-light { display: var(--tm-logo-light-display); }
 .tm-logo-dark { display: var(--tm-logo-dark-display); }

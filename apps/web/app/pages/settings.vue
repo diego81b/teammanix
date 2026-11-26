@@ -1,8 +1,8 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page tm-page--narrow">
     <div class="space-y-1">
-      <h1 class="text-2xl font-bold">{{ $t('settings.title') }}</h1>
-      <p class="text-sm text-muted">{{ $t('settings.text') }}</p>
+      <h1>{{ $t('settings.title') }}</h1>
+      <p class="text-muted">{{ $t('settings.text') }}</p>
     </div>
 
     <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error">
@@ -16,7 +16,7 @@
 
     <template v-if="data">
       <section v-for="g in settingGroups()" :key="g.id" class="space-y-2" :aria-labelledby="`settings-${g.id}`">
-        <h2 :id="`settings-${g.id}`" class="text-lg font-semibold">{{ $t(`settings.groups.${g.id}`) }}</h2>
+        <h2 :id="`settings-${g.id}`" class="tm-section-title">{{ $t(`settings.groups.${g.id}`) }}</h2>
         <ul class="divide-y divide-default rounded-lg border border-default bg-elevated">
           <li v-for="s in g.settings" :key="s.key" class="p-4">
             <USwitch

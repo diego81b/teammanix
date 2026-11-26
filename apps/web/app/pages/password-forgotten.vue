@@ -1,11 +1,11 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <template v-if="sent">
       <div class="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
         <UIcon name="i-tm-mail" class="size-7" />
       </div>
       <div class="space-y-2">
-        <h1 class="text-2xl font-bold">{{ $t('checkEmail.title') }}</h1>
+        <h1>{{ $t('checkEmail.title') }}</h1>
         <p class="text-muted">{{ $t('neutral') }}</p>
         <p class="text-sm text-muted">{{ $t('passwordForgotten.validity') }}</p>
       </div>
@@ -13,8 +13,8 @@
 
     <template v-else>
       <div class="space-y-1">
-        <h1 class="text-2xl font-bold">{{ $t('passwordForgotten.title') }}</h1>
-        <p class="text-sm text-muted">{{ $t('passwordForgotten.text') }}</p>
+        <h1>{{ $t('passwordForgotten.title') }}</h1>
+        <p class="text-muted">{{ $t('passwordForgotten.text') }}</p>
       </div>
       <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error" />
       <UForm :state="status" :validate="validate" :validate-on="['change']" class="space-y-5" @submit="send">

@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error">
       <template #actions>
         <UButton color="neutral" variant="outline" :label="$t('common.retry')" @click="load" />
@@ -14,7 +14,7 @@
           {{ session.isAdmin ? $t('events.backToSeason') : $t('shell.home') }}
         </NuxtLink>
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <h1 class="text-2xl font-bold">{{ $t('events.title') }}</h1>
+          <h1>{{ $t('events.title') }}</h1>
           <div class="flex flex-wrap gap-2">
             <UButton v-if="data.access.canSeeStatistics" color="neutral" variant="outline" size="lg" class="min-h-11" icon="i-tm-trend-up" :label="$t('statistics.title')" :to="`/statistics/${seasonId}`" />
             <UButton v-if="data.access.canSeeRoster" color="neutral" variant="outline" size="lg" class="min-h-11" icon="i-tm-users" :label="$t('teamRoster.title')" :to="`/team-roster/${seasonId}`" />

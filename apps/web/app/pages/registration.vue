@@ -1,8 +1,8 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <div class="space-y-1">
-      <h1 class="text-2xl font-bold">{{ $t('registration.title') }}</h1>
-      <p v-if="hasInvitation" class="text-sm text-muted">
+      <h1>{{ $t('registration.title') }}</h1>
+      <p v-if="hasInvitation" class="text-muted">
         {{ $t('registration.invitationInSuspended') }}
       </p>
     </div>

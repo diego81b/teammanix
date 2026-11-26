@@ -3,7 +3,7 @@
     <div class="flex flex-wrap items-center gap-3">
       <div class="min-w-0 flex-1">
         <p v-if="who" class="truncate font-medium">{{ who }}</p>
-        <p class="text-sm" :class="who ? 'text-muted' : 'font-medium'">{{ summary }}</p>
+        <p :class="who ? 'text-sm text-muted' : 'font-medium'">{{ summary }}</p>
       </div>
       <UBadge :color="suspension.completed ? 'neutral' : 'error'" variant="subtle" icon="i-tm-ban" :label="suspension.completed ? $t('suspensions.done') : $t('suspensions.progress', { served: done.served, total: done.total })" />
     </div>

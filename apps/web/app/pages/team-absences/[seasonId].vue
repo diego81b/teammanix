@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error">
       <template #actions>
         <UButton color="neutral" variant="outline" :label="$t('common.retry')" @click="load" />
@@ -14,15 +14,15 @@
           {{ $t('teamAbsences.toCalendar') }}
         </NuxtLink>
         <div>
-          <h1 class="text-2xl font-bold">{{ $t('teamAbsences.title') }}</h1>
+          <h1>{{ $t('teamAbsences.title') }}</h1>
           <p v-if="season" class="text-sm text-muted">{{ season.teamName }} · {{ season.seasonName }}</p>
         </div>
-        <p class="text-sm text-muted">{{ $t('teamAbsences.intro') }}</p>
+        <p class="text-muted">{{ $t('teamAbsences.intro') }}</p>
       </div>
 
-      <p v-if="data.rows.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">{{ $t('teamAbsences.none') }}</p>
+      <p v-if="data.rows.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">{{ $t('teamAbsences.none') }}</p>
       <template v-else>
-        <p v-if="groups.current.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">{{ $t('teamAbsences.noneCurrent') }}</p>
+        <p v-if="groups.current.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">{{ $t('teamAbsences.noneCurrent') }}</p>
         <ul v-else class="space-y-2">
           <li v-for="r in groups.current" :key="r.enrollmentId" class="rounded-lg border border-default bg-elevated p-3">
             <p class="font-semibold">{{ fullName(r) }}</p>

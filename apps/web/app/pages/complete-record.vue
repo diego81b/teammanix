@@ -1,8 +1,8 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <div class="space-y-1">
-      <h1 class="text-2xl font-bold">{{ $t('completeRecord.heading') }}</h1>
-      <p class="text-sm text-muted">
+      <h1>{{ $t('completeRecord.heading') }}</h1>
+      <p class="text-muted">
         {{ $t('completeRecord.text', { club: session.active?.name ?? '' }) }}
       </p>
     </div>

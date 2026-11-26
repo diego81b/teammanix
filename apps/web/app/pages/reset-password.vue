@@ -1,11 +1,11 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <template v-if="done">
       <div class="flex size-14 items-center justify-center rounded-full bg-success/10 text-success">
         <UIcon name="i-tm-check-circle" class="size-7" />
       </div>
       <div class="space-y-2">
-        <h1 class="text-2xl font-bold">{{ $t('reset.okTitle') }}</h1>
+        <h1>{{ $t('reset.okTitle') }}</h1>
         <p class="text-muted">{{ $t('reset.okText') }}</p>
       </div>
       <UButton to="/login" block size="xl" :label="$t('common.login')" />
@@ -16,14 +16,14 @@
         <UIcon name="i-tm-error" class="size-7" />
       </div>
       <div class="space-y-2">
-        <h1 class="text-2xl font-bold">{{ $t('reset.errorTitle') }}</h1>
+        <h1>{{ $t('reset.errorTitle') }}</h1>
         <p class="text-muted">{{ $t('reset.textError') }}</p>
       </div>
       <UButton to="/password-forgotten" block size="xl" :label="$t('common.requestNewLink')" />
     </template>
 
     <template v-else>
-      <h1 class="text-2xl font-bold">{{ $t('reset.choose') }}</h1>
+      <h1>{{ $t('reset.choose') }}</h1>
       <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error" />
       <UForm :state="status" :validate="validate" :validate-on="['change']" class="space-y-5" @submit="send">
         <UFormField name="password" :label="$t('reset.new')" :hint="$t('registration.passwordHint')" required>

@@ -1,8 +1,8 @@
 <template>
   <section class="space-y-4" aria-labelledby="title-roles">
     <div>
-      <h2 id="title-roles" class="text-lg font-semibold">{{ $t('roles.title') }}</h2>
-      <p class="text-sm text-muted">{{ $t('roles.text') }}</p>
+      <h2 id="title-roles" class="tm-section-title">{{ $t('roles.title') }}</h2>
+      <p class="text-muted">{{ $t('roles.text') }}</p>
     </div>
 
     <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error">
@@ -14,11 +14,11 @@
     <p v-if="loading && !data" class="text-sm text-muted" role="status">{{ $t('common.loading') }}</p>
 
     <template v-if="data">
-      <p v-if="data.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">{{ $t('roles.empty') }}</p>
+      <p v-if="data.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">{{ $t('roles.empty') }}</p>
       <template v-else>
-        <table class="hidden w-full text-left text-sm md:table">
+        <table class="hidden w-full text-left lg:table">
           <caption class="sr-only">{{ $t('roles.title') }}</caption>
-          <thead class="border-b border-default text-muted">
+          <thead class="border-b border-default text-sm text-muted">
             <tr>
               <th scope="col" class="py-2 pr-3 font-medium">{{ $t('roles.person') }}</th>
               <th scope="col" class="px-3 py-2 font-medium">{{ $t('invitation.role') }}</th>
@@ -30,7 +30,7 @@
             <tr v-for="r in data" :key="r.id">
               <th scope="row" class="py-3 pr-3 font-medium">
                 {{ fullName(r) }}
-                <span class="block text-sm font-normal text-muted">{{ r.email }}</span>
+                <span class="block text-sm font-normal text-muted [overflow-wrap:anywhere]">{{ r.email }}</span>
               </th>
               <td class="px-3 py-3">{{ $t(`roles.${r.role}`) }}</td>
               <td class="px-3 py-3">{{ scope(r) }}</td>
@@ -49,7 +49,7 @@
           </tbody>
         </table>
 
-        <ul class="space-y-2 md:hidden">
+        <ul class="space-y-2 lg:hidden">
           <li v-for="r in data" :key="r.id" class="space-y-2 rounded-lg border border-default bg-elevated p-3">
             <div>
               <p class="font-semibold">{{ fullName(r) }}</p>

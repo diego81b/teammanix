@@ -2,7 +2,7 @@
   <section class="space-y-4" aria-labelledby="title-certificates">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <h2 id="title-certificates" class="text-lg font-semibold">{{ $t('certificate.title') }}</h2>
+        <h2 id="title-certificates" class="tm-section-title">{{ $t('certificate.title') }}</h2>
         <p v-if="list" class="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
           <CertificateBadge :summary="{ status: list.status, expiry: list.expiry }" />
         </p>
@@ -15,7 +15,7 @@
     <p v-if="loading && !list" class="text-sm text-muted" role="status">{{ $t('common.loading') }}</p>
 
     <template v-if="list">
-      <p v-if="list.certificates.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">
+      <p v-if="list.certificates.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">
         {{ $t('certificate.empty') }}
       </p>
       <ul v-else class="space-y-2">
@@ -103,7 +103,7 @@
             @drop.prevent="released"
           >
             <UIcon name="i-tm-upload" class="size-8 text-muted" aria-hidden="true" />
-            <p class="text-sm text-muted">{{ $t('certificate.drag') }}</p>
+            <p class="text-muted">{{ $t('certificate.drag') }}</p>
             <div class="flex flex-wrap justify-center gap-2">
               <UButton color="neutral" variant="outline" class="min-h-11" icon="i-tm-file" :loading="file.submit" :label="$t('certificate.chooseFile')" @click="entryFile?.click()" />
               <UButton color="neutral" variant="outline" class="min-h-11" icon="i-tm-camera" :loading="file.submit" :label="$t('certificate.triggersPhoto')" @click="entryPhoto?.click()" />

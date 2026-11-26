@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error">
       <template #actions>
         <UButton color="neutral" variant="outline" :label="$t('common.retry')" @click="load" />
@@ -14,13 +14,13 @@
           {{ $t('certificatesDue.toCalendar') }}
         </NuxtLink>
         <div>
-          <h1 class="text-2xl font-bold">{{ $t('certificatesDue.title') }}</h1>
+          <h1>{{ $t('certificatesDue.title') }}</h1>
           <p v-if="season" class="text-sm text-muted">{{ season.teamName }} · {{ season.seasonName }}</p>
         </div>
-        <p class="text-sm text-muted">{{ $t('certificatesDue.intro') }}</p>
+        <p class="text-muted">{{ $t('certificatesDue.intro') }}</p>
       </div>
 
-      <p v-if="data.rows.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">{{ $t('certificatesDue.none') }}</p>
+      <p v-if="data.rows.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">{{ $t('certificatesDue.none') }}</p>
       <ul v-else class="space-y-2">
         <li v-for="r in data.rows" :key="r.personId" class="flex items-start justify-between gap-3 rounded-lg border border-default bg-elevated p-3">
           <div class="min-w-0">

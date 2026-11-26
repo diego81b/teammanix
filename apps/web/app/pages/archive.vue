@@ -1,12 +1,12 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <div class="space-y-2">
       <NuxtLink to="/people" class="inline-flex min-h-11 items-center gap-1 text-sm text-muted hover:text-default">
         <UIcon name="i-tm-chevron-left" class="size-4" aria-hidden="true" />
         {{ $t('person.title') }}
       </NuxtLink>
-      <h1 class="text-2xl font-bold">{{ $t('archive.title') }}</h1>
-      <p class="text-sm text-muted">{{ $t('archive.text') }}</p>
+      <h1>{{ $t('archive.title') }}</h1>
+      <p class="text-muted">{{ $t('archive.text') }}</p>
     </div>
 
     <UInput v-model="search" type="search" size="xl" icon="i-tm-search" class="w-full" :placeholder="$t('person.searchPlaceholder')" :aria-label="$t('person.search')" />
@@ -20,7 +20,7 @@
     <p v-if="loading && !data" class="text-sm text-muted" role="status">{{ $t('common.loading') }}</p>
 
     <template v-if="data">
-      <p v-if="visible.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">
+      <p v-if="visible.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">
         {{ search.trim() ? $t('common.noResult') : $t('archive.empty') }}
       </p>
       <ul v-else class="divide-y divide-default rounded-lg border border-default">

@@ -1,6 +1,6 @@
 <template>
   <article class="tm-legale space-y-4">
-    <h1 class="text-2xl font-bold md:text-3xl">{{ title }}</h1>
+    <h1>{{ title }}</h1>
     <UAlert
       v-if="locale !== 'it'"
       color="info"

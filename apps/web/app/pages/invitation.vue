@@ -1,11 +1,11 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <template v-if="!token">
       <div class="flex size-14 items-center justify-center rounded-full bg-error/10 text-error">
         <UIcon name="i-tm-error" class="size-7" />
       </div>
       <div class="space-y-2">
-        <h1 class="text-2xl font-bold">{{ $t('invitation.linkNotValidTitle') }}</h1>
+        <h1>{{ $t('invitation.linkNotValidTitle') }}</h1>
         <p class="text-muted">{{ $t('invitation.linkNotValidText') }}</p>
       </div>
       <UButton to="/" block size="xl" color="neutral" variant="outline" :label="$t('common.goToHome')" />
@@ -20,7 +20,7 @@
         <UIcon name="i-tm-error" class="size-7" />
       </div>
       <div class="space-y-2">
-        <h1 class="text-2xl font-bold">{{ $t('invitation.notValidTitle') }}</h1>
+        <h1>{{ $t('invitation.notValidTitle') }}</h1>
         <p class="text-muted">
           {{ $t('invitation.notValidText') }}
         </p>
@@ -30,7 +30,7 @@
 
     <template v-else-if="!session.authenticated">
       <div class="space-y-2">
-        <h1 class="text-2xl font-bold">{{ title }}</h1>
+        <h1>{{ title }}</h1>
         <p class="text-muted">
           {{ $t('invitation.signInOrCreate') }}
         </p>
@@ -43,7 +43,7 @@
 
     <template v-else>
       <div class="space-y-2">
-        <h1 class="text-2xl font-bold">{{ title }}</h1>
+        <h1>{{ title }}</h1>
         <p class="text-muted">
           <i18n-t keypath="invitation.loginComeText" tag="span">
             <template #email><strong class="break-all">{{ session.user?.email }}</strong></template>

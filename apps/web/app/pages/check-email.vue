@@ -1,14 +1,14 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <div class="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
       <UIcon name="i-tm-mail" class="size-7" />
     </div>
 
     <div class="space-y-2">
-      <h1 class="text-2xl font-bold">{{ $t('checkEmail.title') }}</h1>
+      <h1>{{ $t('checkEmail.title') }}</h1>
       <p class="text-muted">{{ $t('neutral') }}</p>
-      <p v-if="email" class="text-sm">{{ $t('checkEmail.address') }}: <strong class="break-all">{{ email }}</strong></p>
-      <p class="text-sm text-muted">{{ $t('checkEmail.instructions') }}</p>
+      <p v-if="email">{{ $t('checkEmail.address') }}: <strong class="break-all">{{ email }}</strong></p>
+      <p class="text-muted">{{ $t('checkEmail.instructions') }}</p>
     </div>
 
     <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error" />

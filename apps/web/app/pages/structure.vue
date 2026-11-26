@@ -1,9 +1,9 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div class="space-y-1">
-        <h1 class="text-2xl font-bold">{{ $t(`structure.unit.${clubTerm}.title`) }}</h1>
-        <p class="text-sm text-muted">{{ $t(`structure.unit.${clubTerm}.text`) }}</p>
+        <h1>{{ $t(`structure.unit.${clubTerm}.title`) }}</h1>
+        <p class="text-muted">{{ $t(`structure.unit.${clubTerm}.text`) }}</p>
       </div>
       <div class="flex flex-wrap gap-2">
         <UButton color="neutral" variant="outline" icon="i-tm-plus" size="lg" class="min-h-11" :label="$t('structure.newSection')" @click="openSection(null)" />
@@ -22,18 +22,18 @@
     <div v-else-if="data && data.teams.length === 0 && data.sections.length === 0" class="rounded-lg border border-dashed border-default p-8 text-center">
       <UIcon name="i-tm-building" class="mx-auto mb-3 size-8 text-muted" />
       <p class="font-semibold">{{ $t(`structure.unit.${clubTerm}.emptyTitle`) }}</p>
-      <p class="mt-1 text-sm text-muted">{{ $t(`structure.unit.${clubTerm}.emptyText`) }}</p>
+      <p class="mt-1 text-muted">{{ $t(`structure.unit.${clubTerm}.emptyText`) }}</p>
     </div>
 
     <section v-for="g in groups" :key="g.section?.id ?? 'none'" class="space-y-3" :aria-labelledby="grouped ? `sec${g.section?.id ?? 'none'}` : undefined">
       <div v-if="grouped" class="flex flex-wrap items-center justify-between gap-2">
-        <h2 :id="`sec${g.section?.id ?? 'none'}`" class="text-lg font-semibold">{{ g.section?.name ?? $t('structure.noSection') }}</h2>
+        <h2 :id="`sec${g.section?.id ?? 'none'}`" class="tm-section-title">{{ g.section?.name ?? $t('structure.noSection') }}</h2>
         <UDropdownMenu v-if="g.section" :items="sectionMenu(g.section)" :content="{ align: 'end' }">
           <UButton color="neutral" variant="ghost" icon="i-tm-dots-v" class="min-h-11 min-w-11" :aria-label="$t('structure.sectionActions', { name: g.section.name })" />
         </UDropdownMenu>
       </div>
 
-      <p v-if="g.teams.length === 0" class="rounded-lg border border-dashed border-default p-4 text-sm text-muted">{{ $t(`structure.unit.${clubTerm}.noTeam`) }}</p>
+      <p v-if="g.teams.length === 0" class="rounded-lg border border-dashed border-default p-4 text-muted">{{ $t(`structure.unit.${clubTerm}.noTeam`) }}</p>
 
       <article v-for="s in g.teams" :key="s.id" class="rounded-lg border border-default bg-elevated">
         <header class="flex flex-wrap items-center justify-between gap-2 border-b border-default px-4 py-3">
@@ -75,7 +75,7 @@
             </NuxtLink>
           </li>
         </ul>
-        <p v-else class="px-4 py-3 text-sm text-muted">{{ $t('structure.noSeason') }}</p>
+        <p v-else class="px-4 py-3 text-muted">{{ $t('structure.noSeason') }}</p>
       </article>
     </section>
 

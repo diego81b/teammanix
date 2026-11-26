@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error">
       <template #actions>
         <UButton color="neutral" variant="outline" :label="$t('common.retry')" @click="load" />
@@ -15,7 +15,7 @@
         </NuxtLink>
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div class="space-y-1">
-            <h1 class="text-2xl font-bold">{{ context.season.name }}</h1>
+            <h1>{{ context.season.name }}</h1>
             <p class="text-sm text-muted">{{ [context.section?.name, context.team.name].filter(Boolean).join(' · ') }}</p>
             <p class="flex flex-wrap items-center gap-2 text-sm">
               <UBadge :color="seasonStatusItem(context.season.status)" variant="subtle" :label="$t(`status.season.${context.season.status}`)" />
@@ -90,7 +90,7 @@
       <section class="space-y-4" aria-labelledby="title-roster">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 id="title-roster" class="text-lg font-semibold">{{ $t('season.roster') }}</h2>
+            <h2 id="title-roster" class="tm-section-title">{{ $t('season.roster') }}</h2>
             <p class="text-sm text-muted" role="status">{{ $t('season.count', { players: count.players, staff: count.staff }) }}</p>
           </div>
           <UButton
@@ -109,14 +109,14 @@
           <USelect v-model="filters.certificate" :items="certificateOptions" size="xl" class="w-full" :aria-label="$t('certificate.title')" />
         </div>
 
-        <p v-if="visible.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">
+        <p v-if="visible.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">
           {{ roster.length === 0 ? $t('season.emptyRoster') : $t('common.noResult') }}
         </p>
 
         <template v-else>
-          <table class="hidden w-full text-left text-sm md:table">
+          <table class="hidden w-full text-left md:table">
             <caption class="sr-only">{{ $t('season.roster') }}</caption>
-            <thead class="border-b border-default text-muted">
+            <thead class="border-b border-default text-sm text-muted">
               <tr>
                 <th scope="col" class="py-2 pr-3 font-medium">{{ $t('person.name') }}</th>
                 <th scope="col" class="px-3 py-2 font-medium">{{ $t('season.role') }}</th>
@@ -184,7 +184,7 @@
       </UModal>
     </template>
 
-    <p v-else-if="data && !context" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">
+    <p v-else-if="data && !context" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">
       {{ $t('errors.codes.SEASON_NOT_FOUND') }}
     </p>
   </div>

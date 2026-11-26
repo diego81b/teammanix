@@ -2,8 +2,8 @@
   <section class="space-y-4" aria-labelledby="title-staff-roles">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div class="min-w-0 flex-1 basis-64">
-        <h2 id="title-staff-roles" class="text-lg font-semibold">{{ $t('settings.staffRoles.title') }}</h2>
-        <p class="text-sm text-muted">{{ $t('settings.staffRoles.text') }}</p>
+        <h2 id="title-staff-roles" class="tm-section-title">{{ $t('settings.staffRoles.title') }}</h2>
+        <p class="text-muted">{{ $t('settings.staffRoles.text') }}</p>
       </div>
       <UButton size="lg" icon="i-tm-plus" :label="$t('settings.staffRoles.add')" @click="openNew" />
     </div>
@@ -17,7 +17,7 @@
     <p v-if="loading && !data" class="text-sm text-muted" role="status">{{ $t('common.loading') }}</p>
 
     <template v-if="data">
-      <p v-if="data.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">{{ $t('settings.staffRoles.empty') }}</p>
+      <p v-if="data.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">{{ $t('settings.staffRoles.empty') }}</p>
       <ul v-else class="divide-y divide-default rounded-lg border border-default bg-elevated">
         <li v-for="r in data" :key="r.id" class="flex flex-wrap items-center justify-between gap-3 p-4">
           <div class="min-w-0 flex-1 basis-56 space-y-1">

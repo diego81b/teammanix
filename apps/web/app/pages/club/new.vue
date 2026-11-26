@@ -1,8 +1,8 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <div class="space-y-1">
-      <h1 class="text-2xl font-bold">{{ $t('newClub.heading') }}</h1>
-      <p class="text-sm text-muted">{{ $t('newClub.text') }}</p>
+      <h1>{{ $t('newClub.heading') }}</h1>
+      <p class="text-muted">{{ $t('newClub.text') }}</p>
     </div>
 
     <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error" />

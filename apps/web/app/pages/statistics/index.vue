@@ -1,8 +1,8 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <div class="space-y-2">
-      <h1 class="text-2xl font-bold">{{ $t('statistics.mineTitle') }}</h1>
-      <p class="text-sm text-muted">{{ $t('statistics.mineIntro') }}</p>
+      <h1>{{ $t('statistics.mineTitle') }}</h1>
+      <p class="text-muted">{{ $t('statistics.mineIntro') }}</p>
     </div>
 
     <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error">
@@ -13,11 +13,11 @@
     <p v-if="loading && !data" class="text-sm text-muted" role="status">{{ $t('common.loading') }}</p>
 
     <template v-if="data">
-      <p v-if="data.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">{{ $t('statistics.noEnrollment') }}</p>
+      <p v-if="data.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">{{ $t('statistics.noEnrollment') }}</p>
 
       <section v-for="s in data" :key="s.seasonId" class="space-y-3" :aria-label="`${s.teamName} · ${s.seasonName}`">
         <div class="min-w-0">
-          <h2 class="truncate font-semibold">{{ s.teamName }}</h2>
+          <h2 class="tm-section-title truncate">{{ s.teamName }}</h2>
           <p class="text-sm text-muted">{{ s.seasonName }}</p>
         </div>
         <div class="rounded-lg border border-default bg-elevated p-4">

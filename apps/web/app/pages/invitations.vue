@@ -1,8 +1,8 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <div class="space-y-1">
-      <h1 class="text-2xl font-bold">{{ $t('access.title') }}</h1>
-      <p class="text-sm text-muted">{{ $t('access.text') }}</p>
+      <h1>{{ $t('access.title') }}</h1>
+      <p class="text-muted">{{ $t('access.text') }}</p>
     </div>
 
     <div role="tablist" :aria-label="$t('access.title')" class="flex gap-1 overflow-x-auto border-b border-default">
