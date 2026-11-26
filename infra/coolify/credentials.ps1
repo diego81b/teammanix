@@ -24,7 +24,7 @@ function Read-HiddenValue([string] $Prompt) {
 }
 
 function Assert-Name([string] $Name) {
-  if ($Name -notmatch '^[a-z][a-z0-9-]*$') { throw "Invalid name '$Name'. Use lowercase letters, digits and dashes." }
+  if ($Name -cnotmatch '^[a-z][a-z0-9-]*$') { throw "Invalid name '$Name'. Use lowercase letters, digits and dashes." }
 }
 
 $action = if ($args.Count -gt 0) { [string] $args[0] } else { '' }

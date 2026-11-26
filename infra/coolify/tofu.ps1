@@ -28,7 +28,7 @@
 $ErrorActionPreference = 'Stop'
 
 $envName = if ($env:TEAMMANIX_ENV) { $env:TEAMMANIX_ENV } else { 'staging' }
-if ($envName -notmatch '^[a-z][a-z0-9-]*$') { throw "Invalid environment name '$envName'" }
+if ($envName -cnotmatch '^[a-z][a-z0-9-]*$') { throw "Invalid environment name '$envName'" }
 
 if (-not (Get-Command tofu -ErrorAction SilentlyContinue)) {
   throw "tofu not found. Install it: winget install OpenTofu.Tofu"
