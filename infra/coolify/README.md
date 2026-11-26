@@ -191,6 +191,20 @@ The second command prints the table of contents of the dump and must end without
 
 **Restore.** The Coolify import of the database (`/databases/{uuid}/imports`), as in the "Restore" bullet, into the new or rebuilt database. Whether the import accepts a custom-format file is not known; the drill settles it.
 
+## Deployment status
+
+`deploys.ps1` reads the deployments of the application `teammanix-<env>` with the Coolify API, using the same Credential Manager entries as `tofu.ps1` (`coolify-endpoint`, `coolify-token`). The token stays in the process.
+
+```powershell
+.\infra\coolify\deploys.ps1 status                    # last 5: status, commit, message, start, end, duration
+.\infra\coolify\deploys.ps1 status -Take 10
+.\infra\coolify\deploys.ps1 logs                      # log of the latest deployment
+.\infra\coolify\deploys.ps1 logs <deployment_uuid>
+$env:TEAMMANIX_ENV = 'prod'; .\infra\coolify\deploys.ps1 status    # default environment: staging
+```
+
+`status` exits with 1 when the latest deployment failed. `logs` never prints the lines Coolify marks as hidden.
+
 ## Tests
 
 The configuration logic (the key set of the application variables, the plan-time stop on an empty backup key, the backup schedule) runs against a mocked provider: no Coolify, no token, no passphrase, no `tofu.ps1`.
@@ -202,3 +216,9 @@ cd ../../apps/api && npx jest --selectProjects unit -- coolify-secrets
 ```
 
 `npm test` does not run `tofu test`.
+
+The pure functions of `deploys.ps1` (`deploys.lib.ps1`) have Pester tests, Pester 3.4 syntax as shipped with Windows PowerShell 5.1:
+
+```powershell
+Invoke-Pester -Script infra/coolify/tests/deploys.Tests.ps1
+```
