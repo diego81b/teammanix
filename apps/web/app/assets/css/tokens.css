@@ -100,7 +100,8 @@
   --tm-header-h: 56px;
   --tm-tabbar-h: 64px;
   --tm-sidebar-w: 248px;
-  --tm-content-max: 1120px;
+  --tm-content-max: 1280px;
+  --tm-narrow-max: 768px;
   --tm-gutter: 16px;
   --tm-row-min: 56px;
   --tm-badge-h: 24px;
