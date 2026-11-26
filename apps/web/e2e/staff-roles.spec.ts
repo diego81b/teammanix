@@ -123,7 +123,8 @@ test('a new fencing team offers the suggested roles and only the ones chosen are
   const offer = await createFencingTeam(page)
   await offer.getByRole('checkbox', { name: /Istruttore/ }).uncheck()
   await offer.getByRole('button', { name: 'Aggiungi i ruoli scelti' }).click()
-  await expect(page.getByText('Ruoli aggiunti.')).toBeVisible()
+  // The toast also renders a hidden live-region copy of its text: aim at the title slot
+  await expect(page.locator('[data-slot="title"]', { hasText: 'Ruoli aggiunti.' })).toBeVisible()
 
   await go(page, '/settings')
   await expect(page.getByText('Maestro', { exact: true })).toBeVisible()
