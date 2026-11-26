@@ -69,6 +69,13 @@ describe('welcome group headings', () => {
       expect(classes).not.toMatch(/(^|\s)(text-base|font-semibold)(\s|$)/)
     }
   })
+
+  it('the "have a link" toggle is at least 44px tall', () => {
+    const button = /<h2\s[^>]*id="t-invitation"[^>]*>\s*<button\s([^>]*)>/.exec(read(join(APP, 'pages/welcome.vue')))
+    const classes = /(?:^|\s)class="([^"]*)"/.exec(button?.[1] ?? '')?.[1] ?? ''
+    expect(button, 'toggle button not found inside h2#t-invitation').not.toBeNull()
+    expect(hasClass(classes, 'min-h-11'), `button class "${classes}"`).toBe(true)
+  })
 })
 
 describe('widths come from tokens', () => {

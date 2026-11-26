@@ -52,7 +52,7 @@
       <h2 id="t-invitation" class="tm-section-title">
         <button
           type="button"
-          class="flex w-full items-center justify-between gap-2 text-left"
+          class="flex min-h-11 w-full items-center justify-between gap-2 text-left"
           :aria-expanded="linkOpen"
           aria-controls="link-invitation"
           @click="linkOpen = !linkOpen"
