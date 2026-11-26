@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error">
       <template #actions>
         <UButton color="neutral" variant="outline" :label="$t('common.retry')" @click="load" />
@@ -9,11 +9,11 @@
 
     <template v-if="data">
       <div class="space-y-3">
-        <h1 class="text-2xl font-bold">{{ $t('calendar.mine') }}</h1>
+        <h1>{{ $t('calendar.mine') }}</h1>
         <CalendarSwitch current="me" :seasons="data.seasons" :has-mine="data.mine.length > 0" />
         <UAlert color="neutral" variant="subtle" icon="i-tm-lock" :title="$t('events.readOnly')" />
       </div>
-      <p v-if="data.mine.length === 0 && data.seasons.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">
+      <p v-if="data.mine.length === 0 && data.seasons.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">
         {{ $t('calendar.none') }}
       </p>
       <CalendarView v-else :events="data.mine" show-team />

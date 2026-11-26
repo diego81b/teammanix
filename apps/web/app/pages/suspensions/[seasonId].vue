@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error">
       <template #actions>
         <UButton color="neutral" variant="outline" :label="$t('common.retry')" @click="load" />
@@ -15,17 +15,17 @@
         </NuxtLink>
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 class="text-2xl font-bold">{{ $t('suspensions.title') }}</h1>
+            <h1>{{ $t('suspensions.title') }}</h1>
             <p class="text-sm text-muted">{{ data.context.teamName }} · {{ data.context.seasonName }}</p>
           </div>
           <UButton v-if="data.context.canManage" size="lg" class="min-h-11" icon="i-tm-plus" :label="$t('suspensions.add')" @click="openForm(null)" />
         </div>
-        <p class="text-sm text-muted">{{ $t('suspensions.teamIntro') }}</p>
+        <p class="text-muted">{{ $t('suspensions.teamIntro') }}</p>
         <UAlert v-if="data.context.status === 'closed'" color="neutral" variant="subtle" icon="i-tm-lock" :title="$t('suspensions.closed')" />
         <UAlert v-if="errorAction" color="error" variant="subtle" icon="i-tm-error" :title="errorAction" />
       </div>
 
-      <p v-if="data.list.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">{{ $t('suspensions.none') }}</p>
+      <p v-if="data.list.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">{{ $t('suspensions.none') }}</p>
       <template v-else>
         <div class="flex gap-1" role="group" :aria-label="$t('calendar.viewLabel')">
           <UButton

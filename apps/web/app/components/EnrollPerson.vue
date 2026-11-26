@@ -29,7 +29,7 @@
           </UFormField>
           <UFormField name="person">
             <p v-if="loading" class="text-sm text-muted" role="status">{{ $t('common.loading') }}</p>
-            <p v-else-if="found.length === 0" class="text-sm text-muted">{{ $t('common.noResult') }}</p>
+            <p v-else-if="found.length === 0" class="text-muted">{{ $t('common.noResult') }}</p>
             <ul v-else class="max-h-56 divide-y divide-default overflow-y-auto rounded-md border border-default">
               <li v-for="p in found" :key="p.id">
                 <button

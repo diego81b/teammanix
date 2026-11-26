@@ -1,8 +1,8 @@
 <template>
   <section class="space-y-4" aria-labelledby="title-permissions">
     <div>
-      <h2 id="title-permissions" class="text-lg font-semibold">{{ $t('permissions.title') }}</h2>
-      <p class="text-sm text-muted">{{ $t('permissions.text') }}</p>
+      <h2 id="title-permissions" class="tm-section-title">{{ $t('permissions.title') }}</h2>
+      <p class="text-muted">{{ $t('permissions.text') }}</p>
     </div>
 
     <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error">
@@ -56,7 +56,7 @@
           <UButton size="lg" class="min-h-11" :disabled="!modified" :loading="submit" :label="$t('common.save')" @click="save" />
         </div>
       </div>
-      <p v-else class="self-start rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">{{ $t('permissions.choose') }}</p>
+      <p v-else class="self-start rounded-lg border border-dashed border-default p-6 text-center text-muted">{{ $t('permissions.choose') }}</p>
     </div>
   </section>
 </template>

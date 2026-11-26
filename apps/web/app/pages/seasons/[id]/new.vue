@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page tm-page--narrow">
     <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error">
       <template #actions>
         <UButton color="neutral" variant="outline" :label="$t('common.retry')" @click="load" />
@@ -13,7 +13,7 @@
           <UIcon name="i-tm-chevron-left" class="size-4" aria-hidden="true" />
           {{ context.season.name }}
         </NuxtLink>
-        <h1 class="text-2xl font-bold">{{ $t('season.newTitle') }}</h1>
+        <h1>{{ $t('season.newTitle') }}</h1>
         <p class="text-sm text-muted">{{ [context.section?.name, context.team.name].filter(Boolean).join(' · ') }}</p>
       </div>
 
@@ -46,10 +46,10 @@
 
         <section v-if="step === 0" class="space-y-4" aria-labelledby="title-step">
           <div>
-            <h2 id="title-step" class="text-lg font-semibold">{{ $t('season.stepPeople') }}</h2>
-            <p class="text-sm text-muted">{{ $t('season.stepPeopleText') }}</p>
+            <h2 id="title-step" class="tm-section-title">{{ $t('season.stepPeople') }}</h2>
+            <p class="text-muted">{{ $t('season.stepPeopleText') }}</p>
           </div>
-          <p v-if="roster.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">
+          <p v-if="roster.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">
             {{ $t('season.emptyRoster') }}
           </p>
           <template v-else>
@@ -76,8 +76,8 @@
 
         <section v-else-if="step === 1" class="space-y-4" aria-labelledby="title-step">
           <div>
-            <h2 id="title-step" class="text-lg font-semibold">{{ $t('season.stepData') }}</h2>
-            <p class="text-sm text-muted">{{ $t('season.stepDataText') }}</p>
+            <h2 id="title-step" class="tm-section-title">{{ $t('season.stepData') }}</h2>
+            <p class="text-muted">{{ $t('season.stepDataText') }}</p>
           </div>
           <UForm id="form-new" :state="formData" :validate="validate" :validate-on="['change']" class="space-y-4" @submit="step = 2">
             <UFormField name="name" :label="$t('season.name')" required>
@@ -99,28 +99,28 @@
 
         <section v-else class="space-y-4" aria-labelledby="title-step">
           <div>
-            <h2 id="title-step" class="text-lg font-semibold">{{ $t('season.stepSummary') }}</h2>
-            <p class="text-sm text-muted">{{ $t('season.stepSummaryText') }}</p>
+            <h2 id="title-step" class="tm-section-title">{{ $t('season.stepSummary') }}</h2>
+            <p class="text-muted">{{ $t('season.stepSummaryText') }}</p>
           </div>
-          <dl class="grid gap-3 rounded-lg border border-default bg-elevated p-4 text-sm sm:grid-cols-2">
+          <dl class="grid gap-3 rounded-lg border border-default bg-elevated p-4 sm:grid-cols-2">
             <div>
-              <dt class="text-muted">{{ $t('season.name') }}</dt>
+              <dt class="text-sm text-muted">{{ $t('season.name') }}</dt>
               <dd class="font-medium">{{ formData.name }}</dd>
             </div>
             <div>
-              <dt class="text-muted">{{ $t('season.period') }}</dt>
+              <dt class="text-sm text-muted">{{ $t('season.period') }}</dt>
               <dd class="font-medium">{{ formatDate(formData.startDate, locale) }} - {{ formatDate(formData.endDate, locale) }}</dd>
             </div>
             <div v-if="formData.league.trim()">
-              <dt class="text-muted">{{ $t('season.league') }}</dt>
+              <dt class="text-sm text-muted">{{ $t('season.league') }}</dt>
               <dd class="font-medium">{{ formData.league }}</dd>
             </div>
             <div>
-              <dt class="text-muted">{{ $t('season.roster') }}</dt>
+              <dt class="text-sm text-muted">{{ $t('season.roster') }}</dt>
               <dd class="font-medium">{{ $t('season.copied', { n: choices.length }) }}</dd>
             </div>
           </dl>
-          <p class="text-sm text-muted">{{ $t('season.statusReset') }}</p>
+          <p class="text-muted">{{ $t('season.statusReset') }}</p>
 
           <UCheckbox v-model="carrySuspensions" :label="$t('season.carrySuspensions')" :description="$t('season.carrySuspensionsText')" />
           <UCheckbox v-model="activeImmediately" :label="$t('season.activeImmediately')" :description="$t('season.activeImmediatelyText')" />
@@ -153,7 +153,7 @@
       </template>
     </template>
 
-    <p v-else-if="data && !context" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">
+    <p v-else-if="data && !context" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">
       {{ $t('errors.codes.SEASON_NOT_FOUND') }}
     </p>
   </div>

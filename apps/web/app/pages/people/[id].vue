@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-8">
+  <div class="tm-page">
     <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error">
       <template #actions>
         <UButton color="neutral" variant="outline" :label="$t('common.retry')" @click="load" />
@@ -15,7 +15,7 @@
         </NuxtLink>
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div class="space-y-1">
-            <h1 class="text-2xl font-bold">{{ fullName(person) }}</h1>
+            <h1>{{ fullName(person) }}</h1>
             <p class="flex flex-wrap items-center gap-2">
               <UBadge v-if="person.disabled" color="neutral" variant="subtle" :label="$t('person.disabled')" />
               <UBadge v-if="person.toComplete" color="warning" variant="subtle" :label="$t('person.toComplete')" />
@@ -38,18 +38,18 @@
       </div>
 
       <section class="space-y-3" aria-labelledby="title-registry">
-        <h2 id="title-registry" class="text-lg font-semibold">{{ $t('person.registry') }}</h2>
-        <dl class="grid gap-3 rounded-lg border border-default bg-elevated p-4 text-sm sm:grid-cols-2">
+        <h2 id="title-registry" class="tm-section-title">{{ $t('person.registry') }}</h2>
+        <dl class="grid gap-3 rounded-lg border border-default bg-elevated p-4 sm:grid-cols-2">
           <div>
-            <dt class="text-muted">{{ $t('person.email') }}</dt>
+            <dt class="text-sm text-muted">{{ $t('person.email') }}</dt>
             <dd class="font-medium">{{ person.email ?? '-' }}</dd>
           </div>
           <div>
-            <dt class="text-muted">{{ $t('person.phone') }}</dt>
+            <dt class="text-sm text-muted">{{ $t('person.phone') }}</dt>
             <dd class="font-medium">{{ person.phone ?? '-' }}</dd>
           </div>
           <div>
-            <dt class="text-muted">{{ $t('person.birthDate') }}</dt>
+            <dt class="text-sm text-muted">{{ $t('person.birthDate') }}</dt>
             <dd class="font-medium">{{ person.birthDate ? formatDate(person.birthDate, locale) : '-' }}</dd>
           </div>
         </dl>
@@ -57,7 +57,7 @@
 
       <section class="space-y-3" aria-labelledby="title-enrollments">
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <h2 id="title-enrollments" class="text-lg font-semibold">{{ $t('person.enrollments') }}</h2>
+          <h2 id="title-enrollments" class="tm-section-title">{{ $t('person.enrollments') }}</h2>
           <UButton
             v-if="tree && tree.teams.length && !person.disabled"
             color="neutral"
@@ -68,13 +68,13 @@
             @click="open.staffTeams = true"
           />
         </div>
-        <p v-if="person.enrollments.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">
+        <p v-if="person.enrollments.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">
           {{ $t('person.noEnrollment') }}
         </p>
         <template v-else>
-          <table class="hidden w-full text-left text-sm md:table">
+          <table class="hidden w-full text-left md:table">
             <caption class="sr-only">{{ $t('person.enrollments') }}</caption>
-            <thead class="border-b border-default text-muted">
+            <thead class="border-b border-default text-sm text-muted">
               <tr>
                 <th scope="col" class="py-2 pr-3 font-medium">{{ $t('season.title') }}</th>
                 <th scope="col" class="px-3 py-2 font-medium">{{ $t('person.team') }}</th>

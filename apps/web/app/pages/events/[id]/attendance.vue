@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error">
       <template #actions>
         <UButton color="neutral" variant="outline" :label="$t('common.retry')" @click="load" />
@@ -13,7 +13,7 @@
           <UIcon name="i-tm-chevron-left" class="size-4" aria-hidden="true" />
           {{ $t('attendance.back') }}
         </NuxtLink>
-        <h1 class="text-2xl font-bold">{{ $t('attendance.title') }}</h1>
+        <h1>{{ $t('attendance.title') }}</h1>
         <p class="text-sm text-muted">
           <span class="font-semibold text-default">{{ eventHeading(data.event, key => t(key)) }}</span>
           · {{ formatDate(splitInstant(data.event.start).date, locale) }} · {{ splitInstant(data.event.start).time }} - {{ splitInstant(data.event.end).time }}
@@ -27,10 +27,10 @@
         <div class="space-y-2 rounded-lg border border-default bg-elevated p-3">
           <p class="text-sm font-semibold">{{ $t('attendance.yourResult') }}</p>
           <UBadge v-if="data.mine?.outcome" :color="OUTCOME_COLOR[data.mine.outcome]" variant="subtle" size="lg" :label="$t(`attendance.outcome.${data.mine.outcome}`)" />
-          <p v-else class="text-sm text-muted">{{ $t('attendance.noResult') }}</p>
+          <p v-else class="text-muted">{{ $t('attendance.noResult') }}</p>
         </div>
-        <h2 class="pt-2 font-semibold">{{ $t('attendance.staffPresentTitle') }} ({{ data.staffPresent.length }})</h2>
-        <p v-if="data.staffPresent.length === 0" class="rounded-lg border border-dashed border-default p-4 text-center text-sm text-muted">{{ $t('attendance.staffPresentEmpty') }}</p>
+        <h2 class="tm-section-title pt-2">{{ $t('attendance.staffPresentTitle') }} ({{ data.staffPresent.length }})</h2>
+        <p v-if="data.staffPresent.length === 0" class="rounded-lg border border-dashed border-default p-4 text-center text-muted">{{ $t('attendance.staffPresentEmpty') }}</p>
         <ul v-else class="space-y-2">
           <li v-for="s in data.staffPresent" :key="s.enrollmentId" class="flex items-center gap-3 rounded-lg border border-default bg-elevated p-3">
             <span class="min-w-0 flex-1 truncate font-medium">{{ rowName({ name: s.name, surname: s.surname, disabled: false }, key => t(key)) }}</span>
@@ -61,10 +61,10 @@
         <template v-else>
           <UAlert v-if="!data.canRecord" color="neutral" variant="subtle" icon="i-tm-lock" :title="$t('attendance.readOnly')" />
           <UAlert v-else-if="notice" color="neutral" variant="subtle" icon="i-tm-info" :title="$t('attendance.opensAt', { time: splitInstant(notice.opensAt.toISOString()).time })" />
-          <p v-if="data.rows.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">{{ $t('attendance.empty') }}</p>
+          <p v-if="data.rows.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">{{ $t('attendance.empty') }}</p>
 
           <section v-for="g in groups" :key="g.key" class="space-y-2" :aria-label="$t(`attendance.${g.key}`)">
-            <h2 class="font-semibold">{{ $t(`attendance.${g.key}`) }} ({{ g.rows.length }})</h2>
+            <h2 class="tm-section-title">{{ $t(`attendance.${g.key}`) }} ({{ g.rows.length }})</h2>
             <ul class="space-y-2">
               <li v-for="r in g.rows" :key="r.enrollmentId" class="space-y-2 rounded-lg border border-default bg-elevated p-3">
                 <div class="flex items-center gap-3">

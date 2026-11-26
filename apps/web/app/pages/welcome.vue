@@ -1,12 +1,12 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <div class="space-y-1">
-      <h1 class="text-2xl font-bold">{{ $t('welcome.greeting', { name: session.user?.name ?? '' }) }}</h1>
+      <h1>{{ $t('welcome.greeting', { name: session.user?.name ?? '' }) }}</h1>
       <p class="text-muted">{{ $t('welcome.text') }}</p>
     </div>
 
     <section class="space-y-3" aria-labelledby="t-invitations">
-      <h2 id="t-invitations" class="text-base font-semibold">{{ $t('welcome.invitationsTitle') }}</h2>
+      <h2 id="t-invitations" class="tm-section-title">{{ $t('welcome.invitationsTitle') }}</h2>
       <div v-if="loading" class="flex justify-center py-4" role="status" :aria-label="$t('common.loading')">
         <UIcon name="i-tm-loader" class="size-6 animate-spin text-muted" />
       </div>
@@ -30,7 +30,7 @@
           </UCard>
         </li>
       </ul>
-      <p v-else class="text-sm text-muted">
+      <p v-else class="text-muted">
         <i18n-t keypath="welcome.noInvitations" tag="span">
           <template #email><strong class="break-all">{{ session.user?.email }}</strong></template>
         </i18n-t>
@@ -49,7 +49,7 @@
     <USeparator :label="$t('welcome.or')" />
 
     <section class="space-y-3" aria-labelledby="t-invitation">
-      <h2 id="t-invitation" class="text-base font-semibold">
+      <h2 id="t-invitation" class="tm-section-title">
         <button
           type="button"
           class="flex w-full items-center justify-between gap-2 text-left"
@@ -62,7 +62,7 @@
         </button>
       </h2>
       <div v-show="linkOpen" id="link-invitation" class="space-y-3">
-        <p class="text-sm text-muted">
+        <p class="text-muted">
           {{ $t('welcome.hasInvitationText') }}
         </p>
         <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error" />

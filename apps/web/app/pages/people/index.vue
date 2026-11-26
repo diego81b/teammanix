@@ -1,9 +1,9 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div class="space-y-1">
-        <h1 class="text-2xl font-bold">{{ $t('person.title') }}</h1>
-        <p class="text-sm text-muted">{{ $t('person.text') }}</p>
+        <h1>{{ $t('person.title') }}</h1>
+        <p class="text-muted">{{ $t('person.text') }}</p>
       </div>
       <div class="flex flex-wrap gap-2">
         <UButton color="neutral" variant="outline" size="lg" class="min-h-11" icon="i-tm-archive" to="/archive" :label="$t('archive.title')" />
@@ -21,7 +21,7 @@
     <p v-if="loading && !data" class="text-sm text-muted" role="status">{{ $t('common.loading') }}</p>
 
     <template v-if="data">
-      <p v-if="data.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">
+      <p v-if="data.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">
         {{ search.trim() ? $t('common.noResult') : $t('person.empty') }}
       </p>
       <ul v-else class="divide-y divide-default rounded-lg border border-default">

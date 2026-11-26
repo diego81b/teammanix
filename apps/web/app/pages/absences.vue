@@ -1,8 +1,8 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <div class="space-y-2">
-      <h1 class="text-2xl font-bold">{{ $t('absences.title') }}</h1>
-      <p class="text-sm text-muted">{{ $t('absences.intro') }}</p>
+      <h1>{{ $t('absences.title') }}</h1>
+      <p class="text-muted">{{ $t('absences.intro') }}</p>
     </div>
 
     <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error">
@@ -14,7 +14,7 @@
     <p v-if="loading && !data" class="text-sm text-muted" role="status">{{ $t('common.loading') }}</p>
 
     <template v-if="data">
-      <p v-if="data.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">{{ $t('absences.noEnrollment') }}</p>
+      <p v-if="data.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">{{ $t('absences.noEnrollment') }}</p>
       <UAlert v-if="injury?.kind === 'injured'" color="error" variant="subtle" icon="i-tm-ban" :title="$t('absences.injured')" />
       <UAlert
         v-else-if="injury?.kind === 'expected'"
@@ -27,7 +27,7 @@
       <section v-for="e in data" :key="e.enrollmentId" class="space-y-3" :aria-label="`${e.teamName} · ${e.seasonName}`">
         <div class="flex flex-wrap items-center gap-3">
           <div class="min-w-40 flex-1">
-            <h2 class="truncate font-semibold">{{ e.teamName }}</h2>
+            <h2 class="tm-section-title truncate">{{ e.teamName }}</h2>
             <p class="text-sm text-muted">{{ e.seasonName }}</p>
           </div>
           <div class="flex flex-wrap gap-2">
@@ -45,7 +45,7 @@
           </div>
         </div>
 
-        <p v-if="e.absences.length === 0" class="rounded-lg border border-dashed border-default p-4 text-center text-sm text-muted">{{ $t('absences.none') }}</p>
+        <p v-if="e.absences.length === 0" class="rounded-lg border border-dashed border-default p-4 text-center text-muted">{{ $t('absences.none') }}</p>
         <template v-else>
           <template v-for="g in groups(e)" :key="g.key">
             <template v-if="g.items.length">
@@ -53,7 +53,7 @@
               <ul class="space-y-2">
                 <li v-for="a in g.items" :key="a.id" class="flex items-center gap-3 rounded-lg border border-default bg-elevated p-3">
                   <UIcon name="i-tm-calendar" class="size-5 shrink-0 text-muted" aria-hidden="true" />
-                  <span class="min-w-0 flex-1 text-sm font-medium">{{ periodText(a) }}</span>
+                  <span class="min-w-0 flex-1 font-medium">{{ periodText(a) }}</span>
                   <UButton
                     color="neutral"
                     variant="outline"
@@ -101,7 +101,7 @@
     <!-- Free days from today onward inside the declared absences: the person sees the result before confirming. -->
     <UModal v-model:open="open.free" :title="$t('absences.free.title')" :description="freeTarget ? `${freeTarget.teamName} · ${freeTarget.seasonName}` : ''">
       <template #body>
-        <p class="mb-4 text-sm text-muted">{{ $t('absences.free.text') }}</p>
+        <p class="mb-4 text-muted">{{ $t('absences.free.text') }}</p>
         <UAlert v-if="errorFree" color="error" variant="subtle" icon="i-tm-error" :title="errorFree" class="mb-4" />
         <UForm id="form-free" :state="freeForm" :validate="validateFree" :validate-on="['change']" class="space-y-4" @submit="saveFree">
           <UFormField name="startDate" :label="$t('absences.from')" required>
@@ -114,10 +114,10 @@
         </UForm>
         <section v-if="preview" class="mt-4 space-y-2" aria-live="polite">
           <h3 class="text-sm font-semibold text-muted">{{ $t('absences.free.resultTitle') }}</h3>
-          <p v-if="!preview.changed" class="rounded-lg border border-dashed border-default p-3 text-sm text-muted">{{ $t('absences.free.nothing') }}</p>
-          <p v-else-if="preview.after.length === 0" class="rounded-lg border border-dashed border-default p-3 text-sm text-muted">{{ $t('absences.free.resultNone') }}</p>
+          <p v-if="!preview.changed" class="rounded-lg border border-dashed border-default p-3 text-muted">{{ $t('absences.free.nothing') }}</p>
+          <p v-else-if="preview.after.length === 0" class="rounded-lg border border-dashed border-default p-3 text-muted">{{ $t('absences.free.resultNone') }}</p>
           <ul v-else class="space-y-2">
-            <li v-for="a in preview.after" :key="`${a.startDate}|${a.endDate}`" class="flex items-center gap-3 rounded-lg border border-default bg-elevated p-3 text-sm font-medium">
+            <li v-for="a in preview.after" :key="`${a.startDate}|${a.endDate}`" class="flex items-center gap-3 rounded-lg border border-default bg-elevated p-3 font-medium">
               <UIcon name="i-tm-calendar" class="size-5 shrink-0 text-muted" aria-hidden="true" />
               {{ periodText(a) }}
             </li>

@@ -1,7 +1,7 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <div class="space-y-1">
-      <h1 class="text-2xl font-bold md:text-3xl">{{ $t('home.greeting', { name: session.user?.name ?? '' }) }}</h1>
+      <h1>{{ $t('home.greeting', { name: session.user?.name ?? '' }) }}</h1>
       <p class="text-muted">{{ session.active?.name }}</p>
     </div>
 
@@ -28,7 +28,7 @@
             <p class="text-sm text-muted">{{ $t('calendar.team', { team: next.teamName }) }}</p>
           </template>
           <template v-else>
-            <p class="text-sm">{{ $t('home.nextEmpty') }}</p>
+            <p>{{ $t('home.nextEmpty') }}</p>
             <p class="text-sm text-muted">{{ $t('home.nextEmptyHint') }}</p>
           </template>
           <UButton to="/calendar" color="neutral" variant="outline" size="lg" class="min-h-11" :label="$t('home.openCalendar')" />

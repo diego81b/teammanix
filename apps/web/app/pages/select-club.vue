@@ -1,8 +1,8 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <div class="space-y-1">
-      <h1 class="text-2xl font-bold">{{ $t('selectClub.title') }}</h1>
-      <p class="text-sm text-muted">{{ $t('selectClub.text') }}</p>
+      <h1>{{ $t('selectClub.title') }}</h1>
+      <p class="text-muted">{{ $t('selectClub.text') }}</p>
     </div>
 
     <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error" />

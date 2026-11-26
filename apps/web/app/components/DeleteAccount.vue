@@ -2,7 +2,7 @@
   <UModal v-model:open="open" :title="$t('profile.deleteModalTitle')">
     <template #body>
       <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error" class="mb-4" />
-      <form id="delete-account-form" class="space-y-4 text-sm" @submit.prevent="remove">
+      <form id="delete-account-form" class="space-y-4" @submit.prevent="remove">
         <p>{{ $t('profile.deleteModalText') }}</p>
         <UFormField name="password" :label="$t('profile.deletePassword')" required>
           <PasswordInput v-model="password" autocomplete="current-password" />

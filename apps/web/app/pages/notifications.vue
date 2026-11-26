@@ -1,9 +1,9 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page tm-page--narrow">
     <div class="flex items-start gap-3">
       <div class="min-w-0 flex-1 space-y-1">
-        <h1 class="text-2xl font-bold">{{ $t('notifications.title') }}</h1>
-        <p class="text-sm text-muted">{{ $t('notifications.intro') }}</p>
+        <h1>{{ $t('notifications.title') }}</h1>
+        <p class="text-muted">{{ $t('notifications.intro') }}</p>
       </div>
       <UButton to="/profile" color="neutral" variant="ghost" size="lg" icon="i-tm-user" class="min-h-11" :label="$t('notifications.settings')" />
     </div>
@@ -31,7 +31,7 @@
         />
       </div>
 
-      <p v-if="data.items.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">
+      <p v-if="data.items.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">
         {{ $t('notifications.empty') }}<br>{{ $t('notifications.emptyHint') }}
       </p>
 
@@ -50,7 +50,7 @@
               :role="n.readAt ? undefined : 'img'"
             />
             <span class="min-w-0 flex-1">
-              <span class="block text-sm" :class="n.readAt ? 'font-medium' : 'font-semibold'">{{ view(n).title }}</span>
+              <span class="block" :class="n.readAt ? 'font-medium' : 'font-semibold'">{{ view(n).title }}</span>
               <span class="mt-0.5 block text-sm text-muted">{{ view(n).body }}</span>
               <span class="mt-1 block text-xs text-muted">{{ ago(n.createdAt) }}</span>
             </span>

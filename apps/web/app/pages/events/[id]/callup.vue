@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error">
       <template #actions>
         <UButton color="neutral" variant="outline" :label="$t('common.retry')" @click="load" />
@@ -13,7 +13,7 @@
           <UIcon name="i-tm-chevron-left" class="size-4" aria-hidden="true" />
           {{ $t('callup.back') }}
         </NuxtLink>
-        <h1 class="text-2xl font-bold">{{ $t('callup.title') }}</h1>
+        <h1>{{ $t('callup.title') }}</h1>
         <p class="text-sm text-muted">
           <span class="font-semibold text-default">{{ eventHeading(data.event, key => t(key)) }}</span>
           · {{ formatDate(splitInstant(data.event.start).date, locale) }} · {{ splitInstant(data.event.start).time }} - {{ splitInstant(data.event.end).time }}
@@ -58,8 +58,8 @@
             />
           </div>
         </div>
-        <h2 class="font-semibold">{{ $t('callup.calledUp') }} ({{ data.calledUp.length }})</h2>
-        <p v-if="data.calledUp.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">{{ $t('callup.emptyCalledUp') }}</p>
+        <h2 class="tm-section-title">{{ $t('callup.calledUp') }} ({{ data.calledUp.length }})</h2>
+        <p v-if="data.calledUp.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">{{ $t('callup.emptyCalledUp') }}</p>
         <ul v-else class="space-y-2">
           <li v-for="p in data.calledUp" :key="p.enrollmentId" class="flex items-center gap-3 rounded-lg border border-default bg-elevated p-3" :class="p.mine ? 'border-primary' : ''">
             <span class="min-w-0 flex-1 truncate font-medium">{{ personName(p) }}</span>
@@ -67,8 +67,8 @@
             <UBadge :color="RESPONSE_COLOR[p.response]" variant="subtle" :label="$t(`callup.response.${p.response}`)" />
           </li>
         </ul>
-        <h2 class="pt-2 font-semibold">{{ $t('callup.staffAvailableTitle') }} ({{ data.staff.length }})</h2>
-        <p v-if="data.staff.length === 0" class="rounded-lg border border-dashed border-default p-4 text-center text-sm text-muted">{{ $t('callup.staffEmptyAvailable') }}</p>
+        <h2 class="tm-section-title pt-2">{{ $t('callup.staffAvailableTitle') }} ({{ data.staff.length }})</h2>
+        <p v-if="data.staff.length === 0" class="rounded-lg border border-dashed border-default p-4 text-center text-muted">{{ $t('callup.staffEmptyAvailable') }}</p>
         <ul v-else class="space-y-2">
           <li v-for="s in data.staff" :key="s.enrollmentId" class="flex items-center gap-3 rounded-lg border border-default bg-elevated p-3">
             <span class="min-w-0 flex-1 truncate font-medium">{{ personName(s) }}</span>
@@ -81,11 +81,11 @@
       <template v-else>
         <UAlert v-if="data.view === 'read'" color="neutral" variant="subtle" icon="i-tm-lock" :title="$t('callup.readOnly')" />
         <UAlert v-if="data.noCoachWarning" color="warning" variant="subtle" icon="i-tm-warning" :title="$t('callup.noCoachWarning')" />
-        <p class="text-sm text-muted">{{ data.blockCertificate ? $t('callup.certificateBlocks') : $t('callup.certificateWarns') }}</p>
+        <p class="text-muted">{{ data.blockCertificate ? $t('callup.certificateBlocks') : $t('callup.certificateWarns') }}</p>
 
-        <UTabs v-model="tab" :items="tabs" :content="false" class="w-full" :aria-label="$t('callup.lists')" />
+        <UTabs v-model="tab" :items="tabs" :content="false" :ui="{ trigger: 'max-md:min-h-11' }" class="w-full" :aria-label="$t('callup.lists')" />
 
-        <p v-if="current.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">{{ $t(`callup.empty${capital(tab)}`) }}</p>
+        <p v-if="current.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">{{ $t(`callup.empty${capital(tab)}`) }}</p>
         <ul v-else class="space-y-2">
           <li v-for="r in current" :key="r.enrollmentId" class="space-y-2 rounded-lg border border-default bg-elevated p-3">
             <div class="flex items-center gap-3">
@@ -180,8 +180,8 @@
         </ul>
 
         <!-- Staff availability: staff, managers and the admin see every answer. -->
-        <section class="space-y-3 pt-2" :class="data.view === 'manage' ? 'pb-24' : ''" :aria-label="$t('callup.staffTitle')">
-          <h2 class="font-semibold">{{ $t('callup.staffTitle') }}</h2>
+        <section class="space-y-3" :class="data.view === 'manage' ? 'pb-24' : ''" :aria-label="$t('callup.staffTitle')">
+          <h2 class="tm-section-title">{{ $t('callup.staffTitle') }}</h2>
           <!-- A person who is also called up as a player answers that role here, apart from the availability below. -->
           <div v-if="staff?.ownCallup" class="space-y-2 rounded-lg border border-default bg-elevated p-3" role="group" :aria-label="$t('callup.answerAsPlayerTitle')">
             <p class="flex items-center gap-2 text-sm font-semibold">
@@ -272,8 +272,9 @@
           </ul>
         </section>
 
-        <div v-if="data.view === 'manage'" class="fixed inset-x-0 bottom-0 z-10 border-t border-default bg-default p-3">
-          <div class="mx-auto flex max-w-3xl items-center gap-3">
+        <!-- Above the tab bar on phones; from md it starts after the sidebar, and its inner row is the content box. -->
+        <div v-if="data.view === 'manage'" class="fixed bottom-[calc(var(--tm-tabbar-h)+var(--tm-safe-bottom))] inset-x-0 z-10 border-t border-default bg-default py-3 md:bottom-0 md:left-[var(--tm-sidebar-w)]">
+          <div class="tm-container flex items-center gap-3">
             <UButton
               size="lg"
               class="min-h-11 flex-1 justify-center"
@@ -284,7 +285,7 @@
               @click="send"
             />
           </div>
-          <p v-if="unsent === 0" class="pt-1 text-center text-xs text-muted">{{ $t('callup.nothingToSend') }}</p>
+          <p v-if="unsent === 0" class="px-[var(--tm-gutter)] pt-1 text-center text-xs text-muted">{{ $t('callup.nothingToSend') }}</p>
         </div>
       </template>
 

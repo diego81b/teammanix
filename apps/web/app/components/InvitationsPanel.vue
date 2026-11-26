@@ -1,7 +1,7 @@
 <template>
   <section class="space-y-4" aria-labelledby="title-invitations">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <h2 id="title-invitations" class="text-lg font-semibold">{{ $t('invitation.listTitle') }}</h2>
+      <h2 id="title-invitations" class="tm-section-title">{{ $t('invitation.listTitle') }}</h2>
       <UButton icon="i-tm-user-plus" size="lg" class="min-h-11" :label="$t('invitation.new')" @click="fresh = true" />
     </div>
 
@@ -14,11 +14,11 @@
     <p v-if="loading && !data" class="text-sm text-muted" role="status">{{ $t('common.loading') }}</p>
 
     <template v-if="data">
-      <p v-if="data.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">{{ $t('invitation.empty') }}</p>
+      <p v-if="data.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">{{ $t('invitation.empty') }}</p>
       <template v-else>
-        <table class="hidden w-full text-left text-sm md:table">
+        <table class="hidden w-full text-left lg:table">
           <caption class="sr-only">{{ $t('invitation.listTitle') }}</caption>
-          <thead class="border-b border-default text-muted">
+          <thead class="border-b border-default text-sm text-muted">
             <tr>
               <th scope="col" class="py-2 pr-3 font-medium">{{ $t('person.email') }}</th>
               <th scope="col" class="px-3 py-2 font-medium">{{ $t('invitation.role') }}</th>
@@ -29,7 +29,7 @@
           </thead>
           <tbody class="divide-y divide-default">
             <tr v-for="i in data" :key="i.id">
-              <th scope="row" class="py-3 pr-3 font-medium">{{ i.email }}</th>
+              <th scope="row" class="py-3 pr-3 font-medium [overflow-wrap:anywhere]">{{ i.email }}</th>
               <td class="px-3 py-3">{{ $t(`roles.${i.role}`) }}</td>
               <td class="px-3 py-3"><UBadge :color="variantInvitation(invitationStatus(i))" variant="subtle" :label="$t(`status.invitation.${invitationStatus(i)}`)" /></td>
               <td class="px-3 py-3">{{ formatDate(i.expiresAt.slice(0, 10), locale) }}</td>
@@ -43,7 +43,7 @@
           </tbody>
         </table>
 
-        <ul class="space-y-2 md:hidden">
+        <ul class="space-y-2 lg:hidden">
           <li v-for="i in data" :key="i.id" class="space-y-2 rounded-lg border border-default bg-elevated p-3">
             <p class="truncate font-semibold">{{ i.email }}</p>
             <p class="flex flex-wrap items-center gap-2 text-sm text-muted">

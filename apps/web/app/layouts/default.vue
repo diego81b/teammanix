@@ -41,7 +41,7 @@
       </div>
     </header>
 
-    <div class="mx-auto flex" style="max-width: calc(var(--tm-content-max) + var(--tm-sidebar-w))">
+    <div class="flex">
       <nav
         class="sticky hidden shrink-0 flex-col gap-4 overflow-y-auto p-4 md:flex"
         style="width: var(--tm-sidebar-w); top: var(--tm-header-h); height: calc(100dvh - var(--tm-header-h))"
@@ -71,8 +71,10 @@
           />
         </div>
       </nav>
-      <main id="content" class="min-w-0 flex-1 px-4 py-6 pb-[calc(var(--tm-tabbar-h)+var(--tm-safe-bottom)+1.5rem)] md:px-6 md:pb-10">
-        <slot />
+      <main id="content" class="min-w-0 flex-1 py-6 pb-[calc(var(--tm-tabbar-h)+var(--tm-safe-bottom)+1.5rem)] md:pb-10">
+        <div class="tm-container" data-layout="content">
+          <slot />
+        </div>
       </main>
     </div>
 

@@ -1,14 +1,14 @@
 <template>
-  <div class="space-y-8">
+  <div class="tm-page tm-page--narrow">
     <div class="space-y-1">
-      <h1 class="text-2xl font-bold">{{ $t('profile.title') }}</h1>
-      <p class="text-sm text-muted">{{ $t('profile.intro') }}</p>
+      <h1>{{ $t('profile.title') }}</h1>
+      <p class="text-muted">{{ $t('profile.intro') }}</p>
     </div>
 
     <section class="space-y-3" aria-labelledby="profile-theme">
       <div class="space-y-1">
-        <h2 id="profile-theme" class="font-semibold">{{ $t('profile.themeTitle') }}</h2>
-        <p class="text-sm text-muted">{{ $t('profile.themeText') }}</p>
+        <h2 id="profile-theme" class="tm-section-title">{{ $t('profile.themeTitle') }}</h2>
+        <p class="text-muted">{{ $t('profile.themeText') }}</p>
       </div>
       <URadioGroup
         v-model="theme"
@@ -21,12 +21,12 @@
     </section>
 
     <section class="space-y-3" aria-labelledby="profile-push">
-      <h2 id="profile-push" class="font-semibold">{{ $t('profile.pushTitle') }}</h2>
+      <h2 id="profile-push" class="tm-section-title">{{ $t('profile.pushTitle') }}</h2>
       <UAlert v-if="errorPush" color="error" variant="subtle" icon="i-tm-error" :title="errorPush" />
       <p v-if="pushLoading" class="text-sm text-muted" role="status">{{ $t('common.loading') }}</p>
       <div v-else class="flex items-center gap-3 rounded-lg border border-default bg-elevated p-3">
         <UIcon name="i-tm-bell" class="size-5 shrink-0 text-muted" aria-hidden="true" />
-        <p class="min-w-0 flex-1 text-sm">{{ pushText }}</p>
+        <p class="min-w-0 flex-1">{{ pushText }}</p>
         <UButton
           v-if="pushStatus === 'off'"
           size="lg"
@@ -50,8 +50,8 @@
 
     <section class="space-y-3" aria-labelledby="profile-channels">
       <div class="space-y-1">
-        <h2 id="profile-channels" class="font-semibold">{{ $t('profile.channelsTitle') }}</h2>
-        <p class="text-sm text-muted">{{ $t('profile.channelsText') }}</p>
+        <h2 id="profile-channels" class="tm-section-title">{{ $t('profile.channelsTitle') }}</h2>
+        <p class="text-muted">{{ $t('profile.channelsText') }}</p>
       </div>
 
       <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error">
@@ -80,8 +80,8 @@
 
     <section class="space-y-3" aria-labelledby="profile-delete">
       <div class="space-y-1">
-        <h2 id="profile-delete" class="font-semibold">{{ $t('profile.deleteTitle') }}</h2>
-        <p class="text-sm text-muted">{{ $t('profile.deleteText') }}</p>
+        <h2 id="profile-delete" class="tm-section-title">{{ $t('profile.deleteTitle') }}</h2>
+        <p class="text-muted">{{ $t('profile.deleteText') }}</p>
       </div>
       <UButton color="error" variant="outline" size="lg" class="min-h-11" :label="$t('profile.deleteButton')" @click="deleteOpen = true" />
       <DeleteAccount v-model:open="deleteOpen" />

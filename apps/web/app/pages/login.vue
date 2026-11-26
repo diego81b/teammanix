@@ -1,6 +1,6 @@
 <template>
-  <div class="space-y-6">
-    <h1 class="text-2xl font-bold">{{ $t('login.title') }}</h1>
+  <div class="tm-page">
+    <h1>{{ $t('login.title') }}</h1>
 
     <UAlert
       v-if="verifyRequest"

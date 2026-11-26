@@ -3,7 +3,7 @@
     <template #body>
       <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error" class="mb-4" />
       <p v-if="loading" class="text-sm text-muted" role="status">{{ $t('events.removeFuture.loading') }}</p>
-      <p v-else-if="removal" class="text-sm">{{ removalMessage(removal, (key, params) => t(key, params ?? {})) }}</p>
+      <p v-else-if="removal">{{ removalMessage(removal, (key, params) => t(key, params ?? {})) }}</p>
     </template>
     <template #footer>
       <div class="flex w-full flex-wrap justify-end gap-2">

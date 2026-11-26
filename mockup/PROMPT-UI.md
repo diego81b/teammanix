@@ -240,7 +240,7 @@ Il tuo design system CSS (token e componenti, senza valori sparsi nelle pagine) 
 - Token di stato: `--tm-success`, `--tm-warning`, `--tm-danger`, `--tm-info` con le rispettive varianti `-bg` (tinta tenue) e `-text` (scura, contrasto AA).
 - Scala di spaziatura aggiuntiva: `--tm-space-5: 20px`, `--tm-space-10: 40px`, `--tm-space-12: 48px`.
 - Altezze fisse: header 56 px su mobile e 64 px su desktop, bottom tab bar 64 px più safe area iOS (`env(safe-area-inset-bottom)`).
-- Griglia: gutter laterale 16 px su mobile, 24 px su tablet, contenuto massimo 1120 px centrato su desktop, sidebar 248 px su desktop.
+- Griglia: gutter laterale 16 px su mobile, 24 px su tablet, contenuto massimo 1280 px centrato su desktop, sidebar 248 px su desktop.
 - Breakpoint: 640, 768, 1024, 1280 px.
 - Ombra per elementi flottanti: `--tm-shadow-float: 0 8px 24px rgba(9, 9, 9, 0.12)`.
 - Z-index a livelli nominati (header, sheet, modale, toast).

@@ -3,7 +3,7 @@
     <NuxtLink to="/" class="mb-8 mt-4" aria-label="TeamManix">
       <TmLogo :height="40" />
     </NuxtLink>
-    <main class="w-full max-w-3xl">
+    <main class="w-full" style="max-width: var(--tm-narrow-max)">
       <UCard :ui="{ root: 'rounded-2xl', body: 'p-6 sm:p-10' }">
         <slot />
       </UCard>

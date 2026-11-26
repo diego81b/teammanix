@@ -2,7 +2,7 @@
   <UModal v-model:open="open" :title="$t('structure.deleteSectionTitle', { name: section?.name ?? '' })">
     <template #body>
       <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error" class="mb-4" />
-      <p class="text-sm">{{ $t(`structure.unit.${term}.deleteSectionText`) }}</p>
+      <p>{{ $t(`structure.unit.${term}.deleteSectionText`) }}</p>
     </template>
     <template #footer>
       <div class="flex w-full flex-wrap justify-end gap-2">

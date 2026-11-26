@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="tm-page">
     <div v-if="phase === 'waiting'" class="flex flex-col items-center gap-4 py-6" role="status">
       <UIcon name="i-tm-loader" class="size-8 animate-spin text-primary" />
       <p class="text-muted">{{ $t('verifyEmail.ongoing') }}</p>
@@ -10,7 +10,7 @@
         <UIcon name="i-tm-check-circle" class="size-7" />
       </div>
       <div class="space-y-2">
-        <h1 class="text-2xl font-bold">{{ $t('verifyEmail.okTitle') }}</h1>
+        <h1>{{ $t('verifyEmail.okTitle') }}</h1>
         <p class="text-muted">{{ $t('verifyEmail.okText') }}</p>
       </div>
       <UButton to="/login" block size="xl" :label="$t('common.login')" />
@@ -21,7 +21,7 @@
         <UIcon name="i-tm-error" class="size-7" />
       </div>
       <div class="space-y-2">
-        <h1 class="text-2xl font-bold">{{ $t('verifyEmail.errorTitle') }}</h1>
+        <h1>{{ $t('verifyEmail.errorTitle') }}</h1>
         <p class="text-muted">{{ error || $t('verifyEmail.textError') }}</p>
       </div>
       <UButton to="/check-email" block size="xl" :label="$t('common.requestNewLink')" />

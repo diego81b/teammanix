@@ -2,7 +2,7 @@
   <UModal v-model:open="open" :title="$t('archive.deleteTitle', { name: person?.name ?? '' })">
     <template #body>
       <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error" class="mb-4" />
-      <div class="space-y-3 text-sm">
+      <div class="space-y-3">
         <p>{{ $t('archive.deleteText') }}</p>
         <ul class="list-disc space-y-1 pl-5 text-muted">
           <li>{{ $t('archive.deleteEffect1') }}</li>

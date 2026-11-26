@@ -1,7 +1,7 @@
 <template>
   <UModal v-model:open="open" :title="$t('teamRoster.expected.title')" :description="row ? fullName(row) : ''">
     <template #body>
-      <p class="mb-4 text-sm text-muted">{{ $t('teamRoster.expected.intro') }}</p>
+      <p class="mb-4 text-muted">{{ $t('teamRoster.expected.intro') }}</p>
       <UAlert v-if="error" color="error" variant="subtle" icon="i-tm-error" :title="error" class="mb-4" />
       <UForm id="form-expected-injury" :state="form" :validate="validate" :validate-on="['change']" class="space-y-4" @submit="save">
         <UFormField name="startDate" :label="$t('teamRoster.expected.start')" required>

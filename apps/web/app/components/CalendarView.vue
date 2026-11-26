@@ -30,7 +30,7 @@
     </div>
 
     <template v-if="view === 'list'">
-      <p v-if="groups.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-sm text-muted">
+      <p v-if="groups.length === 0" class="rounded-lg border border-dashed border-default p-6 text-center text-muted">
         {{ part === 'upcoming' ? $t('calendar.emptyUpcoming') : $t('calendar.emptyHistory') }}
       </p>
       <section v-for="g in groups" :key="g.day" class="space-y-2" :aria-label="formatDay(g.day, locale)">
@@ -87,7 +87,7 @@
 
       <section class="space-y-2" :aria-label="$t('calendar.dayTitle', { day: formatDay(selected, locale) })">
         <h3 class="text-sm font-semibold text-muted first-letter:uppercase">{{ formatDay(selected, locale) }}</h3>
-        <p v-if="dayEvents.length === 0" class="rounded-lg border border-dashed border-default p-4 text-center text-sm text-muted">{{ $t('calendar.dayEmpty') }}</p>
+        <p v-if="dayEvents.length === 0" class="rounded-lg border border-dashed border-default p-4 text-center text-muted">{{ $t('calendar.dayEmpty') }}</p>
         <ul v-else class="space-y-2">
           <EventRow v-for="e in dayEvents" :key="e.id" :event="e" :show-team="showTeam">
             <template #actions><slot name="actions" :event="e" /></template>
