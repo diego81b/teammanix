@@ -9,7 +9,7 @@ import { Season } from '../entities/season.entity';
 import { Suspension } from '../entities/suspension.entity';
 import { loadMatches, loadSuspensions, suspensionData } from '../suspensions/suspension.loader';
 import { residue } from '../suspensions/suspension.rules';
-import { type SeasonDto, draftExists, toSeasonDto } from '../structure/structure.service';
+import { type SeasonDto, checkNoOverlap, draftExists, toSeasonDto } from '../structure/structure.service';
 import { editable, periodValid } from '../structure/season.rules';
 import { usableStaffRole } from '../staff-roles/staff-roles.service';
 import type { CloneSeasonDto, PromoteEnrollmentDto } from './dto-admin';
@@ -42,6 +42,7 @@ export class CloningService {
       throw new BadRequestException({ message: 'Invalid period', code: 'INVALID_DATE_SEASON' });
     }
     if ((await this.em.count(Season, { team: source.team.id, status: SeasonStatus.DRAFT })) > 0) throw draftExists();
+    await checkNoOverlap(this.em, source.team.id, dto.startDate, dto.endDate);
     const choices = dto.enrollments.length
       ? await this.em.find(Enrollment, { id: { $in: dto.enrollments }, season: source.id, endedAt: null }, { populate: ['person', 'staffRole'] })
       : [];

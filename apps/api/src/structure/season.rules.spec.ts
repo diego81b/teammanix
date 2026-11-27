@@ -1,5 +1,5 @@
 import { SeasonStatus } from '../entities/enums';
-import { validIsoDate, editable, periodValid, canActivate, canClose } from './season.rules';
+import { validIsoDate, editable, periodValid, periodsOverlap, canActivate, canClose } from './season.rules';
 
 describe('validIsoDate', () => {
   it.each(['2026-09-01', '2028-02-29', '1999-12-31'])('accetta %s', (d) => expect(validIsoDate(d)).toBe(true));
@@ -23,6 +23,25 @@ describe('periodValid', () => {
   it('invalid dates', () => {
     expect(periodValid('2026-02-30', '2027-06-30')).toBe(false);
     expect(periodValid('2026-09-01', 'x')).toBe(false);
+  });
+});
+
+describe('periodsOverlap', () => {
+  it.each([
+    ['nested', '2026-09-01', '2027-06-30', '2026-10-01', '2026-12-31'],
+    ['identical', '2026-09-01', '2027-06-30', '2026-09-01', '2027-06-30'],
+    ['partial', '2026-09-01', '2027-06-30', '2027-01-01', '2027-12-31'],
+    ['touching on one day', '2026-09-01', '2027-06-30', '2027-06-30', '2028-06-30'],
+  ])('%s periods overlap, in either order', (_, aStart, aEnd, bStart, bEnd) => {
+    expect(periodsOverlap(aStart, aEnd, bStart, bEnd)).toBe(true);
+    expect(periodsOverlap(bStart, bEnd, aStart, aEnd)).toBe(true);
+  });
+  it.each([
+    ['disjoint', '2026-09-01', '2027-06-30', '2028-09-01', '2029-06-30'],
+    ['starting the day after', '2026-09-01', '2027-06-30', '2027-07-01', '2028-06-30'],
+  ])('%s periods do not overlap, in either order', (_, aStart, aEnd, bStart, bEnd) => {
+    expect(periodsOverlap(aStart, aEnd, bStart, bEnd)).toBe(false);
+    expect(periodsOverlap(bStart, bEnd, aStart, aEnd)).toBe(false);
   });
 });
 

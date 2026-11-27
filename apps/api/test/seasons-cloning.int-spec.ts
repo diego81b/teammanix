@@ -77,7 +77,7 @@ describe('closure, cloning and promotion (rules 7, 8, 9)', () => {
 
     it('after closure the team can activate another season', async () => {
       const c = await context('ch-2@test.it');
-      const draft = (await createSeason(c.token, c.team1, { name: '2027/28' })).body;
+      const draft = (await createSeason(c.token, c.team1, newSeason)).body;
       expect((await t.req('POST', `/seasons/${draft.id}/active`, { token: c.token })).body.code).toBe('ACTIVE_SEASON_EXISTS');
       await closeSeason(c.token, c.seasonId);
       expect((await t.req('POST', `/seasons/${draft.id}/active`, { token: c.token })).status).toBe(200);
@@ -186,10 +186,20 @@ describe('closure, cloning and promotion (rules 7, 8, 9)', () => {
 
     it('if the team already has a draft the cloning is rejected and nothing is created', async () => {
       const c = await context('cl-9@test.it');
-      await createSeason(c.token, c.team1, { name: '2027/28' });
+      await createSeason(c.token, c.team1, newSeason);
       const r = await clone(c.token, c.seasonId, []);
       expect([r.status, r.body.code]).toEqual([409, 'DRAFT_EXISTS']);
       expect(await seasonsOf(c.team1)).toHaveLength(2);
+    });
+
+    it('a period overlapping another season of the team is refused and nothing is created', async () => {
+      const c = await context('cl-10@test.it');
+      const p = await person(c.token, 'Anna');
+      const i = await enroll(c.token, c.seasonId, p.id);
+      const r = await clone(c.token, c.seasonId, [i.id], { startDate: '2027-01-01', endDate: '2027-12-31' });
+      expect([r.status, r.body.code]).toEqual([409, 'SEASON_OVERLAP']);
+      expect(await seasonsOf(c.team1)).toHaveLength(1);
+      expect(await t.orm.em.fork().count(Enrollment, { person: p.id }, { filters: false })).toBe(1);
     });
 
     it('duplicates in the selection: 400', async () => {

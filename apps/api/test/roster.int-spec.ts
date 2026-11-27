@@ -414,8 +414,8 @@ describe('people, roster and disabling', () => {
   });
 
   describe('staff in several teams at once', () => {
-    const season = async (token: string, teamId: string, name: string, then?: 'active' | 'closed') => {
-      const r = await t.req('POST', `/teams/${teamId}/seasons`, { token, body: { name, startDate: '2026-09-01', endDate: '2027-06-30' } });
+    const season = async (token: string, teamId: string, name: string, then?: 'active' | 'closed', period = { startDate: '2026-09-01', endDate: '2027-06-30' }) => {
+      const r = await t.req('POST', `/teams/${teamId}/seasons`, { token, body: { name, ...period } });
       expect(r.status).toBe(201);
       const id = r.body.id as string;
       if (then) expect((await t.req('POST', `/seasons/${id}/active`, { token })).status).toBe(200);
@@ -433,7 +433,7 @@ describe('people, roster and disabling', () => {
       const struct = await createTeams(t.req, a.token, { sportProfile: 'football', section: 'Youth' });
       const [teamA, teamB, teamC] = [await struct.team('Under 12'), await struct.team('Under 14'), await struct.team('Under 16')];
       const activeA = await season(a.token, teamA.id, '2026/27', 'active');
-      const draftA = await season(a.token, teamA.id, '2027/28');
+      const draftA = await season(a.token, teamA.id, '2027/28', undefined, { startDate: '2027-09-01', endDate: '2028-06-30' });
       const draftB = await season(a.token, teamB.id, '2026/27');
       const activeC = await season(a.token, teamC.id, '2026/27', 'active');
       const coach = (await person(a.token, { name: 'Gino', surname: 'Portieri', email: `coach-${email}` })).body;

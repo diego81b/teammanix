@@ -315,7 +315,7 @@ describe('structure: sections, teams, seasons', () => {
       const other = (await newTeam(s.token, 'Under 17')).body;
       expect((await newSeason(s.token, other.id)).status).toBe(201);
       await t.req('POST', `/seasons/${before.id}/active`, { token: s.token });
-      expect((await newSeason(s.token, s.teamId, { name: '2027/28' })).status).toBe(201);
+      expect((await newSeason(s.token, s.teamId, { name: '2027/28', startDate: '2027-09-01', endDate: '2028-06-30' })).status).toBe(201);
     });
 
     it('only a draft can be activated', async () => {
@@ -338,6 +338,81 @@ describe('structure: sections, teams, seasons', () => {
       const st = (await newSeason(s.token, s.teamId)).body;
       const r = await t.req('PATCH', `/seasons/${st.id}`, { token: s.token, body: { endDate: '2026-08-01' } });
       expect([r.status, r.body.code]).toEqual([400, 'INVALID_DATE_SEASON']);
+    });
+
+    describe('overlap between seasons of a team', () => {
+      const seasonsOf = (teamId: string) => t.orm.em.fork().find(Season, { team: teamId }, { filters: false });
+      const stored = (id: string) => t.orm.em.fork().findOneOrFail(Season, { id }, { filters: false });
+      const activate = async (token: string, id: string) => expect((await t.req('POST', `/seasons/${id}/active`, { token })).status).toBe(200);
+      const NEXT = { name: '2027/28', startDate: '2027-09-01', endDate: '2028-06-30' };
+
+      it('create: a period overlapping another season of the team is refused and nothing is saved', async () => {
+        const s = await team('ov-1@test.it');
+        await activate(s.token, (await newSeason(s.token, s.teamId)).body.id);
+        const r = await newSeason(s.token, s.teamId, { name: '2027/28', startDate: '2027-01-01', endDate: '2027-12-31' });
+        expect([r.status, r.body.code]).toEqual([409, 'SEASON_OVERLAP']);
+        expect(await seasonsOf(s.teamId)).toHaveLength(1);
+      });
+
+      it('create: a period starting the day after the only season ends is created', async () => {
+        const s = await team('ov-2@test.it');
+        await activate(s.token, (await newSeason(s.token, s.teamId)).body.id);
+        const r = await newSeason(s.token, s.teamId, { name: '2027/28', startDate: '2027-07-01', endDate: '2028-06-30' });
+        expect(r.status).toBe(201);
+      });
+
+      it('create: the same dates as a season of another team are created', async () => {
+        const s = await team('ov-3@test.it');
+        const other = (await newTeam(s.token, 'Under 17')).body;
+        expect((await newSeason(s.token, s.teamId)).status).toBe(201);
+        expect((await newSeason(s.token, other.id)).status).toBe(201);
+      });
+
+      it('create: refused when the only overlapping season is closed', async () => {
+        const s = await team('ov-4@test.it');
+        const first = (await newSeason(s.token, s.teamId)).body;
+        await t.orm.em.fork().nativeUpdate(Season, { id: first.id }, { status: 'closed' } as never, { filters: false });
+        const r = await newSeason(s.token, s.teamId, { name: '2027/28', startDate: '2027-01-01', endDate: '2027-12-31' });
+        expect([r.status, r.body.code]).toEqual([409, 'SEASON_OVERLAP']);
+      });
+
+      /** A team with an active season (2026/27) and a draft after it (2027/28). */
+      async function twoSeasons(email: string) {
+        const s = await team(email);
+        const first = (await newSeason(s.token, s.teamId)).body;
+        await activate(s.token, first.id);
+        const next = (await newSeason(s.token, s.teamId, NEXT)).body;
+        return { ...s, first, next };
+      }
+
+      it('edit: moving the dates onto another season of the team is refused and the stored dates stay', async () => {
+        const s = await twoSeasons('ov-5@test.it');
+        for (const body of [{ startDate: '2027-06-01' }, { startDate: '2026-01-01', endDate: '2028-12-31' }]) {
+          const r = await t.req('PATCH', `/seasons/${s.next.id}`, { token: s.token, body });
+          expect([r.status, r.body.code]).toEqual([409, 'SEASON_OVERLAP']);
+        }
+        expect(await stored(s.next.id)).toMatchObject({ startDate: '2027-09-01', endDate: '2028-06-30' });
+      });
+
+      it('edit: a date change that overlaps no other season is accepted, even next to a neighbour or with a single season', async () => {
+        const s = await twoSeasons('ov-6@test.it');
+        const adjacent = await t.req('PATCH', `/seasons/${s.next.id}`, { token: s.token, body: { startDate: '2027-07-01' } });
+        expect([adjacent.status, adjacent.body.startDate]).toEqual([200, '2027-07-01']);
+        const alone = await team('ov-6b@test.it');
+        const only = (await newSeason(alone.token, alone.teamId)).body;
+        const r = await t.req('PATCH', `/seasons/${only.id}`, { token: alone.token, body: { startDate: '2026-08-01', endDate: '2027-08-01' } });
+        expect([r.status, r.body.endDate]).toEqual([200, '2027-08-01']);
+      });
+
+      it('edit: a season already overlapping in the data can be renamed, change league or get its own dates sent back', async () => {
+        const s = await twoSeasons('ov-7@test.it');
+        await t.orm.em.fork().nativeUpdate(Season, { id: s.next.id }, { startDate: '2027-01-01' } as never, { filters: false });
+        for (const body of [{ name: 'Renamed' }, { league: 'Regional' }, { startDate: '2027-01-01', endDate: '2028-06-30' }]) {
+          const r = await t.req('PATCH', `/seasons/${s.next.id}`, { token: s.token, body });
+          expect([r.status, body]).toEqual([200, body]);
+        }
+        expect(await stored(s.next.id)).toMatchObject({ name: 'Renamed', league: 'Regional', startDate: '2027-01-01' });
+      });
     });
 
     it('a closed season is read-only (rule 7)', async () => {

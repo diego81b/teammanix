@@ -18,7 +18,7 @@ import type {
   EditTeamDto,
   EditSeasonDto,
 } from './dto';
-import { editable, periodValid, canActivate, canClose } from './season.rules';
+import { editable, periodValid, periodsOverlap, canActivate, canClose } from './season.rules';
 
 /** Codes only: texts (sport, positions) are translated by the frontend. */
 export interface SportProfileDto {
@@ -60,6 +60,15 @@ export interface SeasonDto {
 
 export const draftExists = () =>
   new ConflictException({ message: 'The team already has a draft season', code: 'DRAFT_EXISTS' });
+
+export const seasonOverlap = () =>
+  new ConflictException({ message: 'The period overlaps another season of the team', code: 'SEASON_OVERLAP' });
+
+/** Refuses a period that shares a day with another season of the team, whatever its status. */
+export async function checkNoOverlap(em: EntityManager, teamId: string, start: string, end: string, exceptId?: string): Promise<void> {
+  const seasons = await em.find(Season, { team: teamId });
+  if (seasons.some((s) => s.id !== exceptId && periodsOverlap(start, end, s.startDate, s.endDate))) throw seasonOverlap();
+}
 
 export function toSeasonDto(s: Season): SeasonDto {
   return {
@@ -185,6 +194,7 @@ export class StructureService {
     this.checkPeriod(dto.startDate, dto.endDate);
     // One draft per team: the DB unique index also settles the race between two requests.
     if ((await this.em.count(Season, { team: sq.id, status: SeasonStatus.DRAFT })) > 0) throw draftExists();
+    await checkNoOverlap(this.em, sq.id, dto.startDate, dto.endDate);
     const st = this.em.create(Season, {
       club: a.clubId as string,
       team: sq,
@@ -209,6 +219,7 @@ export class StructureService {
     const start = dto.startDate ?? st.startDate;
     const end = dto.endDate ?? st.endDate;
     this.checkPeriod(start, end);
+    if (start !== st.startDate || end !== st.endDate) await checkNoOverlap(this.em, st.team.id, start, end, st.id);
     if (dto.name) st.name = dto.name;
     if (dto.league !== undefined) st.league = dto.league;
     st.startDate = start;

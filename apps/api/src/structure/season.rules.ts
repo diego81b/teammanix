@@ -13,6 +13,10 @@ export function periodValid(start: unknown, end: unknown): boolean {
   return validIsoDate(start) && validIsoDate(end) && end >= start;
 }
 
+/** Two inclusive periods share at least one day. */
+export const periodsOverlap = (aStart: string, aEnd: string, bStart: string, bEnd: string): boolean =>
+  aStart <= bEnd && bStart <= aEnd;
+
 /** Only a draft is activated. Closing has its own path (rule 8). */
 export const canActivate = (status: SeasonStatus): boolean => status === SeasonStatus.DRAFT;
 
