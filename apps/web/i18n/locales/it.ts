@@ -167,6 +167,7 @@ const it = {
       VENUE_EXISTS: 'Esiste già un impianto con questo nome.',
       SEASON_NOT_CLOSABLE: 'Si può chiudere solo una stagione attiva.',
       DRAFT_EXISTS: 'La squadra ha già una stagione in bozza: modificala o attivala prima di crearne una nuova.',
+      SEASON_OVERLAP: 'Le date si sovrappongono a un\'altra stagione della squadra: scegli un periodo che non ne copra un\'altra.',
       INVALID_ENROLLMENTS: 'Alcune iscrizioni scelte non fanno parte di questa stagione o sono già chiuse.',
       PROMOTION_SAME_SEASON: 'La destinazione deve essere una stagione diversa da quella di partenza.',
       ACTIVE_SEASON_EXISTS: 'La squadra ha già una stagione attiva. Chiudila prima di attivarne un\'altra.',

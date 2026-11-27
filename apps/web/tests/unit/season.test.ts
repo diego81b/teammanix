@@ -16,7 +16,16 @@ describe('proposeNewSeason', () => {
   })
   it('a start already in July or earlier keeps the same date, one year later', () => {
     expect(proposeNewSeason(st({ startDate: '2025-07-01' })).startDate).toBe('2026-07-01')
-    expect(proposeNewSeason(st({ startDate: '2025-01-10' })).startDate).toBe('2026-01-10')
+    expect(proposeNewSeason(st({ startDate: '2025-01-10', endDate: '2025-12-31' })).startDate).toBe('2026-01-10')
+  })
+  it('a previous season ending after 1 July starts the day after it ends, so the proposal does not overlap it', () => {
+    expect(proposeNewSeason(st({ startDate: '2026-09-01', endDate: '2027-07-15' }))).toEqual({
+      name: '2026/2027', startDate: '2027-07-16', endDate: '2028-07-15',
+    })
+  })
+  it('the day after an end date rolls over month, year and leap day', () => {
+    expect(proposeNewSeason(st({ endDate: '2027-12-31' })).startDate).toBe('2028-01-01')
+    expect(proposeNewSeason(st({ endDate: '2028-02-29' })).startDate).toBe('2028-03-01')
   })
   it('a name that does not follow the pattern stays the same', () => {
     expect(proposeNewSeason(st({ name: 'Estate' })).name).toBe('Estate')

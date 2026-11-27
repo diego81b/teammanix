@@ -163,6 +163,7 @@ const en: typeof it = {
       VENUE_EXISTS: 'A venue with this name already exists.',
       SEASON_NOT_CLOSABLE: 'Only an active season can be closed.',
       DRAFT_EXISTS: 'This team already has a draft season: edit or activate it before creating another one.',
+      SEASON_OVERLAP: 'These dates overlap another season of this team: choose a period that does not cover another season.',
       INVALID_ENROLLMENTS: 'Some of the selected registrations do not belong to this season or are already closed.',
       PROMOTION_SAME_SEASON: 'The destination must be a different season from the starting one.',
       ACTIVE_SEASON_EXISTS: 'The team already has an active season. Close it before activating another.',

@@ -17,18 +17,27 @@ function aYearAfter(iso: string): string {
   return d.getUTCMonth() === Number(m) - 1 ? d.toISOString().slice(0, 10) : `${year}-${m}-28`
 }
 
+const dayAfter = (iso: string): string => {
+  const d = new Date(`${iso}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + 1)
+  return d.toISOString().slice(0, 10)
+}
+
+const later = (a: string, b: string): string => (a > b ? a : b)
+
 const startProposed = (data: string): string => (data.slice(5) > '07-01' ? `${data.slice(0, 4)}-07-01` : data)
 
 /**
  * Proposal for the next season: a name like "2025/2026" advances by a year, other names stay.
  * The start falls on July 1 (preparation at end of August, league in mid September), unless the start
- * of the previous one was already in July or earlier.
+ * of the previous one was already in July or earlier. It never starts before the day after the previous one ends,
+ * because the API refuses seasons of a team that overlap.
  */
 export function proposeNewSeason(s: Pick<SeasonDto, 'name' | 'startDate' | 'endDate'>): { name: string, startDate: string, endDate: string } {
   const template = /^(\d{4})\/(\d{4})$/.exec(s.name)
   return {
     name: template ? `${Number(template[1]) + 1}/${Number(template[2]) + 1}` : s.name,
-    startDate: startProposed(aYearAfter(s.startDate)),
+    startDate: later(startProposed(aYearAfter(s.startDate)), dayAfter(s.endDate)),
     endDate: aYearAfter(s.endDate),
   }
 }

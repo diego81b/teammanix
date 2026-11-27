@@ -163,6 +163,7 @@ const fr: typeof it = {
       VENUE_EXISTS: 'Une installation portant ce nom existe déjà.',
       SEASON_NOT_CLOSABLE: 'Seule une saison active peut être clôturée.',
       DRAFT_EXISTS: 'Cette équipe a déjà une saison en brouillon : modifiez-la ou activez-la avant de créer la suivante.',
+      SEASON_OVERLAP: 'Ces dates chevauchent une autre saison de cette équipe : choisissez une période qui n\'en recouvre pas une autre.',
       INVALID_ENROLLMENTS: 'Certaines inscriptions sélectionnées ne font pas partie de cette saison ou sont déjà clôturées.',
       PROMOTION_SAME_SEASON: 'La destination doit être une saison différente de celle de départ.',
       ACTIVE_SEASON_EXISTS: 'L\'équipe a déjà une saison active. Clôturez-la avant d\'en activer une autre.',
