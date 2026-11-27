@@ -8,7 +8,7 @@ Multi-tenant PWA for sports clubs. A club registers itself, creates its structur
 ## Features
 
 - **Self-service clubs.** Whoever creates a club becomes its admin. Registration with email verification, password reset and login. The UI is available in Italian, English and French.
-- **Structure.** Club, optional sections that group teams, teams (a sport profile each) and seasons. One active season and one draft per team. A season can be closed, cloned into a draft with a chosen roster, or promoted to another team.
+- **Structure.** Club, optional sections that group teams, teams (a sport profile each) and seasons. One active season and one draft per team, and the seasons of a team never overlap. A season can be closed, cloned into a draft with a chosen roster, or promoted to another team.
 - **People and roster.** A person (player or staff) is a registry record, separate from a user account. It is linked to an account when an invitation is accepted.
 - **Access roles with scope.** Roles apply to the whole club, one section or one team. Fine-grained permissions can be adjusted per person. The last admin of a club can never be removed.
 - **Invitations by email.** Invite, resend, revoke, accept. Links expire.
